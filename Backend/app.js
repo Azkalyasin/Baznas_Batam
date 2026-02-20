@@ -25,6 +25,7 @@ app.use(helmet()); // Secure HTTP headers
 app.use(cors()); // Enable CORS
 app.use(compression()); // Compress responses
 app.use(morgan('dev')); // Log requests
+app.use(express.json()); // Enable JSON body parsing
 
 // Rate Limiting (Prevent Brute Force)
 const limiter = rateLimit({
@@ -33,8 +34,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use('/api', limiter);
-
-app.use(express.json()); // Enable JSON body parsing
+// Enable JSON body parsing
 
 // Define Associations
 Mustahiq.hasMany(Distribusi, { foreignKey: 'mustahiq_id' });
