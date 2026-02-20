@@ -1,21 +1,42 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 
-const register = async (userData) => {
-  const { username, password, nama, role } = userData;
+const getAllUsers = async (query) => {
+  const { role, page = 1, limit = 10, search } = query;
+  const offset = (page - 1) * limit;
 
-  // Check if username exists
-  const existingUser = await User.findOne({ where: { username } });
-  if (existingUser) {
-    throw new Error('Username already exists');
+  const where = {};
+  if (role) where.role = role;
+  if (search) {
+    where.username = { [Op.like]: `%${search}%` };
   }
 
-  // Hash password
+  const { rows, count } = await User.findAndCountAll({
+    where,
+    limit: parseInt(limit),
+    offset: parseInt(offset),
+    attributes: { exclude: ['password'] } // Don't return passwords
+  });
+
+  return { users: rows, total: count, page, totalPages: Math.ceil(count / limit) };
+};
+
+const getUserById = async (id) => {
+  const user = await User.findByPk(id, { attributes: { exclude: ['password'] } });
+  if (!user) throw new Error('User not found');
+  return user;
+};
+
+const createUser = async (userData) => {
+  const { username, password, nama, role } = userData;
+
+  const existing = await User.findOne({ where: { username } });
+  if (existing) throw new Error('Username already exists');
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Create user
   const newUser = await User.create({
     username,
     password: hashedPassword,
@@ -23,48 +44,33 @@ const register = async (userData) => {
     role
   });
 
-  return {
-    id: newUser.id,
-    username: newUser.username,
-    nama: newUser.nama,
-    role: newUser.role
-  };
+  return { id: newUser.id, username, nama, role };
 };
 
-const login = async (loginData) => {
-  const { username, password } = loginData;
+const updateUser = async (id, updateData) => {
+  const user = await User.findByPk(id);
+  if (!user) throw new Error('User not found');
 
-  // Find user
-  const user = await User.findOne({ where: { username } });
-  if (!user) {
-    throw new Error('Invalid credentials');
+  if (updateData.password) {
+    const salt = await bcrypt.genSalt(10);
+    updateData.password = await bcrypt.hash(updateData.password, salt);
   }
 
-  // Check password
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new Error('Invalid credentials');
-  }
+  await user.update(updateData);
+  return { id: user.id, username: user.username, nama: user.nama, role: user.role };
+};
 
-  // Generate Token
-  const token = jwt.sign(
-    { id: user.id, role: user.role },
-    process.env.JWT_SECRET || 'secret', 
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
-  );
-
-  return {
-    token,
-    user: {
-      id: user.id,
-      username: user.username,
-      nama: user.nama,
-      role: user.role
-    }
-  };
+const deleteUser = async (id) => {
+  const user = await User.findByPk(id);
+  if (!user) throw new Error('User not found');
+  await user.destroy();
+  return { message: 'User deleted' };
 };
 
 export default {
-  register,
-  login
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser
 };
