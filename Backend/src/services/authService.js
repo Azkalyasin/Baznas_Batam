@@ -1,6 +1,7 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const login = async ({ username, password }) => {
   const user = await User.findOne({ where: { username } });
@@ -15,9 +16,11 @@ const login = async ({ username, password }) => {
     throw Object.assign(new Error('Username atau password salah.'), { status: 401 });
   }
 
-  // Tidak ada fallback 'secret' — dijaga di app.js
+  // jti (JWT ID) unik per token — digunakan untuk token blacklist saat logout
+  const jti = crypto.randomUUID();
+
   const token = jwt.sign(
-    { id: user.id, role: user.role, nama: user.nama, username: user.username },
+    { jti, id: user.id, role: user.role, nama: user.nama, username: user.username },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
   );
@@ -35,3 +38,4 @@ const login = async ({ username, password }) => {
 export default {
   login
 };
+

@@ -1,4 +1,5 @@
 import authService from '../services/authService.js';
+import tokenBlacklist from '../utils/tokenBlacklist.js';
 
 const login = async (req, res, next) => {
   try {
@@ -16,16 +17,19 @@ const login = async (req, res, next) => {
         message: error.message
       });
     }
-    next(error); // Teruskan error server ke global error handler
+    next(error);
   }
 };
 
-const logout = async (req, res) => {
-  // Logout berbasis JWT dilakukan di sisi client dengan menghapus token.
-  // Untuk keamanan lebih, implementasikan token blacklist di sini.
+const logout = (req, res) => {
+  // req.user sudah di-attach oleh authMiddleware, berisi { jti, id, exp, ... }
+  if (req.user?.jti && req.user?.exp) {
+    tokenBlacklist.addToBlacklist(req.user.jti, req.user.exp);
+  }
+
   res.status(200).json({
     success: true,
-    message: 'Logout berhasil.'
+    message: 'Logout berhasil. Token telah diinvalidasi.'
   });
 };
 
@@ -42,3 +46,4 @@ export default {
   logout,
   me
 };
+
