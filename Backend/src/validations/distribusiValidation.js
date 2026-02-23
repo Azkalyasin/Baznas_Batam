@@ -77,7 +77,7 @@ const viaEnum = [
   'UOB', 'HSBC', 'DBS', 'Standard Chartered', 'BSI', 'Bank Muamalat'
 ];
 
-const createSchema = z.object({
+export const createDistribusiSchema = z.object({
   mustahiq_id: z.number().int().positive(),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD'),
   program_kegiatan: z.enum(programKegiatanEnum).optional(),
@@ -95,9 +95,9 @@ const createSchema = z.object({
   keterangan: z.string().optional()
 });
 
-const updateSchema = createSchema.partial();
+export const updateDistribusiSchema = createDistribusiSchema.partial();
 
-const querySchema = z.object({
+export const queryDistribusiSchema = z.object({
   q: z.string().optional(),
   mustahiq_id: z.string().optional(),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -114,9 +114,6 @@ const querySchema = z.object({
   limit: z.string().regex(/^\d+$/).optional().transform(Number)
 });
 
-export {
-  createSchema,
-  updateSchema,
-  querySchema,
-  idParamSchema
-};
+// Re-export for convenience or backward compatibility if really needed, 
+// but we will update the routes to use specific names.
+export { idParamSchema };

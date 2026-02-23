@@ -1,7 +1,11 @@
 import express from 'express';
 import distribusiController from '../controllers/distribusiController.js';
 import validate from '../middlewares/validateMiddleware.js';
-import { createSchema, updateSchema, querySchema } from '../validations/distribusiValidation.js';
+import { 
+  createDistribusiSchema, 
+  updateDistribusiSchema, 
+  queryDistribusiSchema 
+} from '../validations/distribusiValidation.js';
 import { idParamSchema } from '../validations/shared.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import roleMiddleware from '../middlewares/roleMiddleware.js';
@@ -13,7 +17,7 @@ router.use(authMiddleware);
 
 router.get('/', 
   roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
-  validate(querySchema, 'query'), 
+  validate(queryDistribusiSchema, 'query'), 
   distribusiController.getAll
 );
 
@@ -46,14 +50,14 @@ router.get('/:id/cetak',
 
 router.post('/', 
   roleMiddleware(['superadmin']), 
-  validate(createSchema), 
+  validate(createDistribusiSchema), 
   distribusiController.create
 );
 
 router.put('/:id', 
   roleMiddleware(['superadmin']), 
   validate(idParamSchema, 'params'), 
-  validate(updateSchema), 
+  validate(updateDistribusiSchema), 
   distribusiController.update
 );
 
