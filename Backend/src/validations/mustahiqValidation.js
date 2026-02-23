@@ -86,7 +86,6 @@ export const createMustahiqSchema = z.object({
   jenis_program: jenisProgramEnum.optional(),
   asnaf: asnafEnum,
   rekomendasi_upz: z.string().optional(),
-  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD.'),
   keterangan: z.string().optional()
 });
 

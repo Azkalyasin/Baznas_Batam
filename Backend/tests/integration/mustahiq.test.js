@@ -121,7 +121,7 @@ describe('Mustahiq Routes Integration Test', () => {
   describe('POST /api/mustahiq', () => {
     const validBody = {
       nrm: 'NRM001', nama: 'Ahmad', kelurahan: 'Tembesi',
-      kecamatan: 'Batu Aji', asnaf: 'Fakir', registered_date: '2026-01-01'
+      kecamatan: 'Batu Aji', asnaf: 'Fakir'
     };
 
     test('body valid → 201', async () => {

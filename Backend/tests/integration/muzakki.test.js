@@ -116,8 +116,7 @@ describe('Muzakki Routes Integration Test', () => {
   describe('POST /api/muzakki', () => {
     const validBody = {
       npwz: 'NPWZ001', nama: 'Budi', kelurahan: 'Tembesi',
-      kecamatan: 'Batu Aji', jenis_muzakki: 'Individu',
-      registered_date: '2026-01-01'
+      kecamatan: 'Batu Aji', jenis_muzakki: 'Individu'
     };
 
     test('body valid → 201', async () => {

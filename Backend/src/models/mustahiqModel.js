@@ -155,10 +155,6 @@ const Mustahiq = db.define('mustahiq', {
   registered_by: {
     type: DataTypes.INTEGER,
     allowNull: false
-  },
-  registered_date: {
-    type: DataTypes.DATEONLY,
-    allowNull: false
   }
 }, {
   freezeTableName: true,

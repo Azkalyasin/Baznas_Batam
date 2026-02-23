@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
-import { mustahiqSchema } from '../validations/mustahiqValidation.js';
-import { muzakkiSchema } from '../validations/muzakkiValidation.js';
+import { createMustahiqSchema } from '../validations/mustahiqValidation.js';
+import { createMuzakkiSchema } from '../validations/muzakkiValidation.js';
 import { createPenerimaanSchema } from '../validations/penerimaanValidation.js';
 import { createDistribusiSchema } from '../validations/distribusiValidation.js';
 import Mustahiq from '../models/mustahiqModel.js';
@@ -20,10 +20,9 @@ const COLUMN_CONFIG = {
       { header: 'Kelurahan', key: 'kelurahan', width: 20 },
       { header: 'Kecamatan', key: 'kecamatan', width: 20 },
       { header: 'No HP', key: 'no_hp', width: 15 },
-      { header: 'Asnaf', key: 'asnaf', width: 15 },
-      { header: 'Tanggal Daftar (YYYY-MM-DD)', key: 'registered_date', width: 25 }
+      { header: 'Asnaf', key: 'asnaf', width: 15 }
     ],
-    schema: mustahiqSchema,
+    schema: createMustahiqSchema,
     model: Mustahiq
   },
   muzakki: {
@@ -36,7 +35,7 @@ const COLUMN_CONFIG = {
       { header: 'Jenis Muzakki', key: 'jenis_muzakki', width: 20 },
       { header: 'Jenis UPZ', key: 'jenis_upz', width: 20 }
     ],
-    schema: muzakkiSchema,
+    schema: createMuzakkiSchema,
     model: Muzakki
   },
   penerimaan: {

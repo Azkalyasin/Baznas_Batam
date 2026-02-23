@@ -88,10 +88,6 @@ const Muzakki = db.define('muzakki', {
   registered_by: {
     type: DataTypes.INTEGER,
     allowNull: false
-  },
-  registered_date: {
-    type: DataTypes.DATEONLY,
-    allowNull: false
   }
 }, {
   freezeTableName: true,

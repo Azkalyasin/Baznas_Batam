@@ -53,7 +53,6 @@ export const createMuzakkiSchema = z.object({
   alamat: z.string().optional(),
   kelurahan: kelurahanEnum,
   kecamatan: kecamatanEnum,
-  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD.'),
   keterangan: z.string().optional()
 });
 
