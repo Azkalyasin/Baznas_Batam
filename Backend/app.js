@@ -15,6 +15,8 @@ import setupTriggers from './src/utils/dbSetup.js';
 import seedUser from './src/utils/seedUser.js';
 import userRoute from './src/routes/userRoute.js';
 import authRoute from './src/routes/authRoute.js';
+import mustahiqRoute from './src/routes/mustahiqRoute.js';
+import laporanRoute from './src/routes/laporanRoute.js';
 import logger from './src/utils/logger.js';
 
 dotenv.config();
@@ -102,6 +104,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth/login', loginLimiter); // login rate limit lebih ketat
 app.use('/api/auth', authRoute);
 app.use('/api/users', userRoute);
+app.use('/api/mustahiq', mustahiqRoute);
+app.use('/api/laporan', laporanRoute);
 
 // --- 404 Handler ---
 app.use((req, res) => {
