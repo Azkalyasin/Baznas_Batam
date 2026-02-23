@@ -16,6 +16,7 @@ import seedUser from './src/utils/seedUser.js';
 import userRoute from './src/routes/userRoute.js';
 import authRoute from './src/routes/authRoute.js';
 import mustahiqRoute from './src/routes/mustahiqRoute.js';
+import muzakkiRoute from './src/routes/muzakkiRoute.js';
 import laporanRoute from './src/routes/laporanRoute.js';
 import logger from './src/utils/logger.js';
 
@@ -105,6 +106,7 @@ app.use('/api/auth/login', loginLimiter); // login rate limit lebih ketat
 app.use('/api/auth', authRoute);
 app.use('/api/users', userRoute);
 app.use('/api/mustahiq', mustahiqRoute);
+app.use('/api/muzakki', muzakkiRoute);
 app.use('/api/laporan', laporanRoute);
 
 // --- 404 Handler ---
