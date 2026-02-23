@@ -123,7 +123,7 @@ describe('penerimaanService', () => {
     test('penerimaan tidak ditemukan → throw 404', async () => {
       Penerimaan.findByPk.mockResolvedValue(null);
 
-      await expect(penerimaanService.update(999, { jumlah: 500000 })).rejects.toMatchObject({
+      await expect(penerimaanService.update(999, { jumlah: 500000 }, 1)).rejects.toMatchObject({
         status: 404
       });
     });
@@ -136,7 +136,7 @@ describe('penerimaanService', () => {
       Penerimaan.findByPk.mockResolvedValue(existing);
       Muzakki.findByPk.mockResolvedValue({ id: 2, status: 'inactive' });
 
-      await expect(penerimaanService.update(1, { muzakki_id: 2 })).rejects.toMatchObject({
+      await expect(penerimaanService.update(1, { muzakki_id: 2 }, 1)).rejects.toMatchObject({
         status: 400
       });
     });
@@ -149,7 +149,7 @@ describe('penerimaanService', () => {
       };
       Penerimaan.findByPk.mockResolvedValue(existing);
 
-      await penerimaanService.update(1, { jumlah: 2000000 });
+      await penerimaanService.update(1, { jumlah: 2000000 }, 1);
 
       expect(db.transaction).toHaveBeenCalled();
       expect(existing.update).toHaveBeenCalledWith(
@@ -171,7 +171,7 @@ describe('penerimaanService', () => {
       const mock = { id: 1, destroy: jest.fn().mockResolvedValue(true) };
       Penerimaan.findByPk.mockResolvedValue(mock);
 
-      await expect(penerimaanService.destroy(1)).resolves.toBeUndefined();
+      await expect(penerimaanService.destroy(1, 1)).resolves.toBeUndefined();
       expect(db.transaction).toHaveBeenCalled();
       expect(mock.destroy).toHaveBeenCalledWith(
         expect.objectContaining({ transaction: mockTransaction })

@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
+import { registerAuditHooks } from '../utils/auditHooks.js';
 
 const Muzakki = db.define('muzakki', {
   id: {
@@ -100,5 +101,7 @@ const Muzakki = db.define('muzakki', {
     { fields: ['nama'],               name: 'nama_index'  }
   ]
 });
+
+registerAuditHooks(Muzakki, 'muzakki');
 
 export default Muzakki;

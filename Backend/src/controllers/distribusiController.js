@@ -30,7 +30,7 @@ const create = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const data = await distribusiService.update(req.params.id, req.body);
+    const data = await distribusiService.update(req.params.id, req.body, req.user.id);
     res.status(200).json({ success: true, data, message: 'Data distribusi berhasil diperbarui.' });
   } catch (error) {
     next(error);
@@ -39,7 +39,7 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
   try {
-    await distribusiService.destroy(req.params.id);
+    await distribusiService.destroy(req.params.id, req.user.id);
     res.status(200).json({ success: true, message: 'Data distribusi berhasil dihapus.' });
   } catch (error) {
     next(error);

@@ -95,7 +95,7 @@ const create = async (body, userId) => {
     const muzakki = await Muzakki.create({
       ...body,
       registered_by: userId
-    }, { transaction: t });
+    }, { transaction: t, userId });
 
     await t.commit();
     return muzakki;
@@ -106,7 +106,7 @@ const create = async (body, userId) => {
 };
 
 // --- PUT /api/muzakki/:id ---
-const update = async (id, updateData) => {
+const update = async (id, updateData, userId) => {
   const muzakki = await Muzakki.findByPk(id);
   if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
 
@@ -124,7 +124,7 @@ const update = async (id, updateData) => {
 
   const t = await db.transaction();
   try {
-    await muzakki.update(updateData, { transaction: t });
+    await muzakki.update(updateData, { transaction: t, userId });
     await t.commit();
 
     await muzakki.reload();
@@ -136,13 +136,13 @@ const update = async (id, updateData) => {
 };
 
 // --- PUT /api/muzakki/:id/status ---
-const updateStatus = async (id, status) => {
+const updateStatus = async (id, status, userId) => {
   const muzakki = await Muzakki.findByPk(id);
   if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
 
   const t = await db.transaction();
   try {
-    await muzakki.update({ status }, { transaction: t });
+    await muzakki.update({ status }, { transaction: t, userId });
     await t.commit();
     return muzakki;
   } catch (error) {
@@ -152,7 +152,7 @@ const updateStatus = async (id, status) => {
 };
 
 // --- DELETE /api/muzakki/:id ---
-const destroy = async (id) => {
+const destroy = async (id, userId) => {
   const muzakki = await Muzakki.findByPk(id);
   if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
 
@@ -167,7 +167,7 @@ const destroy = async (id) => {
 
   const t = await db.transaction();
   try {
-    await muzakki.destroy({ transaction: t });
+    await muzakki.destroy({ transaction: t, userId });
     await t.commit();
   } catch (error) {
     await t.rollback();

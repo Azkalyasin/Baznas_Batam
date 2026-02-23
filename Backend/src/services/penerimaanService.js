@@ -75,7 +75,7 @@ const create = async (body, userId) => {
       dana_amil: danaAmil,
       dana_bersih: danaBersih,
       created_by: userId
-    }, { transaction: t });
+    }, { transaction: t, userId });
 
     await t.commit();
 
@@ -89,7 +89,7 @@ const create = async (body, userId) => {
 };
 
 // --- PUT /api/penerimaan/:id ---
-const update = async (id, updateData) => {
+const update = async (id, updateData, userId) => {
   const penerimaan = await Penerimaan.findByPk(id);
   if (!penerimaan) throw Object.assign(new Error('Data penerimaan tidak ditemukan.'), { status: 404 });
 
@@ -111,7 +111,7 @@ const update = async (id, updateData) => {
 
   const t = await db.transaction();
   try {
-    await penerimaan.update(updateData, { transaction: t });
+    await penerimaan.update(updateData, { transaction: t, userId });
     await t.commit();
 
     await penerimaan.reload();
@@ -124,13 +124,13 @@ const update = async (id, updateData) => {
 
 // --- DELETE /api/penerimaan/:id ---
 // Trigger DB akan handle: rollback muzakki stats
-const destroy = async (id) => {
+const destroy = async (id, userId) => {
   const penerimaan = await Penerimaan.findByPk(id);
   if (!penerimaan) throw Object.assign(new Error('Data penerimaan tidak ditemukan.'), { status: 404 });
 
   const t = await db.transaction();
   try {
-    await penerimaan.destroy({ transaction: t });
+    await penerimaan.destroy({ transaction: t, userId });
     await t.commit();
   } catch (error) {
     await t.rollback();

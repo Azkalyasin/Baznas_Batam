@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
+import { registerAuditHooks } from '../utils/auditHooks.js';
 
 const Mustahiq = db.define('mustahiq', {
   id: {
@@ -167,5 +168,7 @@ const Mustahiq = db.define('mustahiq', {
     { unique: true, fields: ['nik'], name: 'nik_unique' }
   ]
 });
+
+registerAuditHooks(Mustahiq, 'mustahiq');
 
 export default Mustahiq;

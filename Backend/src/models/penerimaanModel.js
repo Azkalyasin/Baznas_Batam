@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
+import { registerAuditHooks } from '../utils/auditHooks.js';
 import Muzakki from './muzakkiModel.js';
 
 const Penerimaan = db.define('penerimaan', {
@@ -100,4 +101,6 @@ const Penerimaan = db.define('penerimaan', {
 });
 
 // Relation defined in app.js or associations file
+registerAuditHooks(Penerimaan, 'penerimaan');
+
 export default Penerimaan;

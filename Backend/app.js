@@ -21,6 +21,8 @@ import penerimaanRoute from './src/routes/penerimaanRoute.js';
 import distribusiRoute from './src/routes/distribusiRoute.js';
 import dashboardRoute from './src/routes/dashboardRoute.js';
 import laporanRoute from './src/routes/laporanRoute.js';
+import migrasiRoute from './src/routes/migrasiRoute.js';
+import auditLogRoute from './src/routes/auditLogRoute.js';
 import logger from './src/utils/logger.js';
 
 dotenv.config();
@@ -114,6 +116,8 @@ app.use('/api/penerimaan', penerimaanRoute);
 app.use('/api/distribusi', distribusiRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.use('/api/laporan', laporanRoute);
+app.use('/api/migrasi', migrasiRoute);
+app.use('/api/audit-log', auditLogRoute);
 
 // --- 404 Handler ---
 app.use((req, res) => {

@@ -88,7 +88,7 @@ const create = async (body, userId) => {
       bulan: new Date(body.tanggal).toLocaleString('id-ID', { month: 'long' }),
       tahun: new Date(body.tanggal).getFullYear(),
       created_by: userId
-    }, { transaction: t });
+    }, { transaction: t, userId });
 
     await t.commit();
     return distribusi;
@@ -99,7 +99,7 @@ const create = async (body, userId) => {
 };
 
 // --- PUT /api/distribusi/:id ---
-const update = async (id, body) => {
+const update = async (id, body, userId) => {
   const distribusi = await Distribusi.findByPk(id);
   if (!distribusi) {
     throw Object.assign(new Error('Data distribusi tidak ditemukan.'), { status: 404 });
@@ -131,7 +131,7 @@ const update = async (id, body) => {
 
   const t = await db.transaction();
   try {
-    await distribusi.update(body, { transaction: t });
+    await distribusi.update(body, { transaction: t, userId });
     await t.commit();
     await distribusi.reload();
     return distribusi;
@@ -142,7 +142,7 @@ const update = async (id, body) => {
 };
 
 // --- DELETE /api/distribusi/:id ---
-const destroy = async (id) => {
+const destroy = async (id, userId) => {
   const distribusi = await Distribusi.findByPk(id);
   if (!distribusi) {
     throw Object.assign(new Error('Data distribusi tidak ditemukan.'), { status: 404 });
@@ -150,7 +150,7 @@ const destroy = async (id) => {
 
   const t = await db.transaction();
   try {
-    await distribusi.destroy({ transaction: t });
+    await distribusi.destroy({ transaction: t, userId });
     await t.commit();
   } catch (error) {
     await t.rollback();

@@ -120,7 +120,7 @@ const create = async (body, userId) => {
       ...body,
       no_reg_bpp,
       registered_by: userId
-    }, { transaction: t });
+    }, { transaction: t, userId });
 
     await t.commit();
     return mustahiq;
@@ -131,7 +131,7 @@ const create = async (body, userId) => {
 };
 
 // --- PUT /api/mustahiq/:id ---
-const update = async (id, updateData) => {
+const update = async (id, updateData, userId) => {
   const mustahiq = await Mustahiq.findByPk(id);
   if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
 
@@ -149,7 +149,7 @@ const update = async (id, updateData) => {
 
   const t = await db.transaction();
   try {
-    await mustahiq.update(updateData, { transaction: t });
+    await mustahiq.update(updateData, { transaction: t, userId });
     await t.commit();
 
     await mustahiq.reload();
@@ -161,13 +161,13 @@ const update = async (id, updateData) => {
 };
 
 // --- PUT /api/mustahiq/:id/status ---
-const updateStatus = async (id, status) => {
+const updateStatus = async (id, status, userId) => {
   const mustahiq = await Mustahiq.findByPk(id);
   if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
 
   const t = await db.transaction();
   try {
-    await mustahiq.update({ status }, { transaction: t });
+    await mustahiq.update({ status }, { transaction: t, userId });
     await t.commit();
     return mustahiq;
   } catch (error) {
@@ -177,7 +177,7 @@ const updateStatus = async (id, status) => {
 };
 
 // --- DELETE /api/mustahiq/:id ---
-const destroy = async (id) => {
+const destroy = async (id, userId) => {
   const mustahiq = await Mustahiq.findByPk(id);
   if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
 
@@ -192,7 +192,7 @@ const destroy = async (id) => {
 
   const t = await db.transaction();
   try {
-    await mustahiq.destroy({ transaction: t });
+    await mustahiq.destroy({ transaction: t, userId });
     await t.commit();
   } catch (error) {
     await t.rollback();

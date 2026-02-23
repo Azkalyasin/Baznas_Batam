@@ -39,7 +39,7 @@ const create = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const data = await mustahiqService.update(req.params.id, req.body);
+    const data = await mustahiqService.update(req.params.id, req.body, req.user.id);
     res.status(200).json({ success: true, data, message: 'Mustahiq berhasil diperbarui.' });
   } catch (error) {
     next(error);
@@ -48,7 +48,7 @@ const update = async (req, res, next) => {
 
 const updateStatus = async (req, res, next) => {
   try {
-    const data = await mustahiqService.updateStatus(req.params.id, req.body.status);
+    const data = await mustahiqService.updateStatus(req.params.id, req.body.status, req.user.id);
     res.status(200).json({ success: true, data, message: `Status mustahiq diubah menjadi '${req.body.status}'.` });
   } catch (error) {
     next(error);
@@ -57,7 +57,7 @@ const updateStatus = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
   try {
-    await mustahiqService.destroy(req.params.id);
+    await mustahiqService.destroy(req.params.id, req.user.id);
     res.status(200).json({ success: true, message: 'Mustahiq berhasil dihapus.' });
   } catch (error) {
     next(error);

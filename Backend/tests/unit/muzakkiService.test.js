@@ -105,7 +105,7 @@ describe('muzakkiService', () => {
       const mockInstance = { id: 1, status: 'active', update: jest.fn().mockResolvedValue(true) };
       Muzakki.findByPk.mockResolvedValue(mockInstance);
 
-      await muzakkiService.updateStatus(1, 'inactive');
+      await muzakkiService.updateStatus(1, 'inactive', 1);
       expect(db.transaction).toHaveBeenCalled();
       expect(mockInstance.update).toHaveBeenCalledWith(
         { status: 'inactive' },
@@ -123,7 +123,7 @@ describe('muzakkiService', () => {
       Muzakki.findByPk.mockResolvedValue(mockInstance);
       Penerimaan.count.mockResolvedValue(0);
 
-      await expect(muzakkiService.destroy(1)).resolves.toBeUndefined();
+      await expect(muzakkiService.destroy(1, 1)).resolves.toBeUndefined();
       expect(db.transaction).toHaveBeenCalled();
       expect(mockInstance.destroy).toHaveBeenCalledWith(
         expect.objectContaining({ transaction: mockTransaction })

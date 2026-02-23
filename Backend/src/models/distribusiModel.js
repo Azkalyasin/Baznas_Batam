@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
+import { registerAuditHooks } from '../utils/auditHooks.js';
 import Mustahiq from './mustahiqModel.js';
 
 const Distribusi = db.define('distribusi', {
@@ -162,5 +163,7 @@ const Distribusi = db.define('distribusi', {
 // Define Relation
 // Mustahiq.hasMany(Distribusi, { foreignKey: 'mustahiq_id' });
 // Distribusi.belongsTo(Mustahiq, { foreignKey: 'mustahiq_id' });
+
+registerAuditHooks(Distribusi, 'distribusi');
 
 export default Distribusi;

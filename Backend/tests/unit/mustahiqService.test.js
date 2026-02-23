@@ -92,7 +92,7 @@ describe('mustahiqService', () => {
       const mockInstance = { id: 1, status: 'active', update: jest.fn().mockResolvedValue(true) };
       Mustahiq.findByPk.mockResolvedValue(mockInstance);
 
-      await mustahiqService.updateStatus(1, 'blacklist');
+      await mustahiqService.updateStatus(1, 'blacklist', 1);
       expect(db.transaction).toHaveBeenCalled();
       expect(mockInstance.update).toHaveBeenCalledWith(
         { status: 'blacklist' },
@@ -110,7 +110,7 @@ describe('mustahiqService', () => {
       Mustahiq.findByPk.mockResolvedValue(mockInstance);
       Distribusi.count.mockResolvedValue(0);
 
-      await expect(mustahiqService.destroy(1)).resolves.toBeUndefined();
+      await expect(mustahiqService.destroy(1, 1)).resolves.toBeUndefined();
       expect(db.transaction).toHaveBeenCalled();
       expect(mockInstance.destroy).toHaveBeenCalledWith(
         expect.objectContaining({ transaction: mockTransaction })
