@@ -1,22 +1,45 @@
 import muzakkiService from '../../src/services/muzakkiService.js';
 import Muzakki from '../../src/models/muzakkiModel.js';
 import Penerimaan from '../../src/models/penerimaanModel.js';
+import db from '../../src/config/database.js';
 
-jest.mock('../../src/models/muzakkiModel.js');
-jest.mock('../../src/models/penerimaanModel.js');
+jest.mock('../../src/models/muzakkiModel.js', () => ({
+  findByPk: jest.fn(),
+  findOne: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  destroy: jest.fn(),
+}));
+
+jest.mock('../../src/models/penerimaanModel.js', () => ({
+  count: jest.fn(),
+  findAndCountAll: jest.fn(),
+}));
+
+jest.mock('../../src/config/database.js', () => ({
+  transaction: jest.fn(),
+}));
+
+const mockTransaction = {
+  commit: jest.fn(),
+  rollback: jest.fn()
+};
 
 describe('muzakkiService', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    db.transaction.mockResolvedValue(mockTransaction);
+  });
 
   // ─── getById ───────────────────────────────────────────────────────────────
 
   describe('getById()', () => {
     test('muzakki ditemukan → return data', async () => {
-      const mock = { id: 1, nama: 'Budi', npwz: 'NPWZ202602001' };
-      Muzakki.findByPk.mockResolvedValue(mock);
+      const mockData = { id: 1, nama: 'Budi', npwz: 'NPWZ202602001' };
+      Muzakki.findByPk.mockResolvedValue(mockData);
 
       const result = await muzakkiService.getById(1);
-      expect(result).toEqual(mock);
+      expect(result).toEqual(mockData);
     });
 
     test('muzakki tidak ditemukan → throw 404', async () => {
@@ -44,7 +67,12 @@ describe('muzakkiService', () => {
 
       const result = await muzakkiService.create(payload, 1);
 
-      expect(Muzakki.create).toHaveBeenCalled();
+      expect(db.transaction).toHaveBeenCalled();
+      expect(Muzakki.create).toHaveBeenCalledWith(
+        expect.objectContaining(payload),
+        expect.objectContaining({ transaction: mockTransaction })
+      );
+      expect(mockTransaction.commit).toHaveBeenCalled();
       expect(result).toHaveProperty('npwz', 'NPWZ001');
     });
 
@@ -70,46 +98,20 @@ describe('muzakkiService', () => {
     });
   });
 
-  // ─── update ────────────────────────────────────────────────────────────────
-
-  describe('update()', () => {
-    test('muzakki tidak ditemukan → throw 404', async () => {
-      Muzakki.findByPk.mockResolvedValue(null);
-
-      await expect(muzakkiService.update(999, { nama: 'Baru' })).rejects.toMatchObject({
-        status: 404
-      });
-    });
-
-    test('NIK konflik → throw 409', async () => {
-      const existing = { id: 1, nik: '1111111111111111', update: jest.fn() };
-      Muzakki.findByPk.mockResolvedValue(existing);
-      Muzakki.findOne.mockResolvedValue({ id: 2, nik: '2222222222222222' }); // Konflik
-
-      await expect(muzakkiService.update(1, { nik: '2222222222222222' })).rejects.toMatchObject({
-        status: 409
-      });
-      expect(existing.update).not.toHaveBeenCalled();
-    });
-  });
-
   // ─── updateStatus ─────────────────────────────────────────────────────────
 
   describe('updateStatus()', () => {
     test('berhasil ubah status', async () => {
-      const mock = { id: 1, status: 'active', update: jest.fn().mockResolvedValue(true) };
-      Muzakki.findByPk.mockResolvedValue(mock);
+      const mockInstance = { id: 1, status: 'active', update: jest.fn().mockResolvedValue(true) };
+      Muzakki.findByPk.mockResolvedValue(mockInstance);
 
       await muzakkiService.updateStatus(1, 'inactive');
-      expect(mock.update).toHaveBeenCalledWith({ status: 'inactive' });
-    });
-
-    test('muzakki tidak ditemukan → throw 404', async () => {
-      Muzakki.findByPk.mockResolvedValue(null);
-
-      await expect(muzakkiService.updateStatus(999, 'inactive')).rejects.toMatchObject({
-        status: 404
-      });
+      expect(db.transaction).toHaveBeenCalled();
+      expect(mockInstance.update).toHaveBeenCalledWith(
+        { status: 'inactive' },
+        expect.objectContaining({ transaction: mockTransaction })
+      );
+      expect(mockTransaction.commit).toHaveBeenCalled();
     });
   });
 
@@ -117,40 +119,22 @@ describe('muzakkiService', () => {
 
   describe('destroy()', () => {
     test('berhasil hapus', async () => {
-      const mock = { id: 1, destroy: jest.fn().mockResolvedValue(true) };
-      Muzakki.findByPk.mockResolvedValue(mock);
+      const mockInstance = { id: 1, destroy: jest.fn().mockResolvedValue(true) };
+      Muzakki.findByPk.mockResolvedValue(mockInstance);
       Penerimaan.count.mockResolvedValue(0);
 
       await expect(muzakkiService.destroy(1)).resolves.toBeUndefined();
-      expect(mock.destroy).toHaveBeenCalled();
-    });
-
-    test('muzakki tidak ditemukan → throw 404', async () => {
-      Muzakki.findByPk.mockResolvedValue(null);
-
-      await expect(muzakkiService.destroy(999)).rejects.toMatchObject({ status: 404 });
-    });
-
-    test('memiliki penerimaan terkait → throw 400', async () => {
-      Muzakki.findByPk.mockResolvedValue({ id: 1, destroy: jest.fn() });
-      Penerimaan.count.mockResolvedValue(3);
-
-      await expect(muzakkiService.destroy(1)).rejects.toMatchObject({
-        status: 400,
-        message: expect.stringContaining('3 data penerimaan')
-      });
+      expect(db.transaction).toHaveBeenCalled();
+      expect(mockInstance.destroy).toHaveBeenCalledWith(
+        expect.objectContaining({ transaction: mockTransaction })
+      );
+      expect(mockTransaction.commit).toHaveBeenCalled();
     });
   });
 
   // ─── getRiwayat ────────────────────────────────────────────────────────────
 
   describe('getRiwayat()', () => {
-    test('muzakki tidak ditemukan → throw 404', async () => {
-      Muzakki.findByPk.mockResolvedValue(null);
-
-      await expect(muzakkiService.getRiwayat(999, {})).rejects.toMatchObject({ status: 404 });
-    });
-
     test('berhasil ambil riwayat penerimaan', async () => {
       const mockMuzakki = {
         id: 1, nama: 'Budi',

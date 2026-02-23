@@ -1,6 +1,7 @@
 import Muzakki from '../models/muzakkiModel.js';
 import Penerimaan from '../models/penerimaanModel.js';
 import { Op } from 'sequelize';
+import db from '../config/database.js';
 
 // --- GET /api/muzakki (list + filter + search + pagination) ---
 const getAll = async (query) => {
@@ -89,12 +90,19 @@ const create = async (body, userId) => {
     if (existingNik) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
   }
 
-  const muzakki = await Muzakki.create({
-    ...body,
-    registered_by: userId
-  });
+  const t = await db.transaction();
+  try {
+    const muzakki = await Muzakki.create({
+      ...body,
+      registered_by: userId
+    }, { transaction: t });
 
-  return muzakki;
+    await t.commit();
+    return muzakki;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- PUT /api/muzakki/:id ---
@@ -114,8 +122,17 @@ const update = async (id, updateData) => {
     if (conflict) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
   }
 
-  await muzakki.update(updateData);
-  return muzakki;
+  const t = await db.transaction();
+  try {
+    await muzakki.update(updateData, { transaction: t });
+    await t.commit();
+
+    await muzakki.reload();
+    return muzakki;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- PUT /api/muzakki/:id/status ---
@@ -123,8 +140,15 @@ const updateStatus = async (id, status) => {
   const muzakki = await Muzakki.findByPk(id);
   if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
 
-  await muzakki.update({ status });
-  return muzakki;
+  const t = await db.transaction();
+  try {
+    await muzakki.update({ status }, { transaction: t });
+    await t.commit();
+    return muzakki;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- DELETE /api/muzakki/:id ---
@@ -141,10 +165,19 @@ const destroy = async (id) => {
     );
   }
 
-  await muzakki.destroy();
+  const t = await db.transaction();
+  try {
+    await muzakki.destroy({ transaction: t });
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- GET /api/laporan/muzakki/export ---
+const MAX_EXPORT_ROWS = 10000;
+
 const getExportData = async (query) => {
   const { jenis_muzakki, jenis_upz, status } = query;
   const where = {};
@@ -152,10 +185,20 @@ const getExportData = async (query) => {
   if (jenis_upz) where.jenis_upz = jenis_upz;
   if (status) where.status = status;
 
-  return Muzakki.findAll({
+  const totalAvailable = await Muzakki.count({ where });
+
+  const rows = await Muzakki.findAll({
     where,
-    order: [['nama', 'ASC']]
+    order: [['nama', 'ASC']],
+    limit: MAX_EXPORT_ROWS
   });
+
+  return {
+    rows,
+    totalAvailable,
+    exported: rows.length,
+    isTruncated: totalAvailable > MAX_EXPORT_ROWS
+  };
 };
 
 export default {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { idParamSchema } from './shared.js';
 
 // Shared Enums
 const roleEnum = z.enum(['superadmin', 'pelayanan', 'pendistribusian', 'keuangan']);
@@ -34,7 +35,5 @@ export const queryUserSchema = z.object({
   search: z.string().max(100, 'Keyword pencarian terlalu panjang.').optional()
 });
 
-// Validasi ID parameter (dipakai di route dengan :id)
-export const idParamSchema = z.object({
-  id: z.string().regex(/^\d+$/, 'ID harus berupa angka positif.').transform(Number)
-});
+// idParamSchema di-import dari shared.js
+export { idParamSchema };

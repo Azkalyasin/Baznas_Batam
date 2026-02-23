@@ -10,13 +10,6 @@ const login = async (req, res, next) => {
       message: 'Login berhasil.'
     });
   } catch (error) {
-    // Error auth (401) langsung respond; error lain (500) diteruskan ke global handler
-    if (error.status === 401) {
-      return res.status(401).json({
-        success: false,
-        message: error.message
-      });
-    }
     next(error);
   }
 };
@@ -34,7 +27,6 @@ const logout = (req, res) => {
 };
 
 const me = async (req, res) => {
-  // User sudah di-attach ke req oleh authMiddleware
   res.status(200).json({
     success: true,
     data: req.user
@@ -46,4 +38,3 @@ export default {
   logout,
   me
 };
-

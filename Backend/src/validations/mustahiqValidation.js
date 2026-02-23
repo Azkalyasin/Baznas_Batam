@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { idParamSchema } from './shared.js';
 
 // --- Shared Enums ---
 const kelurahanEnum = z.enum([
@@ -69,10 +70,8 @@ const jenisProgramEnum = z.enum([
   'B. Program Advokasi/Bantuan Hukum'
 ]);
 
-// --- Validasi ID parameter ---
-export const idParamSchema = z.object({
-  id: z.string().regex(/^\d+$/, 'ID harus berupa angka positif.').transform(Number)
-});
+// idParamSchema di-import dari shared.js
+export { idParamSchema };
 
 // --- Create Mustahiq ---
 export const createMustahiqSchema = z.object({

@@ -1,6 +1,7 @@
 import Mustahiq from '../models/mustahiqModel.js';
 import Distribusi from '../models/distribusiModel.js';
 import { Op } from 'sequelize';
+import db from '../config/database.js';
 
 // --- Auto-generate no_reg_bpp: BPP-YYYYMM-NNNNN ---
 const generateNoRegBpp = async () => {
@@ -113,13 +114,20 @@ const create = async (body, userId) => {
 
   const no_reg_bpp = await generateNoRegBpp();
 
-  const mustahiq = await Mustahiq.create({
-    ...body,
-    no_reg_bpp,
-    registered_by: userId
-  });
+  const t = await db.transaction();
+  try {
+    const mustahiq = await Mustahiq.create({
+      ...body,
+      no_reg_bpp,
+      registered_by: userId
+    }, { transaction: t });
 
-  return mustahiq;
+    await t.commit();
+    return mustahiq;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- PUT /api/mustahiq/:id ---
@@ -139,8 +147,17 @@ const update = async (id, updateData) => {
     if (conflict) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
   }
 
-  await mustahiq.update(updateData);
-  return mustahiq;
+  const t = await db.transaction();
+  try {
+    await mustahiq.update(updateData, { transaction: t });
+    await t.commit();
+
+    await mustahiq.reload();
+    return mustahiq;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- PUT /api/mustahiq/:id/status ---
@@ -148,8 +165,15 @@ const updateStatus = async (id, status) => {
   const mustahiq = await Mustahiq.findByPk(id);
   if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
 
-  await mustahiq.update({ status });
-  return mustahiq;
+  const t = await db.transaction();
+  try {
+    await mustahiq.update({ status }, { transaction: t });
+    await t.commit();
+    return mustahiq;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- DELETE /api/mustahiq/:id ---
@@ -166,10 +190,19 @@ const destroy = async (id) => {
     );
   }
 
-  await mustahiq.destroy();
+  const t = await db.transaction();
+  try {
+    await mustahiq.destroy({ transaction: t });
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 // --- GET /api/laporan/mustahiq/export ---
+const MAX_EXPORT_ROWS = 10000;
+
 const getExportData = async (query) => {
   const { asnaf, status, kecamatan } = query;
   const where = {};
@@ -177,10 +210,20 @@ const getExportData = async (query) => {
   if (status) where.status = status;
   if (kecamatan) where.kecamatan = kecamatan;
 
-  return Mustahiq.findAll({
+  const totalAvailable = await Mustahiq.count({ where });
+
+  const rows = await Mustahiq.findAll({
     where,
-    order: [['nama', 'ASC']]
+    order: [['nama', 'ASC']],
+    limit: MAX_EXPORT_ROWS
   });
+
+  return {
+    rows,
+    totalAvailable,
+    exported: rows.length,
+    isTruncated: totalAvailable > MAX_EXPORT_ROWS
+  };
 };
 
 export default {
