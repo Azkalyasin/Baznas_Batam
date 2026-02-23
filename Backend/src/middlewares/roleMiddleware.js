@@ -3,7 +3,7 @@ const roleMiddleware = (allowedRoles) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: You do not have the required role'
+        message: 'Akses ditolak: Anda tidak memiliki role yang diperlukan.'
       });
     }
     next();

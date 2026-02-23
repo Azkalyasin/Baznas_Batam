@@ -9,22 +9,30 @@ const getAllUsers = async (query) => {
   const where = {};
   if (role) where.role = role;
   if (search) {
-    where.username = { [Op.like]: `%${search}%` };
+    where[Op.or] = [
+      { username: { [Op.like]: `%${search}%` } },
+      { nama: { [Op.like]: `%${search}%` } }
+    ];
   }
 
   const { rows, count } = await User.findAndCountAll({
     where,
-    limit: parseInt(limit),
-    offset: parseInt(offset),
-    attributes: { exclude: ['password'] } // Don't return passwords
+    limit: Number(limit),
+    offset: Number(offset),
+    attributes: { exclude: ['password'] }
   });
 
-  return { users: rows, total: count, page, totalPages: Math.ceil(count / limit) };
+  return {
+    users: rows,
+    total: count,
+    page: Number(page),
+    totalPages: Math.ceil(count / limit)
+  };
 };
 
 const getUserById = async (id) => {
   const user = await User.findByPk(id, { attributes: { exclude: ['password'] } });
-  if (!user) throw new Error('User not found');
+  if (!user) throw Object.assign(new Error('User tidak ditemukan.'), { status: 404 });
   return user;
 };
 
@@ -32,28 +40,27 @@ const createUser = async (userData) => {
   const { username, password, nama, role } = userData;
 
   const existing = await User.findOne({ where: { username } });
-  if (existing) throw new Error('Username already exists');
+  if (existing) throw Object.assign(new Error('Username sudah digunakan.'), { status: 409 });
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  const hashedPassword = await bcrypt.hash(password, 12); // saltRounds 12 lebih aman
 
-  const newUser = await User.create({
-    username,
-    password: hashedPassword,
-    nama,
-    role
-  });
+  const newUser = await User.create({ username, password: hashedPassword, nama, role });
 
   return { id: newUser.id, username, nama, role };
 };
 
 const updateUser = async (id, updateData) => {
   const user = await User.findByPk(id);
-  if (!user) throw new Error('User not found');
+  if (!user) throw Object.assign(new Error('User tidak ditemukan.'), { status: 404 });
+
+  // Cek apakah username baru sudah dipakai orang lain
+  if (updateData.username && updateData.username !== user.username) {
+    const conflict = await User.findOne({ where: { username: updateData.username } });
+    if (conflict) throw Object.assign(new Error('Username sudah digunakan.'), { status: 409 });
+  }
 
   if (updateData.password) {
-    const salt = await bcrypt.genSalt(10);
-    updateData.password = await bcrypt.hash(updateData.password, salt);
+    updateData.password = await bcrypt.hash(updateData.password, 12);
   }
 
   await user.update(updateData);
@@ -62,9 +69,8 @@ const updateUser = async (id, updateData) => {
 
 const deleteUser = async (id) => {
   const user = await User.findByPk(id);
-  if (!user) throw new Error('User not found');
+  if (!user) throw Object.assign(new Error('User tidak ditemukan.'), { status: 404 });
   await user.destroy();
-  return { message: 'User deleted' };
 };
 
 export default {

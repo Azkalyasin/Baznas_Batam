@@ -10,7 +10,6 @@ const Muzakki = db.define('muzakki', {
   npwz: {
     type: DataTypes.STRING(15),
     allowNull: false,
-    unique: true
   },
   nama: {
     type: DataTypes.STRING(50),
@@ -18,7 +17,6 @@ const Muzakki = db.define('muzakki', {
   },
   nik: {
     type: DataTypes.STRING(16),
-    unique: true
   },
   no_hp: {
     type: DataTypes.STRING(14)
@@ -97,9 +95,9 @@ const Muzakki = db.define('muzakki', {
 }, {
   freezeTableName: true,
   indexes: [
-    { unique: true, fields: ['npwz'] },
-    { unique: true, fields: ['nik'] },
-    { fields: ['nama'] }
+    { unique: true, fields: ['npwz'], name: 'npwz_unique' },
+    { unique: true, fields: ['nik'],  name: 'nik_unique'  },
+    { fields: ['nama'],               name: 'nama_index'  }
   ]
 });
 

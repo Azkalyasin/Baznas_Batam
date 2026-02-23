@@ -7,18 +7,25 @@ const authMiddleware = (req, res, next) => {
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Access token required'
+      message: 'Access token diperlukan.'
     });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    req.user = decoded; // { id, role, iat, exp }
+    // Tidak ada fallback 'secret' — JWT_SECRET wajib ada (dijaga app.js saat startup)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { id, role, nama, username, iat, exp }
     next();
   } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token sudah kadaluarsa, silakan login ulang.'
+      });
+    }
     return res.status(403).json({
       success: false,
-      message: 'Invalid or expired token'
+      message: 'Token tidak valid.'
     });
   }
 };

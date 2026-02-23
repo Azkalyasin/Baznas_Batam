@@ -12,81 +12,163 @@ import Distribusi from './src/models/distribusiModel.js';
 import Penerimaan from './src/models/penerimaanModel.js';
 import User from './src/models/userModel.js';
 import setupTriggers from './src/utils/dbSetup.js';
+import seedUser from './src/utils/seedUser.js';
 import userRoute from './src/routes/userRoute.js';
 import authRoute from './src/routes/authRoute.js';
+import logger from './src/utils/logger.js';
 
 dotenv.config();
 
+// Validate wajib env vars di awal
+if (!process.env.JWT_SECRET) {
+  logger.error('[FATAL] JWT_SECRET is not set in environment variables. Server will not start.');
+  process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 5000;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Security & Performance Middleware
-app.use(helmet()); // Secure HTTP headers
-app.use(cors()); // Enable CORS
-app.use(compression()); // Compress responses
-app.use(morgan('dev')); // Log requests
-app.use(express.json()); // Enable JSON body parsing
+// --- Security & Performance Middleware ---
+app.use(helmet());
 
-// Rate Limiting (Prevent Brute Force)
+// CORS: batasi origin sesuai environment
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Izinkan request tanpa origin (mobile app, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS: Origin '${origin}' not allowed`));
+  },
+  credentials: true
+}));
+
+app.use(compression());
+
+// Logging: alihkan Morgan stream ke Winston logger
+app.use(morgan(isProduction ? 'combined' : 'dev', { stream: logger.stream }));
+
+// Body parser dengan limit size untuk mencegah payload bomb
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// --- Rate Limiting ---
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes'
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak request dari IP ini, coba lagi setelah 15 menit.'
+  }
 });
-app.use('/api', limiter);
-// Enable JSON body parsing
 
-// Define Associations
+// Rate limit lebih ketat khusus untuk login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak percobaan login, coba lagi setelah 15 menit.'
+  }
+});
+
+app.use('/api', limiter);
+
+// --- Define Associations ---
 Mustahiq.hasMany(Distribusi, { foreignKey: 'mustahiq_id' });
 Distribusi.belongsTo(Mustahiq, { foreignKey: 'mustahiq_id' });
 
 Muzakki.hasMany(Penerimaan, { foreignKey: 'muzakki_id' });
 Penerimaan.belongsTo(Muzakki, { foreignKey: 'muzakki_id' });
 
-// Routes
-app.use('/api/auth', authRoute);
-app.use('/api/users', userRoute);
-
-import seedUser from './src/utils/seedUser.js';
-
-// ... (imports)
-
-// Connect to Database
-(async () => {
-    try {
-        await db.authenticate();
-        console.log('Database connected...');
-        
-        // Sync models (create tables)
-        await db.sync({ alter: true }); // Using alter to update existing tables without dropping
-        console.log('Tables synced...');
-
-        // Setup Triggers & Procedures
-        await setupTriggers();
-
-        // Seed Superadmin
-        await seedUser();
-        
-    } catch (error) {
-        console.error('Connection error:', error);
-    }
-})();
-
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+// --- Routes ---
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.use('/api/auth/login', loginLimiter); // login rate limit lebih ketat
+app.use('/api/auth', authRoute);
+app.use('/api/users', userRoute);
+
+// --- 404 Handler ---
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route '${req.originalUrl}' tidak ditemukan.`
+  });
 });
 
+// --- Global Error Handler ---
+app.use((err, req, res, next) => {
+  logger.error(`${err.message}`, { stack: err.stack, url: req.originalUrl, method: req.method });
+
+  // CORS error
+  if (err.message && err.message.startsWith('CORS:')) {
+    return res.status(403).json({ success: false, message: err.message });
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.status ? err.message : 'Terjadi kesalahan pada server.',
+    // Hanya tampilkan detail error di development
+    ...(isProduction ? {} : { error: err.message })
+  });
+});
+
+// --- Connect to Database & Start Server ---
+// CATATAN MIGRATION: Skema database dikelola via Sequelize Migrations.
+// Untuk menjalankan migration: npx sequelize-cli db:migrate
+// Untuk rollback:              npx sequelize-cli db:migrate:undo
+(async () => {
+  try {
+    await db.authenticate();
+    logger.info('[DB] Database connected.');
+
+    // Setup triggers & stored procedures
+    await setupTriggers();
+
+    // Seed superadmin
+    await seedUser();
+
+    // Server baru listen SETELAH DB siap
+    const server = app.listen(port, () => {
+      logger.info(`[SERVER] Running on port ${port} in ${process.env.NODE_ENV || 'development'} mode.`);
+    });
+
+    // --- Graceful Shutdown ---
+    const shutdown = (signal) => {
+      logger.warn(`[SERVER] ${signal} received. Shutting down gracefully...`);
+      server.close(async () => {
+        await db.close();
+        logger.info('[SERVER] HTTP server closed. Database connection closed.');
+        process.exit(0);
+      });
+
+      // Force exit setelah 10 detik jika masih ada koneksi
+      setTimeout(() => {
+        logger.error('[SERVER] Could not close connections in time, forcefully shutting down.');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+  } catch (error) {
+    logger.error('[FATAL] Could not connect to the database:', { message: error.message, stack: error.stack });
+    process.exit(1);
+  }
+})();

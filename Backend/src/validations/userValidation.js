@@ -5,28 +5,36 @@ const roleEnum = z.enum(['superadmin', 'pelayanan', 'pendistribusian', 'keuangan
 
 // --- Auth Validations ---
 export const loginUserSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required")
+  username: z.string().min(1, 'Username wajib diisi.').max(15, 'Username terlalu panjang.').trim(),
+  password: z.string().min(1, 'Password wajib diisi.').max(100, 'Password terlalu panjang.')
 });
 
 // --- User Management Validations ---
 export const createUserSchema = z.object({
-  username: z.string().min(3).max(15),
-  password: z.string().min(6),
-  nama: z.string().min(1),
+  username: z.string().min(3, 'Username minimal 3 karakter.').max(15, 'Username maksimal 15 karakter.').trim(),
+  password: z.string().min(8, 'Password minimal 8 karakter.').max(100, 'Password terlalu panjang.'),
+  nama: z.string().min(1, 'Nama wajib diisi.').max(50, 'Nama terlalu panjang.').trim(),
   role: roleEnum
 });
 
 export const updateUserSchema = z.object({
-  username: z.string().min(3).max(15).optional(),
-  nama: z.string().min(1).optional(),
+  username: z.string().min(3, 'Username minimal 3 karakter.').max(15).trim().optional(),
+  nama: z.string().min(1, 'Nama tidak boleh kosong.').max(50).trim().optional(),
   role: roleEnum.optional(),
-  password: z.string().min(6).optional() // Password optional on update
-});
+  password: z.string().min(8, 'Password minimal 8 karakter.').max(100).optional()
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'Minimal satu field harus diisi untuk update.' }
+);
 
 export const queryUserSchema = z.object({
-  page: z.string().regex(/^\d+$/).transform(Number).optional(),
-  limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+  page: z.string().regex(/^\d+$/, 'Page harus berupa angka.').transform(Number).optional(),
+  limit: z.string().regex(/^\d+$/, 'Limit harus berupa angka.').transform(Number).optional(),
   role: roleEnum.optional(),
-  search: z.string().optional()
+  search: z.string().max(100, 'Keyword pencarian terlalu panjang.').optional()
+});
+
+// Validasi ID parameter (dipakai di route dengan :id)
+export const idParamSchema = z.object({
+  id: z.string().regex(/^\d+$/, 'ID harus berupa angka positif.').transform(Number)
 });

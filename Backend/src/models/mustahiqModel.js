@@ -10,16 +10,13 @@ const Mustahiq = db.define('mustahiq', {
   no_reg_bpp: {
     type: DataTypes.STRING(12),
     allowNull: false,
-    unique: true
   },
   nrm: {
     type: DataTypes.STRING(24),
     allowNull: false,
-    unique: true
   },
   nik: {
     type: DataTypes.STRING(16),
-    unique: true
   },
   nama: {
     type: DataTypes.STRING(100),
@@ -165,9 +162,9 @@ const Mustahiq = db.define('mustahiq', {
 }, {
   freezeTableName: true,
   indexes: [
-    { unique: true, fields: ['no_reg_bpp'] },
-    { unique: true, fields: ['nrm'] },
-    { unique: true, fields: ['nik'] }
+    { unique: true, fields: ['no_reg_bpp'], name: 'no_reg_bpp_unique' },
+    { unique: true, fields: ['nrm'], name: 'nrm_unique' },
+    { unique: true, fields: ['nik'], name: 'nik_unique' }
   ]
 });
 
