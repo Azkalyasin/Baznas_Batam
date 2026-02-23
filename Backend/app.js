@@ -18,6 +18,7 @@ import authRoute from './src/routes/authRoute.js';
 import mustahiqRoute from './src/routes/mustahiqRoute.js';
 import muzakkiRoute from './src/routes/muzakkiRoute.js';
 import penerimaanRoute from './src/routes/penerimaanRoute.js';
+import distribusiRoute from './src/routes/distribusiRoute.js';
 import laporanRoute from './src/routes/laporanRoute.js';
 import logger from './src/utils/logger.js';
 
@@ -109,6 +110,7 @@ app.use('/api/users', userRoute);
 app.use('/api/mustahiq', mustahiqRoute);
 app.use('/api/muzakki', muzakkiRoute);
 app.use('/api/penerimaan', penerimaanRoute);
+app.use('/api/distribusi', distribusiRoute);
 app.use('/api/laporan', laporanRoute);
 
 // --- 404 Handler ---
