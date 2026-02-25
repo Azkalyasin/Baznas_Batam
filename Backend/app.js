@@ -11,8 +11,6 @@ import Muzakki from './src/models/muzakkiModel.js';
 import Distribusi from './src/models/distribusiModel.js';
 import Penerimaan from './src/models/penerimaanModel.js';
 import User from './src/models/userModel.js';
-import setupTriggers from './src/utils/dbSetup.js';
-import seedUser from './src/utils/seedUser.js';
 import userRoute from './src/routes/userRoute.js';
 import authRoute from './src/routes/authRoute.js';
 import mustahiqRoute from './src/routes/mustahiqRoute.js';
@@ -23,6 +21,7 @@ import dashboardRoute from './src/routes/dashboardRoute.js';
 import laporanRoute from './src/routes/laporanRoute.js';
 import migrasiRoute from './src/routes/migrasiRoute.js';
 import auditLogRoute from './src/routes/auditLogRoute.js';
+import referenceRoute from './src/routes/referenceRoute.js';
 import logger from './src/utils/logger.js';
 
 dotenv.config();
@@ -118,6 +117,7 @@ app.use('/api/dashboard', dashboardRoute);
 app.use('/api/laporan', laporanRoute);
 app.use('/api/migrasi', migrasiRoute);
 app.use('/api/audit-log', auditLogRoute);
+app.use('/api/ref', referenceRoute);
 
 // --- 404 Handler ---
 app.use((req, res) => {
@@ -152,13 +152,6 @@ app.use((err, req, res, next) => {
   try {
     await db.authenticate();
     logger.info('[DB] Database connected.');
-
-    // Setup triggers & stored procedures
-    await setupTriggers();
-
-    // Seed superadmin
-    await seedUser();
-
     // Server baru listen SETELAH DB siap
     const server = app.listen(port, () => {
       logger.info(`[SERVER] Running on port ${port} in ${process.env.NODE_ENV || 'development'} mode.`);

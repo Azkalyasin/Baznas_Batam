@@ -8,7 +8,18 @@
     "start": "NODE_ENV=production node app.js",
     "start:win": "set NODE_ENV=production && node app.js",
     "test": "set NODE_ENV=test && jest --forceExit",
-    "test:watch": "set NODE_ENV=test && jest --watch"
+    "test:watch": "set NODE_ENV=test && jest --watch",
+
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "db:migrate:undo:all": "npx sequelize-cli db:migrate:undo:all",
+
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "db:seed:undo": "npx sequelize-cli db:seed:undo:all",
+
+    "db:setup": "npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all",
+    "db:fresh": "npx sequelize-cli db:migrate:undo:all && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all",
+    "db:fresh:win": "npx sequelize-cli db:migrate:undo:all && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all"
   },
   "keywords": [],
   "author": "",

@@ -7,7 +7,6 @@ const logDir = path.join(__dirname, '..', '..', 'logs');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Format untuk console (colorize di dev, plain di production)
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -16,7 +15,6 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// Format untuk file (JSON structured)
 const fileFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
@@ -26,19 +24,19 @@ const fileFormat = winston.format.combine(
 const transports = [
   new winston.transports.Console({
     format: consoleFormat,
-    silent: process.env.NODE_ENV === 'test' // Bungkam log saat testing
+    silent: process.env.NODE_ENV === 'test'
   }),
   new winston.transports.File({
     filename: path.join(logDir, 'error.log'),
     level: 'error',
     format: fileFormat,
-    maxsize: 5 * 1024 * 1024, // 5 MB
+    maxsize: 5 * 1024 * 1024,
     maxFiles: 5
   }),
   new winston.transports.File({
     filename: path.join(logDir, 'combined.log'),
     format: fileFormat,
-    maxsize: 10 * 1024 * 1024, // 10 MB
+    maxsize: 10 * 1024 * 1024,
     maxFiles: 10
   })
 ];
@@ -46,11 +44,9 @@ const transports = [
 const logger = winston.createLogger({
   level: isProduction ? 'warn' : 'debug',
   transports,
-  // Jangan crash app jika ada error pada logger itu sendiri
   exitOnError: false
 });
 
-// Tambah level 'http' untuk morgan stream
 logger.stream = {
   write: (message) => logger.http(message.trim())
 };
