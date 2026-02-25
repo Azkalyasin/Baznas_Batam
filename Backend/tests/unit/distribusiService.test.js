@@ -2,6 +2,11 @@ import distribusiService from '../../src/services/distribusiService.js';
 import Distribusi from '../../src/models/distribusiModel.js';
 import Mustahiq from '../../src/models/mustahiqModel.js';
 import db from '../../src/config/database.js';
+import { 
+  NamaProgram, 
+  SubProgram, 
+  ProgramKegiatan 
+} from '../../src/models/ref/index.js';
 
 jest.mock('../../src/models/distribusiModel.js', () => ({
   findAndCountAll: jest.fn(),
@@ -16,11 +21,30 @@ jest.mock('../../src/models/mustahiqModel.js', () => ({
   findByPk: jest.fn(),
 }));
 
+jest.mock('../../src/models/userModel.js', () => ({
+  findByPk: jest.fn(),
+}));
+
 jest.mock('../../src/config/database.js', () => ({
   transaction: jest.fn(),
+  query: jest.fn(),
   fn: jest.fn(),
   col: jest.fn(),
   literal: jest.fn(),
+}));
+
+jest.mock('../../src/models/ref/index.js', () => ({
+  Kecamatan: {},
+  Kelurahan: {},
+  Asnaf: {},
+  NamaProgram: { attributes: jest.fn() },
+  SubProgram: { attributes: jest.fn() },
+  ProgramKegiatan: { attributes: jest.fn() },
+  FrekuensiBantuan: {},
+  ViaDistribusi: {},
+  KategoriMustahiq: {},
+  Infak: {},
+  JenisZisDistribusi: {}
 }));
 
 const mockTransaction = {
@@ -40,6 +64,9 @@ describe('distribusiService', () => {
       const result = await distribusiService.getAll({ page: 1, limit: 10 });
       expect(result.rows).toHaveLength(1);
       expect(result.total).toBe(1);
+      expect(Distribusi.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
+        include: expect.any(Array)
+      }));
     });
   });
 
@@ -49,6 +76,9 @@ describe('distribusiService', () => {
       Distribusi.findByPk.mockResolvedValue(mockData);
       const result = await distribusiService.getById(1);
       expect(result).toEqual(mockData);
+      expect(Distribusi.findByPk).toHaveBeenCalledWith(1, expect.objectContaining({
+        include: expect.any(Array)
+      }));
     });
 
     test('data tidak ditemukan → throw 404', async () => {
@@ -58,29 +88,29 @@ describe('distribusiService', () => {
   });
 
   describe('create()', () => {
-    const payload = { mustahiq_id: 1, tanggal: '2026-02-23', jumlah: 1000000 };
-    const mockMustahiq = {
-      id: 1, nama: 'Mustahiq A', nik: '123', kelurahan: 'Tembesi',
-      no_reg_bpp: 'BPP-1', nrm: 'NRM-1', alamat: 'Alamat', kecamatan: 'Batu Aji',
-      no_hp: '0812', asnaf: 'Fakir'
-    };
+    const payload = { mustahiq_id: 1, tanggal: '2026-02-23', jumlah: 1000000, sub_program_id: 1 };
+    const mockMustahiq = { id: 1, nama: 'Mustahiq A', nrm: 'NRM-1' };
 
-    test('berhasil membuat distribusi dengan denormalisasi data', async () => {
+    test('berhasil membuat distribusi with relational IDs and reload', async () => {
       Mustahiq.findByPk.mockResolvedValue(mockMustahiq);
-      Distribusi.create.mockResolvedValue({ id: 1, ...payload });
+      const mockDistribusi = { 
+        id: 1, ...payload, 
+        reload: jest.fn().mockResolvedValue(true) 
+      };
+      Distribusi.create.mockResolvedValue(mockDistribusi);
 
       const result = await distribusiService.create(payload, 1);
 
       expect(db.transaction).toHaveBeenCalled();
+      expect(Mustahiq.findByPk).toHaveBeenCalledWith(1);
       expect(Distribusi.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          nama_mustahik: 'Mustahiq A',
-          nrm: 'NRM-1',
-          bulan: 'Februari',
-          tahun: 2026
+          ...payload,
+          created_by: 1
         }),
         expect.objectContaining({ transaction: mockTransaction })
       );
+      expect(mockDistribusi.reload).toHaveBeenCalled();
       expect(mockTransaction.commit).toHaveBeenCalled();
       expect(result.id).toBe(1);
     });
@@ -92,11 +122,14 @@ describe('distribusiService', () => {
   });
 
   describe('Rekap Functions', () => {
-    test('rekapHarian memanggil findAll dengan benar', async () => {
+    test('rekapHarian memanggil db.query dengan benar', async () => {
+       db.query.mockResolvedValue([[]]); 
        await distribusiService.rekapHarian({ tanggal: '2026-02-23' });
-       expect(Distribusi.findAll).toHaveBeenCalledWith(expect.objectContaining({
-         where: { tanggal: '2026-02-23' }
-       }));
+       expect(db.query).toHaveBeenCalledWith(
+         expect.stringContaining('SELECT'),
+         expect.objectContaining({ replacements: { tanggal: '2026-02-23' } })
+       );
     });
   });
 });
+

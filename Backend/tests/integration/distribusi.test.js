@@ -103,7 +103,8 @@ describe('Distribusi Routes Integration Test', () => {
       mustahiq_id: 1,
       tanggal: '2026-02-23',
       jumlah: 500000,
-      nama_program: 'Batam Cerdas'
+      nama_program_id: 1,
+      sub_program_id: 1
     };
 
     test('body valid & superadmin → 201', async () => {

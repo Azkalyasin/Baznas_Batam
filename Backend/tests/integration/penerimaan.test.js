@@ -114,11 +114,11 @@ describe('Penerimaan Routes Integration Test', () => {
     const validBody = {
       muzakki_id: 1,
       tanggal: '2026-02-20',
-      via: 'Cash',
-      zis: 'Zakat',
-      jenis_zis: 'Zakat',
+      via_id: 1,
+      zis_id: 1,
+      jenis_zis_id: 1,
       jumlah: 1000000,
-      persentase_amil: '12.50%'
+      persentase_amil_id: 1
     };
 
     test('body valid → 201', async () => {

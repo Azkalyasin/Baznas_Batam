@@ -2,6 +2,12 @@ import muzakkiService from '../../src/services/muzakkiService.js';
 import Muzakki from '../../src/models/muzakkiModel.js';
 import Penerimaan from '../../src/models/penerimaanModel.js';
 import db from '../../src/config/database.js';
+import { 
+  Kecamatan, 
+  Kelurahan, 
+  JenisMuzakki, 
+  JenisUpz 
+} from '../../src/models/ref/index.js';
 
 jest.mock('../../src/models/muzakkiModel.js', () => ({
   findByPk: jest.fn(),
@@ -9,6 +15,9 @@ jest.mock('../../src/models/muzakkiModel.js', () => ({
   create: jest.fn(),
   update: jest.fn(),
   destroy: jest.fn(),
+  findAndCountAll: jest.fn(),
+  count: jest.fn(),
+  findAll: jest.fn(),
 }));
 
 jest.mock('../../src/models/penerimaanModel.js', () => ({
@@ -18,6 +27,13 @@ jest.mock('../../src/models/penerimaanModel.js', () => ({
 
 jest.mock('../../src/config/database.js', () => ({
   transaction: jest.fn(),
+}));
+
+jest.mock('../../src/models/ref/index.js', () => ({
+  Kecamatan: { attributes: jest.fn() },
+  Kelurahan: { attributes: jest.fn() },
+  JenisMuzakki: { attributes: jest.fn() },
+  JenisUpz: { attributes: jest.fn() }
 }));
 
 const mockTransaction = {
@@ -39,6 +55,9 @@ describe('muzakkiService', () => {
       Muzakki.findByPk.mockResolvedValue(mockData);
 
       const result = await muzakkiService.getById(1);
+      expect(Muzakki.findByPk).toHaveBeenCalledWith(1, expect.objectContaining({
+        include: expect.any(Array)
+      }));
       expect(result).toEqual(mockData);
     });
 
@@ -56,12 +75,12 @@ describe('muzakkiService', () => {
 
   describe('create()', () => {
     const payload = {
-      npwz: 'NPWZ001', nama: 'Budi', kelurahan: 'Tembesi',
-      kecamatan: 'Batu Aji', jenis_muzakki: 'Individu'
+      npwz: 'NPWZ001', nama: 'Budi', kelurahan_id: 1,
+      kecamatan_id: 1, jenis_muzakki_id: 1
     };
 
-    test('berhasil membuat muzakki dengan npwz dari input', async () => {
-      Muzakki.findOne.mockResolvedValue(null); // Tidak ada duplikat
+    test('berhasil membuat muzakki with relational IDs', async () => {
+      Muzakki.findOne.mockResolvedValue(null); 
       Muzakki.create.mockResolvedValue({ id: 1, ...payload });
 
       const result = await muzakkiService.create(payload, 1);
@@ -72,7 +91,7 @@ describe('muzakkiService', () => {
         expect.objectContaining({ transaction: mockTransaction })
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
-      expect(result).toHaveProperty('npwz', 'NPWZ001');
+      expect(result).toHaveProperty('id');
     });
 
     test('NPWZ sudah digunakan → throw 409', async () => {
@@ -87,8 +106,8 @@ describe('muzakkiService', () => {
     test('NIK sudah digunakan → throw 409', async () => {
       const payloadWithNik = { ...payload, nik: '1234567890123456' };
       Muzakki.findOne
-        .mockResolvedValueOnce(null)  // NPWZ check OK
-        .mockResolvedValueOnce({ id: 3, nik: '1234567890123456' }); // NIK duplikat
+        .mockResolvedValueOnce(null)  
+        .mockResolvedValueOnce({ id: 3, nik: '1234567890123456' }); 
 
       await expect(muzakkiService.create(payloadWithNik, 1)).rejects.toMatchObject({
         message: 'NIK sudah digunakan.',
@@ -151,3 +170,4 @@ describe('muzakkiService', () => {
     });
   });
 });
+

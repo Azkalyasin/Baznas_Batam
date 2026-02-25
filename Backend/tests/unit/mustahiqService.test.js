@@ -2,6 +2,12 @@ import mustahiqService from '../../src/services/mustahiqService.js';
 import Mustahiq from '../../src/models/mustahiqModel.js';
 import Distribusi from '../../src/models/distribusiModel.js';
 import db from '../../src/config/database.js';
+import { 
+  Kecamatan, 
+  Kelurahan, 
+  Asnaf, 
+  KategoriMustahiq 
+} from '../../src/models/ref/index.js';
 
 jest.mock('../../src/models/mustahiqModel.js', () => ({
   findByPk: jest.fn(),
@@ -9,6 +15,9 @@ jest.mock('../../src/models/mustahiqModel.js', () => ({
   create: jest.fn(),
   update: jest.fn(),
   destroy: jest.fn(),
+  findAndCountAll: jest.fn(),
+  count: jest.fn(),
+  findAll: jest.fn(),
 }));
 
 jest.mock('../../src/models/distribusiModel.js', () => ({
@@ -18,6 +27,18 @@ jest.mock('../../src/models/distribusiModel.js', () => ({
 
 jest.mock('../../src/config/database.js', () => ({
   transaction: jest.fn(),
+  Sequelize: {
+    Transaction: {
+      ISOLATION_LEVELS: { SERIALIZABLE: 'SERIALIZABLE' }
+    }
+  }
+}));
+
+jest.mock('../../src/models/ref/index.js', () => ({
+  Kecamatan: { attributes: jest.fn() },
+  Kelurahan: { attributes: jest.fn() },
+  Asnaf: { attributes: jest.fn() },
+  KategoriMustahiq: { attributes: jest.fn() }
 }));
 
 const mockTransaction = {
@@ -39,6 +60,9 @@ describe('mustahiqService', () => {
       Mustahiq.findByPk.mockResolvedValue(mockData);
 
       const result = await mustahiqService.getById(1);
+      expect(Mustahiq.findByPk).toHaveBeenCalledWith(1, expect.objectContaining({
+        include: expect.any(Array)
+      }));
       expect(result).toEqual(mockData);
     });
 
@@ -56,19 +80,22 @@ describe('mustahiqService', () => {
 
   describe('create()', () => {
     const payload = {
-      nrm: 'NRM001', nama: 'Ahmad', kelurahan: 'Tembesi',
-      kecamatan: 'Batu Aji', asnaf: 'Fakir', registered_date: '2026-01-01'
+      nrm: 'NRM001', nama: 'Ahmad', kelurahan_id: 1,
+      kecamatan_id: 1, asnaf_id: 1, registered_date: '2026-01-01'
     };
 
     test('berhasil membuat mustahiq → auto-generate no_reg_bpp', async () => {
-      Mustahiq.findOne.mockResolvedValue(null); // Tidak ada duplikat NRM / last BPP
+      Mustahiq.findOne.mockResolvedValue(null); 
       Mustahiq.create.mockResolvedValue({ id: 1, no_reg_bpp: 'BPP202602001', ...payload });
 
       const result = await mustahiqService.create(payload, 1);
 
       expect(db.transaction).toHaveBeenCalled();
       expect(Mustahiq.create).toHaveBeenCalledWith(
-        expect.objectContaining(payload),
+        expect.objectContaining({
+          ...payload,
+          no_reg_bpp: expect.stringMatching(/^BPP\d{6}\d{3}$/)
+        }),
         expect.objectContaining({ transaction: mockTransaction })
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
@@ -76,7 +103,7 @@ describe('mustahiqService', () => {
     });
 
     test('NRM sudah digunakan → throw 409', async () => {
-      Mustahiq.findOne.mockResolvedValueOnce({ id: 5, nrm: 'NRM001' }); // Duplikat NRM
+      Mustahiq.findOne.mockResolvedValueOnce({ id: 5, nrm: 'NRM001' }); 
 
       await expect(mustahiqService.create(payload, 1)).rejects.toMatchObject({
         message: 'NRM sudah digunakan.',
@@ -139,3 +166,4 @@ describe('mustahiqService', () => {
     });
   });
 });
+
