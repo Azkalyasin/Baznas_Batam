@@ -33,7 +33,7 @@ const Distribusi = db.define('distribusi', {
   },
   // Denormalized Data (Snapshot)
   nrm: { type: DataTypes.STRING(24) },
-  nama_mustahik: { type: DataTypes.STRING(200), allowNull: false },
+  nama_mustahik: { type: DataTypes.STRING(200) },
   nik: { type: DataTypes.STRING(20) },
   alamat: { type: DataTypes.TEXT },
   kelurahan_id: {

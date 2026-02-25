@@ -29,7 +29,7 @@ const Penerimaan = db.define('penerimaan', {
   },
   // Denormalized Data (Snapshot)
   npwz: { type: DataTypes.STRING(20) },
-  nama_muzakki: { type: DataTypes.STRING(150), allowNull: false },
+  nama_muzakki: { type: DataTypes.STRING(150) },
   nik_muzakki: { type: DataTypes.STRING(20) },
   no_hp_muzakki: { type: DataTypes.STRING(14) },
   jenis_muzakki_id: { type: DataTypes.INTEGER },

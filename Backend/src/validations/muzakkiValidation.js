@@ -1,41 +1,7 @@
 import { z } from 'zod';
 
 // --- Shared Enums ---
-const kelurahanEnum = z.enum([
-  'Sadai', 'Tanjung Uncang', 'Tembesi', 'Belian', 'Sungai Jodoh',
-  'Bengkong Indah', 'Batu Besar', 'Taman Baloi', 'Sungai Pelunggut',
-  'Setokok', 'Teluk Tering', 'Tanjung Piayu', 'Baloi Permai',
-  'Sukajadi', 'Sungai Panas', 'Bukit Tempayan', 'Buliang', 'Kibing',
-  'Batu Merah', 'Kampung Seraya', 'Tanjung Sengkuang', 'Kasu', 'Pecong',
-  'Pemping', 'Pulau Terong', 'Sekanak Raya', 'Tanjung Sari',
-  'Bengkong Laut', 'Tanjung Buntung', 'Batu Legong', 'Bulang Lintang',
-  'Pantai Gelam', 'Pulau Buluh', 'Temoyong', 'Air Raja', 'Galang Baru',
-  'Karas', 'Pulau Abang', 'Rempang Cate', 'Sembulang', 'Sijantung',
-  'Subang Mas', 'Baloi Indah', 'Batu Selicin', 'Kampung Pelita',
-  'Lubuk Baja Kota', 'Tanjung Uma', 'Kabil', 'Ngenang', 'Sambau',
-  'Sagulung Kota', 'Sungai Binti', 'Sungai Langkai', 'Sungai Lekop',
-  'Duriangkang', 'Mangsang', 'Muka Kuning', 'Patam Lestari',
-  'Sungai Harapan', 'Tanjung Pinggir', 'Tanjung Riau', 'Tiban Baru',
-  'Tiban Indah', 'Tiban Lama', 'Ketileng', 'Cilame'
-]);
-
-const kecamatanEnum = z.enum([
-  'Batu Aji', 'Sagulung', 'Sekupang', 'Batam Kota', 'Sei Beduk',
-  'Bengkong', 'Lubuk Baja', 'Nongsa', 'Batu Ampar', 'Belakang Padang',
-  'Bulang', 'Galang'
-]);
-
-const jenisMuzakkiEnum = z.enum(['Individu', 'Entitas']);
 const statusEnum = z.enum(['active', 'inactive']);
-
-const jenisUpzEnum = z.enum([
-  'Individu', 'Instansi', 'Sekolah', 'Masjid', 'Perusahaan',
-  'Kantor', 'Majelis Taklim', 'TPQ', 'Universitas',
-  'Rumah Makan / Warung / Komunitas', 'Dai', 'BKMT',
-  'BP BATAM', 'KEMENAG', 'PMB', 'ASN PEMKO', 'BMGQ', 'IPIM',
-  'DPRD', 'UMKM', 'BKPRMI', 'Guru Swasta', 'BANK', 'DMI',
-  'BAZNAS Batam', 'HBMI'
-]);
 
 // --- ID param ---
 export const idParamSchema = z.object({
@@ -48,11 +14,11 @@ export const createMuzakkiSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi.').max(50, 'Nama terlalu panjang.').trim(),
   nik: z.string().max(16, 'NIK maksimal 16 karakter.').trim().optional(),
   no_hp: z.string().max(14, 'Nomor HP terlalu panjang.').trim().optional(),
-  jenis_muzakki: jenisMuzakkiEnum.optional().default('Individu'),
-  jenis_upz: jenisUpzEnum.optional(),
+  jenis_muzakki_id: z.number().int().positive().optional(),
+  jenis_upz_id: z.number().int().positive().optional(),
   alamat: z.string().optional(),
-  kelurahan: kelurahanEnum,
-  kecamatan: kecamatanEnum,
+  kelurahan_id: z.number().int().positive(),
+  kecamatan_id: z.number().int().positive(),
   keterangan: z.string().optional()
 });
 
@@ -62,11 +28,11 @@ export const updateMuzakkiSchema = z.object({
   nama: z.string().min(1).max(50).trim().optional(),
   nik: z.string().max(16).trim().optional(),
   no_hp: z.string().max(14).trim().optional(),
-  jenis_muzakki: jenisMuzakkiEnum.optional(),
-  jenis_upz: jenisUpzEnum.optional(),
+  jenis_muzakki_id: z.number().int().positive().optional(),
+  jenis_upz_id: z.number().int().positive().optional(),
   alamat: z.string().optional(),
-  kelurahan: kelurahanEnum.optional(),
-  kecamatan: kecamatanEnum.optional(),
+  kelurahan_id: z.number().int().positive().optional(),
+  kecamatan_id: z.number().int().positive().optional(),
   keterangan: z.string().optional()
 }).refine(
   (data) => Object.keys(data).length > 0,
@@ -81,11 +47,11 @@ export const updateStatusSchema = z.object({
 // --- Query Params (GET list) ---
 export const queryMuzakkiSchema = z.object({
   q: z.string().max(100).optional(),
-  jenis_muzakki: jenisMuzakkiEnum.optional(),
-  jenis_upz: jenisUpzEnum.optional(),
+  jenis_muzakki_id: z.string().optional(),
+  jenis_upz_id: z.string().optional(),
   status: statusEnum.optional(),
-  kelurahan: kelurahanEnum.optional(),
-  kecamatan: kecamatanEnum.optional(),
+  kelurahan_id: z.string().optional(),
+  kecamatan_id: z.string().optional(),
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional()
 });
@@ -100,7 +66,7 @@ export const queryRiwayatSchema = z.object({
 
 // --- Query Params (Export) ---
 export const queryExportSchema = z.object({
-  jenis_muzakki: jenisMuzakkiEnum.optional(),
-  jenis_upz: jenisUpzEnum.optional(),
+  jenis_muzakki_id: z.string().optional(),
+  jenis_upz_id: z.string().optional(),
   status: statusEnum.optional()
 });

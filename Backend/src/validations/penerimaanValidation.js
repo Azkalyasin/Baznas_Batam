@@ -1,32 +1,6 @@
 import { z } from 'zod';
 import { idParamSchema } from './shared.js';
 
-// --- Enums from model ---
-const viaEnum = z.enum(['Cash', 'Bank', 'Kantor Digital']);
-const zisEnum = z.enum(['Zakat', 'Infaq']);
-
-const metodeBayarEnum = z.enum([
-  'Cash', 'Bank Mandiri', 'Bank Riau Kepri', 'Bank Riau Syariah',
-  'Bank BNI', 'Bank BSI 2025', 'BTN Syariah Zakat', 'BTN Syariah Infak',
-  'Bank Muamalat', 'BSI Zakat', 'BSI Infaq', 'Bank BRI',
-  'Bank BRI Syariah', 'Bank OCBC Syariah', 'Bank BCA'
-]);
-
-const jenisZisEnum = z.enum([
-  'Zakat', 'Infak Terikat', 'Infak Tidak Terikat', 'Zakat Fitrah',
-  'Fidyah', 'Infak Kifarat', 'Hibah', 'Infak Kenclengan',
-  'Infak Voucher', 'Infak Smart 5000', 'Infak Indonesia Peduli',
-  'DSKL', 'CSR', 'Infak Sembako', 'Infak Quran',
-  'Infak Khitan', 'Infak Santri', 'Zakat Perdagangan',
-  'Zakat Emas', 'Zakat Simpanan', 'Infak Seribu',
-  'Infak Palestina', 'Infak Kurban', 'Infak Jumat',
-  'Infak Sumur Bor', 'Infak Pendidikan', 'Infak Subuh',
-  'Infak Lebaran', 'Infak Z-volt', 'Infak Renovasi Masjid/Musholla/TPQ',
-  'Infak Perahu Dakwah'
-]);
-
-const persentaseAmilEnum = z.enum(['0.00%', '5%', '7.50%', '12.50%', '20%', '100%']);
-
 // idParamSchema di-import dari shared.js
 export { idParamSchema };
 
@@ -34,13 +8,13 @@ export { idParamSchema };
 export const createPenerimaanSchema = z.object({
   muzakki_id: z.number().int().positive('muzakki_id harus angka positif.'),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD.'),
-  via: viaEnum,
-  metode_bayar: metodeBayarEnum.optional(),
+  via_id: z.number().int().positive(),
+  metode_bayar_id: z.number().int().positive().optional(),
   no_rekening: z.string().max(50).optional(),
-  zis: zisEnum,
-  jenis_zis: jenisZisEnum,
+  zis_id: z.number().int().positive(),
+  jenis_zis_id: z.number().int().positive(),
   jumlah: z.number().positive('Jumlah harus lebih dari 0.'),
-  persentase_amil: persentaseAmilEnum,
+  persentase_amil_id: z.number().int().positive(),
   keterangan: z.string().optional(),
   rekomendasi_upz: z.string().optional()
 });
@@ -49,13 +23,13 @@ export const createPenerimaanSchema = z.object({
 export const updatePenerimaanSchema = z.object({
   muzakki_id: z.number().int().positive().optional(),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD.').optional(),
-  via: viaEnum.optional(),
-  metode_bayar: metodeBayarEnum.optional(),
+  via_id: z.number().int().positive().optional(),
+  metode_bayar_id: z.number().int().positive().optional(),
   no_rekening: z.string().max(50).optional(),
-  zis: zisEnum.optional(),
-  jenis_zis: jenisZisEnum.optional(),
+  zis_id: z.number().int().positive().optional(),
+  jenis_zis_id: z.number().int().positive().optional(),
   jumlah: z.number().positive('Jumlah harus lebih dari 0.').optional(),
-  persentase_amil: persentaseAmilEnum.optional(),
+  persentase_amil_id: z.number().int().positive().optional(),
   keterangan: z.string().optional(),
   rekomendasi_upz: z.string().optional()
 }).refine(
@@ -70,10 +44,10 @@ export const queryPenerimaanSchema = z.object({
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   bulan: z.string().max(20).optional(),
   tahun: z.string().regex(/^\d{4}$/).transform(Number).optional(),
-  via: viaEnum.optional(),
-  metode_bayar: metodeBayarEnum.optional(),
-  zis: zisEnum.optional(),
-  jenis_zis: jenisZisEnum.optional(),
+  via_id: z.string().optional(),
+  metode_bayar_id: z.string().optional(),
+  zis_id: z.string().optional(),
+  jenis_zis_id: z.string().optional(),
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional()
 });
