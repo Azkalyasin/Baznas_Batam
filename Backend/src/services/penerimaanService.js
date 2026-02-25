@@ -45,7 +45,7 @@ const getAll = async (query) => {
     where,
     limit: Number(limit),
     offset: Number(offset),
-    order: [['tanggal', 'DESC'], ['createdAt', 'DESC']],
+    order: [['tanggal', 'DESC'], ['created_at', 'DESC']],
     include: [
       { model: Muzakki, attributes: ['id', 'nama', 'npwz'] },
       { model: ViaPenerimaan, attributes: ['id', 'nama'] },

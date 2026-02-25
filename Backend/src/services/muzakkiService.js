@@ -34,7 +34,7 @@ const getAll = async (query) => {
     where,
     limit: Number(limit),
     offset: Number(offset),
-    order: [['createdAt', 'DESC']],
+    order: [['created_at', 'DESC']],
     include: [
       { model: Kecamatan, attributes: ['id', 'nama'] },
       { model: Kelurahan, attributes: ['id', 'nama'] },
