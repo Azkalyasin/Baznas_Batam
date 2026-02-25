@@ -121,8 +121,8 @@ const cetakBuktiSetor = async (req, res, next) => {
     addRow('Nama', penerimaan.nama_muzakki);
     addRow('NIK', penerimaan.nik_muzakki);
     addRow('No HP', penerimaan.no_hp_muzakki);
-    addRow('Jenis Muzakki', penerimaan.jenis_muzakki);
-    addRow('Jenis UPZ', penerimaan.jenis_upz);
+    addRow('Jenis Muzakki', penerimaan.ref_jenis_muzakki?.nama);
+    addRow('Jenis UPZ', penerimaan.ref_jenis_upz?.nama);
 
     doc.y = y;
     doc.moveDown(0.5);
@@ -139,11 +139,11 @@ const cetakBuktiSetor = async (req, res, next) => {
 
     addRow('No. Transaksi', `PNR-${String(penerimaan.id).padStart(6, '0')}`);
     addRow('Tanggal', penerimaan.tanggal);
-    addRow('Via', penerimaan.via);
-    addRow('Metode Bayar', penerimaan.metode_bayar);
+    addRow('Via', penerimaan.ref_via_penerimaan?.nama);
+    addRow('Metode Bayar', penerimaan.ref_metode_bayar?.nama);
     addRow('No Rekening', penerimaan.no_rekening);
-    addRow('ZIS', penerimaan.zis);
-    addRow('Jenis ZIS', penerimaan.jenis_zis);
+    addRow('ZIS', penerimaan.ref_zi?.nama);
+    addRow('Jenis ZIS', penerimaan.ref_jenis_zi?.nama);
 
     doc.y = y;
     doc.moveDown(0.5);
@@ -164,7 +164,7 @@ const cetakBuktiSetor = async (req, res, next) => {
     };
 
     addRow('Jumlah', formatCurrency(penerimaan.jumlah));
-    addRow('Persentase Amil', penerimaan.persentase_amil);
+    addRow('Persentase Amil', penerimaan.ref_persentase_amil?.label);
     addRow('Dana Amil', formatCurrency(penerimaan.dana_amil));
     addRow('Dana Bersih', formatCurrency(penerimaan.dana_bersih));
 

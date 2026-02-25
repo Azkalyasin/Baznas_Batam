@@ -122,9 +122,9 @@ const cetakBuktiPenyaluran = async (req, res, next) => {
     addRow('Nama', distribusi.nama_mustahik);
     addRow('No HP', distribusi.no_hp);
     addRow('Alamat', distribusi.alamat);
-    addRow('Kelurahan', distribusi.kelurahan);
-    addRow('Kecamatan', distribusi.kecamatan);
-    addRow('Asnaf', distribusi.asnaf);
+    addRow('Kelurahan', distribusi.ref_kelurahan?.nama);
+    addRow('Kecamatan', distribusi.ref_kecamatan?.nama);
+    addRow('Asnaf', distribusi.ref_asnaf?.nama);
 
     doc.y = y;
     doc.moveDown(0.5);
@@ -139,10 +139,10 @@ const cetakBuktiPenyaluran = async (req, res, next) => {
 
     addRow('No. Distribusi', `DST-${String(distribusi.id).padStart(6, '0')}`);
     addRow('Tanggal', distribusi.tanggal);
-    addRow('Program', distribusi.nama_program);
-    addRow('Kegiatan', distribusi.program_kegiatan);
-    addRow('Sub Program', distribusi.nama_sub_program);
-    addRow('Frekuensi', distribusi.frekuensi_bantuan);
+    addRow('Program', distribusi.ref_nama_program?.nama);
+    addRow('Kegiatan', distribusi.ref_program_kegiatan?.nama);
+    addRow('Sub Program', distribusi.ref_sub_program?.nama);
+    addRow('Frekuensi', distribusi.ref_frekuensi_bantuan?.nama);
 
     doc.y = y;
     doc.moveDown(0.5);
@@ -162,9 +162,9 @@ const cetakBuktiPenyaluran = async (req, res, next) => {
 
     addRow('Jumlah', formatCurrency(distribusi.jumlah));
     addRow('Quantity', distribusi.quantity);
-    addRow('Via', distribusi.via);
+    addRow('Via', distribusi.ref_via_distribusi?.nama);
     addRow('No Rekening', distribusi.no_rekening);
-    addRow('Jenis ZIS', distribusi.jenis_zis);
+    addRow('Jenis ZIS', distribusi.ref_jenis_zis_distribusi?.nama);
 
     doc.y = y;
     if (distribusi.keterangan) {

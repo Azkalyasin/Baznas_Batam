@@ -2,15 +2,25 @@ import Penerimaan from '../models/penerimaanModel.js';
 import Muzakki from '../models/muzakkiModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
-
-// --- Helper: parse persentase_amil string ke number ---
-const parsePersentase = (str) => {
-  return parseFloat(str.replace('%', '')) / 100;
-};
+import AppError from '../utils/AppError.js';
+import { 
+  ViaPenerimaan, 
+  MetodeBayar, 
+  Zis, 
+  JenisZis, 
+  PersentaseAmil, 
+  JenisMuzakki, 
+  JenisUpz 
+} from '../models/ref/index.js';
+import User from '../models/userModel.js';
 
 // --- GET /api/penerimaan (list + filter + search + pagination) ---
 const getAll = async (query) => {
-  const { q, muzakki_id, tanggal, bulan, tahun, via, metode_bayar, zis, jenis_zis, page = 1, limit = 10 } = query;
+  const { 
+    q, muzakki_id, tanggal, bulan, tahun, 
+    via_id, metode_bayar_id, zis_id, jenis_zis_id, 
+    page = 1, limit = 10 
+  } = query;
   const offset = (page - 1) * limit;
 
   const where = {};
@@ -18,10 +28,10 @@ const getAll = async (query) => {
   if (tanggal) where.tanggal = tanggal;
   if (bulan) where.bulan = bulan;
   if (tahun) where.tahun = tahun;
-  if (via) where.via = via;
-  if (metode_bayar) where.metode_bayar = metode_bayar;
-  if (zis) where.zis = zis;
-  if (jenis_zis) where.jenis_zis = jenis_zis;
+  if (via_id) where.via_id = via_id;
+  if (metode_bayar_id) where.metode_bayar_id = metode_bayar_id;
+  if (zis_id) where.zis_id = zis_id;
+  if (jenis_zis_id) where.jenis_zis_id = jenis_zis_id;
 
   if (q) {
     where[Op.or] = [
@@ -35,7 +45,15 @@ const getAll = async (query) => {
     where,
     limit: Number(limit),
     offset: Number(offset),
-    order: [['tanggal', 'DESC'], ['createdAt', 'DESC']]
+    order: [['tanggal', 'DESC'], ['createdAt', 'DESC']],
+    include: [
+      { model: Muzakki, attributes: ['id', 'nama', 'npwz'] },
+      { model: ViaPenerimaan, attributes: ['id', 'nama'] },
+      { model: MetodeBayar, attributes: ['id', 'nama'] },
+      { model: Zis, attributes: ['id', 'nama'] },
+      { model: JenisZis, attributes: ['id', 'nama'] },
+      { model: PersentaseAmil, attributes: ['id', 'label', 'nilai'] }
+    ]
   });
 
   return {
@@ -48,39 +66,49 @@ const getAll = async (query) => {
 
 // --- GET /api/penerimaan/:id ---
 const getById = async (id) => {
-  const penerimaan = await Penerimaan.findByPk(id);
+  const penerimaan = await Penerimaan.findByPk(id, {
+    include: [
+      { model: Muzakki },
+      { model: ViaPenerimaan },
+      { model: MetodeBayar },
+      { model: Zis },
+      { model: JenisZis },
+      { model: PersentaseAmil },
+      { model: User, as: 'creator', attributes: ['id', 'nama'] },
+      { model: JenisMuzakki },
+      { model: JenisUpz }
+    ]
+  });
   if (!penerimaan) throw Object.assign(new Error('Data penerimaan tidak ditemukan.'), { status: 404 });
   return penerimaan;
 };
 
 // --- POST /api/penerimaan ---
-// Trigger DB akan handle: denormalized fields, bulan, tahun, dan muzakki stats update
+// Trigger DB (before_penerimaan_insert) handles amil calculation and snapshot data
 const create = async (body, userId) => {
-  // Validasi muzakki_id ada dan active (sebelum mulai transaction)
   const muzakki = await Muzakki.findByPk(body.muzakki_id);
-  if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
+  if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
   if (muzakki.status !== 'active') {
-    throw Object.assign(new Error('Muzakki tidak aktif, transaksi ditolak.'), { status: 400 });
+    throw new AppError('Muzakki tidak aktif, transaksi ditolak.', 400);
   }
-
-  // Hitung dana_amil dan dana_bersih di application layer
-  const persen = parsePersentase(body.persentase_amil);
-  const danaAmil = parseFloat((body.jumlah * persen).toFixed(2));
-  const danaBersih = parseFloat((body.jumlah - danaAmil).toFixed(2));
 
   const t = await db.transaction();
   try {
     const penerimaan = await Penerimaan.create({
       ...body,
-      dana_amil: danaAmil,
-      dana_bersih: danaBersih,
       created_by: userId
     }, { transaction: t, userId });
 
     await t.commit();
 
-    // Reload di luar transaction untuk mendapatkan data dari trigger
-    await penerimaan.reload();
+    // Reload triggers (calculations & snapshots)
+    await penerimaan.reload({
+        include: [
+            { model: ViaPenerimaan, attributes: ['nama'] },
+            { model: Zis, attributes: ['nama'] },
+            { model: JenisZis, attributes: ['nama'] }
+        ]
+    });
     return penerimaan;
   } catch (error) {
     await t.rollback();
@@ -91,23 +119,26 @@ const create = async (body, userId) => {
 // --- PUT /api/penerimaan/:id ---
 const update = async (id, updateData, userId) => {
   const penerimaan = await Penerimaan.findByPk(id);
-  if (!penerimaan) throw Object.assign(new Error('Data penerimaan tidak ditemukan.'), { status: 404 });
+  if (!penerimaan) throw new AppError('Data penerimaan tidak ditemukan.', 404);
 
-  // Jika muzakki_id berubah, validasi muzakki baru (sebelum transaction)
   if (updateData.muzakki_id && updateData.muzakki_id !== penerimaan.muzakki_id) {
     const muzakki = await Muzakki.findByPk(updateData.muzakki_id);
-    if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
+    if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
     if (muzakki.status !== 'active') {
-      throw Object.assign(new Error('Muzakki tidak aktif, perubahan ditolak.'), { status: 400 });
+      throw new AppError('Muzakki tidak aktif, perubahan ditolak.', 400);
     }
   }
 
-  // Recalculate dana_amil/dana_bersih jika jumlah atau persentase berubah
-  const jumlah = updateData.jumlah ?? penerimaan.jumlah;
-  const persentaseStr = updateData.persentase_amil ?? penerimaan.persentase_amil;
-  const persen = parsePersentase(persentaseStr);
-  updateData.dana_amil = parseFloat((jumlah * persen).toFixed(2));
-  updateData.dana_bersih = parseFloat((jumlah - updateData.dana_amil).toFixed(2));
+  // Application layer handling for amil/bersih calculation if trigger is not enough (optional)
+  if (updateData.jumlah || updateData.persentase_amil_id) {
+      const jumlah = updateData.jumlah ?? penerimaan.jumlah;
+      const pId = updateData.persentase_amil_id ?? penerimaan.persentase_amil_id;
+      const refAmil = await PersentaseAmil.findByPk(pId);
+      if (refAmil) {
+          updateData.dana_amil = parseFloat((jumlah * refAmil.nilai).toFixed(2));
+          updateData.dana_bersih = parseFloat((jumlah - updateData.dana_amil).toFixed(2));
+      }
+  }
 
   const t = await db.transaction();
   try {
@@ -123,10 +154,9 @@ const update = async (id, updateData, userId) => {
 };
 
 // --- DELETE /api/penerimaan/:id ---
-// Trigger DB akan handle: rollback muzakki stats
 const destroy = async (id, userId) => {
   const penerimaan = await Penerimaan.findByPk(id);
-  if (!penerimaan) throw Object.assign(new Error('Data penerimaan tidak ditemukan.'), { status: 404 });
+  if (!penerimaan) throw new AppError('Data penerimaan tidak ditemukan.', 404);
 
   const t = await db.transaction();
   try {
@@ -138,22 +168,24 @@ const destroy = async (id, userId) => {
   }
 };
 
-// --- GET /api/penerimaan/rekap/harian ---
+// --- Reports helper to get labels instead of IDs ---
 const rekapHarian = async (query) => {
   const tanggal = query.tanggal || new Date().toISOString().slice(0, 10);
 
   const [results] = await db.query(`
     SELECT 
-      zis,
-      jenis_zis,
-      COUNT(*) as jumlah_transaksi,
-      SUM(jumlah) as total_jumlah,
-      SUM(dana_amil) as total_dana_amil,
-      SUM(dana_bersih) as total_dana_bersih
-    FROM penerimaan
-    WHERE tanggal = :tanggal
-    GROUP BY zis, jenis_zis
-    ORDER BY zis, jenis_zis
+      z.nama as zis,
+      jz.nama as jenis_zis,
+      COUNT(p.id) as jumlah_transaksi,
+      SUM(p.jumlah) as total_jumlah,
+      SUM(p.dana_amil) as total_dana_amil,
+      SUM(p.dana_bersih) as total_dana_bersih
+    FROM penerimaan p
+    LEFT JOIN ref_zis z ON p.zis_id = z.id
+    LEFT JOIN ref_jenis_zis jz ON p.jenis_zis_id = jz.id
+    WHERE p.tanggal = :tanggal
+    GROUP BY p.zis_id, p.jenis_zis_id
+    ORDER BY z.nama, jz.nama
   `, { replacements: { tanggal } });
 
   const [totals] = await db.query(`
@@ -173,7 +205,6 @@ const rekapHarian = async (query) => {
   };
 };
 
-// --- GET /api/penerimaan/rekap/bulanan ---
 const rekapBulanan = async (query) => {
   const now = new Date();
   const bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -183,17 +214,20 @@ const rekapBulanan = async (query) => {
 
   const [results] = await db.query(`
     SELECT 
-      zis,
-      jenis_zis,
-      via,
-      COUNT(*) as jumlah_transaksi,
-      SUM(jumlah) as total_jumlah,
-      SUM(dana_amil) as total_dana_amil,
-      SUM(dana_bersih) as total_dana_bersih
-    FROM penerimaan
-    WHERE bulan = :bulan AND tahun = :tahun
-    GROUP BY zis, jenis_zis, via
-    ORDER BY zis, jenis_zis, via
+      z.nama as zis,
+      jz.nama as jenis_zis,
+      v.nama as via,
+      COUNT(p.id) as jumlah_transaksi,
+      SUM(p.jumlah) as total_jumlah,
+      SUM(p.dana_amil) as total_dana_amil,
+      SUM(p.dana_bersih) as total_dana_bersih
+    FROM penerimaan p
+    LEFT JOIN ref_zis z ON p.zis_id = z.id
+    LEFT JOIN ref_jenis_zis jz ON p.jenis_zis_id = jz.id
+    LEFT JOIN ref_via_penerimaan v ON p.via_id = v.id
+    WHERE p.bulan = :bulan AND p.tahun = :tahun
+    GROUP BY p.zis_id, p.jenis_zis_id, p.via_id
+    ORDER BY z.nama, jz.nama, v.nama
   `, { replacements: { bulan, tahun } });
 
   const [totals] = await db.query(`
@@ -214,25 +248,25 @@ const rekapBulanan = async (query) => {
   };
 };
 
-// --- GET /api/penerimaan/rekap/tahunan ---
 const rekapTahunan = async (query) => {
   const tahun = query.tahun || new Date().getFullYear();
 
   const [results] = await db.query(`
     SELECT 
-      bulan,
-      zis,
-      COUNT(*) as jumlah_transaksi,
-      SUM(jumlah) as total_jumlah,
-      SUM(dana_amil) as total_dana_amil,
-      SUM(dana_bersih) as total_dana_bersih
-    FROM penerimaan
-    WHERE tahun = :tahun
-    GROUP BY bulan, zis
+      p.bulan,
+      z.nama as zis,
+      COUNT(p.id) as jumlah_transaksi,
+      SUM(p.jumlah) as total_jumlah,
+      SUM(p.dana_amil) as total_dana_amil,
+      SUM(p.dana_bersih) as total_dana_bersih
+    FROM penerimaan p
+    LEFT JOIN ref_zis z ON p.zis_id = z.id
+    WHERE p.tahun = :tahun
+    GROUP BY p.bulan, p.zis_id
     ORDER BY 
-      FIELD(bulan, 'Januari','Februari','Maret','April','Mei','Juni',
+      FIELD(p.bulan, 'Januari','Februari','Maret','April','Mei','Juni',
             'Juli','Agustus','September','Oktober','November','Desember'),
-      zis
+      z.nama
   `, { replacements: { tahun } });
 
   const [totals] = await db.query(`
@@ -262,3 +296,4 @@ export default {
   rekapBulanan,
   rekapTahunan
 };
+

@@ -1,19 +1,5 @@
 import ExcelJS from 'exceljs';
 
-/**
- * Shared helper untuk export data ke Excel.
- * Menghindari duplikasi logic di mustahiqController dan muzakkiController.
- *
- * @param {import('express').Response} res - Express response object
- * @param {Object} options
- * @param {string} options.sheetName - Nama worksheet
- * @param {Array} options.columns - ExcelJS column definitions
- * @param {Array} options.rows - Array of Sequelize model instances
- * @param {string} options.filename - Nama file output (tanpa .xlsx)
- * @param {number} options.totalAvailable - Total data yang tersedia
- * @param {number} options.exported - Jumlah data yang diekspor
- * @param {boolean} options.isTruncated - Apakah data terpotong
- */
 const exportToExcel = async (res, { sheetName, columns, rows, filename, totalAvailable, exported, isTruncated }) => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName);
@@ -23,7 +9,6 @@ const exportToExcel = async (res, { sheetName, columns, rows, filename, totalAva
     ...columns
   ];
 
-  // Style header row
   sheet.getRow(1).fill = {
     type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' }
   };
@@ -33,7 +18,6 @@ const exportToExcel = async (res, { sheetName, columns, rows, filename, totalAva
     sheet.addRow({ no: index + 1, ...row.toJSON() });
   });
 
-  // Info row jika data terpotong
   if (isTruncated) {
     sheet.addRow({});
     const infoRow = sheet.addRow({});

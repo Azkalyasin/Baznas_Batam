@@ -1,6 +1,7 @@
 import User from '../models/userModel.js';
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
+import AppError from '../utils/AppError.js';
 
 const getAllUsers = async (query) => {
   const { role, page = 1, limit = 10, search } = query;
@@ -32,7 +33,7 @@ const getAllUsers = async (query) => {
 
 const getUserById = async (id) => {
   const user = await User.findByPk(id, { attributes: { exclude: ['password'] } });
-  if (!user) throw Object.assign(new Error('User tidak ditemukan.'), { status: 404 });
+  if (!user) throw new AppError('User tidak ditemukan.', 404);
   return user;
 };
 
@@ -40,9 +41,9 @@ const createUser = async (userData) => {
   const { username, password, nama, role } = userData;
 
   const existing = await User.findOne({ where: { username } });
-  if (existing) throw Object.assign(new Error('Username sudah digunakan.'), { status: 409 });
+  if (existing) throw new AppError('Username sudah digunakan.', 409);
 
-  const hashedPassword = await bcrypt.hash(password, 12); // saltRounds 12 lebih aman
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   const newUser = await User.create({ username, password: hashedPassword, nama, role });
 
@@ -51,12 +52,11 @@ const createUser = async (userData) => {
 
 const updateUser = async (id, updateData) => {
   const user = await User.findByPk(id);
-  if (!user) throw Object.assign(new Error('User tidak ditemukan.'), { status: 404 });
+  if (!user) throw new AppError('User tidak ditemukan.', 404);
 
-  // Cek apakah username baru sudah dipakai orang lain
   if (updateData.username && updateData.username !== user.username) {
     const conflict = await User.findOne({ where: { username: updateData.username } });
-    if (conflict) throw Object.assign(new Error('Username sudah digunakan.'), { status: 409 });
+    if (conflict) throw new AppError('Username sudah digunakan.', 409);
   }
 
   if (updateData.password) {
@@ -69,7 +69,7 @@ const updateUser = async (id, updateData) => {
 
 const deleteUser = async (id) => {
   const user = await User.findByPk(id);
-  if (!user) throw Object.assign(new Error('User tidak ditemukan.'), { status: 404 });
+  if (!user) throw new AppError('User tidak ditemukan.', 404);
   await user.destroy();
 };
 

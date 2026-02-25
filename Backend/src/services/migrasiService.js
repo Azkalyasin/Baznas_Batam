@@ -73,7 +73,6 @@ const generateTemplate = async (res, jenis) => {
 
   sheet.columns = config.columns;
 
-  // Style header
   sheet.getRow(1).fill = {
     type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' }
   };
@@ -101,7 +100,7 @@ const previewExcel = async (fileBuffer, jenis) => {
   };
 
   sheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return; // Skip header
+    if (rowNumber === 1) return;
 
     const rowData = {};
     config.columns.forEach((col, index) => {

@@ -6,8 +6,8 @@ import db from '../config/database.js';
 const getDashboardInfo = async (query) => {
   const now = new Date();
   const tahun = parseInt(query.tahun) || now.getFullYear();
-  const bulan = query.bulan; // Opsional: 'Januari', 'Februari', dll
-  const tanggal = query.tanggal; // Opsional: '2026-02-23'
+  const bulan = query.bulan; 
+  const tanggal = query.tanggal; 
 
   const wherePenerimaan = { tahun };
   const whereDistribusi = { tahun };
@@ -21,7 +21,6 @@ const getDashboardInfo = async (query) => {
     whereDistribusi.tanggal = tanggal;
   }
 
-  // 1. Ringkasan Keuangan
   const [penerimaanStats, distribusiStats] = await Promise.all([
     Penerimaan.findAll({
       attributes: [
@@ -54,13 +53,10 @@ const getDashboardInfo = async (query) => {
 
   const total_pengeluaran = parseFloat(distribusiStats[0]?.get('total')) || 0;
   
-  // Logic Dana Amil: Biasanya 12.5% dari Zakat/Infaq sesuai regulasi, atau sesuai field jika ada.
-  // Di sini kita asumsikan 12.5% untuk dana amil jika tidak ada field eksplisit.
   const total_dana_amil = total_zakat * 0.125; 
   const total_dana_bersih = total_pemasukan - total_dana_amil;
   const saldo_bersih = total_dana_bersih - total_pengeluaran;
 
-  // 2. Grafik Bulanan (Jika filter bukan harian)
   let grafik_penerimaan_bulanan = [];
   let grafik_distribusi_bulanan = [];
   
@@ -87,10 +83,6 @@ const getDashboardInfo = async (query) => {
     ]);
   }
 
-  // 3. Status Harian (Opsional - Jika dalam satu bulan atau satu tanggal)
-  // Logic harian bisa ditambahkan di sini jika dibutuhkan UI
-
-  // 4. Breakdown
   const [breakdown_zis, breakdown_program, breakdown_asnaf, breakdown_upz, breakdown_channel] = await Promise.all([
     Penerimaan.findAll({
       attributes: ['jenis_zis', [db.fn('COUNT', db.col('id')), 'count'], [db.fn('SUM', db.col('jumlah')), 'total']],

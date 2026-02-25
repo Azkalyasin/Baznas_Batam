@@ -2,18 +2,25 @@ import Muzakki from '../models/muzakkiModel.js';
 import Penerimaan from '../models/penerimaanModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
+import AppError from '../utils/AppError.js';
+import { 
+  Kecamatan, 
+  Kelurahan, 
+  JenisMuzakki, 
+  JenisUpz 
+} from '../models/ref/index.js';
 
 // --- GET /api/muzakki (list + filter + search + pagination) ---
 const getAll = async (query) => {
-  const { q, jenis_muzakki, jenis_upz, status, kelurahan, kecamatan, page = 1, limit = 10 } = query;
+  const { q, jenis_muzakki_id, jenis_upz_id, status, kelurahan_id, kecamatan_id, page = 1, limit = 10 } = query;
   const offset = (page - 1) * limit;
 
   const where = {};
-  if (jenis_muzakki) where.jenis_muzakki = jenis_muzakki;
-  if (jenis_upz) where.jenis_upz = jenis_upz;
+  if (jenis_muzakki_id) where.jenis_muzakki_id = jenis_muzakki_id;
+  if (jenis_upz_id) where.jenis_upz_id = jenis_upz_id;
   if (status) where.status = status;
-  if (kelurahan) where.kelurahan = kelurahan;
-  if (kecamatan) where.kecamatan = kecamatan;
+  if (kelurahan_id) where.kelurahan_id = kelurahan_id;
+  if (kecamatan_id) where.kecamatan_id = kecamatan_id;
 
   if (q) {
     where[Op.or] = [
@@ -27,7 +34,13 @@ const getAll = async (query) => {
     where,
     limit: Number(limit),
     offset: Number(offset),
-    order: [['createdAt', 'DESC']]
+    order: [['createdAt', 'DESC']],
+    include: [
+      { model: Kecamatan, attributes: ['id', 'nama'] },
+      { model: Kelurahan, attributes: ['id', 'nama'] },
+      { model: JenisMuzakki, attributes: ['id', 'nama'] },
+      { model: JenisUpz, attributes: ['id', 'nama'] }
+    ]
   });
 
   return {
@@ -40,8 +53,15 @@ const getAll = async (query) => {
 
 // --- GET /api/muzakki/:id ---
 const getById = async (id) => {
-  const muzakki = await Muzakki.findByPk(id);
-  if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
+  const muzakki = await Muzakki.findByPk(id, {
+    include: [
+      { model: Kecamatan, attributes: ['id', 'nama'] },
+      { model: Kelurahan, attributes: ['id', 'nama'] },
+      { model: JenisMuzakki, attributes: ['id', 'nama'] },
+      { model: JenisUpz, attributes: ['id', 'nama'] }
+    ]
+  });
+  if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
   return muzakki;
 };
 
@@ -82,12 +102,12 @@ const getRiwayat = async (id, query) => {
 const create = async (body, userId) => {
   // Cek duplikat NPWZ
   const existingNpwz = await Muzakki.findOne({ where: { npwz: body.npwz } });
-  if (existingNpwz) throw Object.assign(new Error('NPWZ sudah digunakan.'), { status: 409 });
+  if (existingNpwz) throw new AppError('NPWZ sudah digunakan.', 409);
 
   // Cek duplikat NIK (jika diisi)
   if (body.nik) {
     const existingNik = await Muzakki.findOne({ where: { nik: body.nik } });
-    if (existingNik) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
+    if (existingNik) throw new AppError('NIK sudah digunakan.', 409);
   }
 
   const t = await db.transaction();
@@ -108,18 +128,18 @@ const create = async (body, userId) => {
 // --- PUT /api/muzakki/:id ---
 const update = async (id, updateData, userId) => {
   const muzakki = await Muzakki.findByPk(id);
-  if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
+  if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
 
   // Cek duplikat NPWZ jika berubah
   if (updateData.npwz && updateData.npwz !== muzakki.npwz) {
     const conflict = await Muzakki.findOne({ where: { npwz: updateData.npwz } });
-    if (conflict) throw Object.assign(new Error('NPWZ sudah digunakan.'), { status: 409 });
+    if (conflict) throw new AppError('NPWZ sudah digunakan.', 409);
   }
 
   // Cek duplikat NIK jika berubah
   if (updateData.nik && updateData.nik !== muzakki.nik) {
     const conflict = await Muzakki.findOne({ where: { nik: updateData.nik } });
-    if (conflict) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
+    if (conflict) throw new AppError('NIK sudah digunakan.', 409);
   }
 
   const t = await db.transaction();
@@ -138,7 +158,7 @@ const update = async (id, updateData, userId) => {
 // --- PUT /api/muzakki/:id/status ---
 const updateStatus = async (id, status, userId) => {
   const muzakki = await Muzakki.findByPk(id);
-  if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
+  if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
 
   const t = await db.transaction();
   try {
@@ -154,15 +174,12 @@ const updateStatus = async (id, status, userId) => {
 // --- DELETE /api/muzakki/:id ---
 const destroy = async (id, userId) => {
   const muzakki = await Muzakki.findByPk(id);
-  if (!muzakki) throw Object.assign(new Error('Muzakki tidak ditemukan.'), { status: 404 });
+  if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
 
   // Cek apakah punya penerimaan terkait
   const penerimaanCount = await Penerimaan.count({ where: { muzakki_id: id } });
   if (penerimaanCount > 0) {
-    throw Object.assign(
-      new Error(`Tidak bisa menghapus muzakki yang memiliki ${penerimaanCount} data penerimaan.`),
-      { status: 400 }
-    );
+    throw new AppError(`Tidak bisa menghapus muzakki yang memiliki ${penerimaanCount} data penerimaan.`, 400);
   }
 
   const t = await db.transaction();
@@ -179,10 +196,10 @@ const destroy = async (id, userId) => {
 const MAX_EXPORT_ROWS = 10000;
 
 const getExportData = async (query) => {
-  const { jenis_muzakki, jenis_upz, status } = query;
+  const { jenis_muzakki_id, jenis_upz_id, status } = query;
   const where = {};
-  if (jenis_muzakki) where.jenis_muzakki = jenis_muzakki;
-  if (jenis_upz) where.jenis_upz = jenis_upz;
+  if (jenis_muzakki_id) where.jenis_muzakki_id = jenis_muzakki_id;
+  if (jenis_upz_id) where.jenis_upz_id = jenis_upz_id;
   if (status) where.status = status;
 
   const totalAvailable = await Muzakki.count({ where });
@@ -190,7 +207,13 @@ const getExportData = async (query) => {
   const rows = await Muzakki.findAll({
     where,
     order: [['nama', 'ASC']],
-    limit: MAX_EXPORT_ROWS
+    limit: MAX_EXPORT_ROWS,
+    include: [
+      { model: Kecamatan, attributes: ['nama'] },
+      { model: Kelurahan, attributes: ['nama'] },
+      { model: JenisMuzakki, attributes: ['nama'] },
+      { model: JenisUpz, attributes: ['nama'] }
+    ]
   });
 
   return {
@@ -211,3 +234,4 @@ export default {
   destroy,
   getExportData
 };
+

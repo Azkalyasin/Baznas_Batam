@@ -2,21 +2,30 @@ import Mustahiq from '../models/mustahiqModel.js';
 import Distribusi from '../models/distribusiModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
+import AppError from '../utils/AppError.js';
+import { 
+  Kecamatan, 
+  Kelurahan, 
+  Asnaf, 
+  KategoriMustahiq 
+} from '../models/ref/index.js';
 
-// --- Auto-generate no_reg_bpp: BPP-YYYYMM-NNNNN ---
-const generateNoRegBpp = async () => {
+
+const generateNrm = async (transaction) => {
   const now = new Date();
   const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
   const prefix = `BPP${yearMonth}`;
 
   const lastRecord = await Mustahiq.findOne({
-    where: { no_reg_bpp: { [Op.like]: `${prefix}%` } },
-    order: [['no_reg_bpp', 'DESC']]
+    where: { nrm: { [Op.like]: `${prefix}%` } },
+    order: [['nrm', 'DESC']],
+    lock: transaction.LOCK.UPDATE,
+    transaction
   });
 
   let sequence = 1;
   if (lastRecord) {
-    const lastSeq = parseInt(lastRecord.no_reg_bpp.slice(prefix.length), 10);
+    const lastSeq = parseInt(lastRecord.nrm.slice(prefix.length), 10);
     if (!isNaN(lastSeq)) sequence = lastSeq + 1;
   }
 
@@ -25,16 +34,15 @@ const generateNoRegBpp = async () => {
 
 // --- GET /api/mustahiq (list + filter + search + pagination) ---
 const getAll = async (query) => {
-  const { q, asnaf, kategori, jenis_program, status, kelurahan, kecamatan, page = 1, limit = 10 } = query;
+  const { q, asnaf_id, kategori_mustahiq_id, status, kelurahan_id, kecamatan_id, page = 1, limit = 10 } = query;
   const offset = (page - 1) * limit;
 
   const where = {};
-  if (asnaf) where.asnaf = asnaf;
-  if (kategori) where.kategori_mustahiq = kategori;
-  if (jenis_program) where.jenis_program = jenis_program;
+  if (asnaf_id) where.asnaf_id = asnaf_id;
+  if (kategori_mustahiq_id) where.kategori_mustahiq_id = kategori_mustahiq_id;
   if (status) where.status = status;
-  if (kelurahan) where.kelurahan = kelurahan;
-  if (kecamatan) where.kecamatan = kecamatan;
+  if (kelurahan_id) where.kelurahan_id = kelurahan_id;
+  if (kecamatan_id) where.kecamatan_id = kecamatan_id;
 
   if (q) {
     where[Op.or] = [
@@ -49,7 +57,13 @@ const getAll = async (query) => {
     where,
     limit: Number(limit),
     offset: Number(offset),
-    order: [['createdAt', 'DESC']]
+    order: [['createdAt', 'DESC']],
+    include: [
+      { model: Kecamatan, attributes: ['id', 'nama'] },
+      { model: Kelurahan, attributes: ['id', 'nama'] },
+      { model: Asnaf, attributes: ['id', 'nama'] },
+      { model: KategoriMustahiq, attributes: ['id', 'nama'] }
+    ]
   });
 
   return {
@@ -62,8 +76,15 @@ const getAll = async (query) => {
 
 // --- GET /api/mustahiq/:id ---
 const getById = async (id) => {
-  const mustahiq = await Mustahiq.findByPk(id);
-  if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
+  const mustahiq = await Mustahiq.findByPk(id, {
+    include: [
+      { model: Kecamatan, attributes: ['id', 'nama'] },
+      { model: Kelurahan, attributes: ['id', 'nama'] },
+      { model: Asnaf, attributes: ['id', 'nama'] },
+      { model: KategoriMustahiq, attributes: ['id', 'nama'] }
+    ]
+  });
+  if (!mustahiq) throw new AppError('Mustahiq tidak ditemukan.', 404);
   return mustahiq;
 };
 
@@ -73,7 +94,7 @@ const getRiwayat = async (id, query) => {
   const offset = (page - 1) * limit;
 
   const mustahiq = await Mustahiq.findByPk(id);
-  if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
+  if (!mustahiq) throw new AppError('Mustahiq tidak ditemukan.', 404);
 
   const whereDistribusi = { mustahiq_id: id };
   if (tahun) whereDistribusi.tahun = tahun;
@@ -102,23 +123,23 @@ const getRiwayat = async (id, query) => {
 
 // --- POST /api/mustahiq ---
 const create = async (body, userId) => {
-  // Cek duplikat NRM
-  const existingNrm = await Mustahiq.findOne({ where: { nrm: body.nrm } });
-  if (existingNrm) throw Object.assign(new Error('NRM sudah digunakan.'), { status: 409 });
-
-  // Cek duplikat NIK (jika diisi)
-  if (body.nik) {
-    const existingNik = await Mustahiq.findOne({ where: { nik: body.nik } });
-    if (existingNik) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
-  }
-
-  const no_reg_bpp = await generateNoRegBpp();
-
-  const t = await db.transaction();
+  const t = await db.transaction({
+    isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE
+  });
   try {
+    const existingNrm = await Mustahiq.findOne({ where: { nrm: body.nrm }, transaction: t });
+    if (existingNrm) throw new AppError('NRM sudah digunakan.', 409);
+
+    if (body.nik) {
+      const existingNik = await Mustahiq.findOne({ where: { nik: body.nik }, transaction: t });
+      if (existingNik) throw new AppError('NIK sudah digunakan.', 409);
+    }
+
+    const nrm = await generateNrm(t);
+
     const mustahiq = await Mustahiq.create({
       ...body,
-      no_reg_bpp,
+      nrm,
       registered_by: userId
     }, { transaction: t, userId });
 
@@ -133,18 +154,15 @@ const create = async (body, userId) => {
 // --- PUT /api/mustahiq/:id ---
 const update = async (id, updateData, userId) => {
   const mustahiq = await Mustahiq.findByPk(id);
-  if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
+  if (!mustahiq) throw new AppError('Mustahiq tidak ditemukan.', 404);
 
-  // Cek duplikat NRM jika berubah
   if (updateData.nrm && updateData.nrm !== mustahiq.nrm) {
     const conflict = await Mustahiq.findOne({ where: { nrm: updateData.nrm } });
-    if (conflict) throw Object.assign(new Error('NRM sudah digunakan.'), { status: 409 });
+    if (conflict) throw new AppError('NRM sudah digunakan.', 409);
   }
-
-  // Cek duplikat NIK jika berubah
   if (updateData.nik && updateData.nik !== mustahiq.nik) {
     const conflict = await Mustahiq.findOne({ where: { nik: updateData.nik } });
-    if (conflict) throw Object.assign(new Error('NIK sudah digunakan.'), { status: 409 });
+    if (conflict) throw new AppError('NIK sudah digunakan.', 409);
   }
 
   const t = await db.transaction();
@@ -163,7 +181,7 @@ const update = async (id, updateData, userId) => {
 // --- PUT /api/mustahiq/:id/status ---
 const updateStatus = async (id, status, userId) => {
   const mustahiq = await Mustahiq.findByPk(id);
-  if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
+  if (!mustahiq) throw new AppError('Mustahiq tidak ditemukan.', 404);
 
   const t = await db.transaction();
   try {
@@ -179,15 +197,11 @@ const updateStatus = async (id, status, userId) => {
 // --- DELETE /api/mustahiq/:id ---
 const destroy = async (id, userId) => {
   const mustahiq = await Mustahiq.findByPk(id);
-  if (!mustahiq) throw Object.assign(new Error('Mustahiq tidak ditemukan.'), { status: 404 });
+  if (!mustahiq) throw new AppError('Mustahiq tidak ditemukan.', 404);
 
-  // Cek apakah punya distribusi terkait
   const distribusiCount = await Distribusi.count({ where: { mustahiq_id: id } });
   if (distribusiCount > 0) {
-    throw Object.assign(
-      new Error(`Tidak bisa menghapus mustahiq yang memiliki ${distribusiCount} data distribusi.`),
-      { status: 400 }
-    );
+    throw new AppError(`Tidak bisa menghapus mustahiq yang memiliki ${distribusiCount} data distribusi.`, 400);
   }
 
   const t = await db.transaction();
@@ -204,18 +218,24 @@ const destroy = async (id, userId) => {
 const MAX_EXPORT_ROWS = 10000;
 
 const getExportData = async (query) => {
-  const { asnaf, status, kecamatan } = query;
+  const { asnaf_id, status, kecamatan_id } = query;
   const where = {};
-  if (asnaf) where.asnaf = asnaf;
+  if (asnaf_id) where.asnaf_id = asnaf_id;
   if (status) where.status = status;
-  if (kecamatan) where.kecamatan = kecamatan;
+  if (kecamatan_id) where.kecamatan_id = kecamatan_id;
 
   const totalAvailable = await Mustahiq.count({ where });
 
   const rows = await Mustahiq.findAll({
     where,
     order: [['nama', 'ASC']],
-    limit: MAX_EXPORT_ROWS
+    limit: MAX_EXPORT_ROWS,
+    include: [
+      { model: Kecamatan, attributes: ['nama'] },
+      { model: Kelurahan, attributes: ['nama'] },
+      { model: Asnaf, attributes: ['nama'] },
+      { model: KategoriMustahiq, attributes: ['nama'] }
+    ]
   });
 
   return {
@@ -236,3 +256,4 @@ export default {
   destroy,
   getExportData
 };
+

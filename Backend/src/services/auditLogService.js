@@ -12,7 +12,6 @@ const logAction = async (userId, table, action, oldData, newData, ipAddress) => 
       ip_address: ipAddress
     });
   } catch (error) {
-    // We don't want to throw error if logging fails, just log it to console/winston
     console.error('Failed to save audit log:', error);
   }
 };
