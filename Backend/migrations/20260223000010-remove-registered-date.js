@@ -1,20 +1,15 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
+/**
+ * Migration ini sudah obsolete — kolom registered_date sudah tidak pernah
+ * ditambahkan di migration create-muzakki dan create-mustahiq yang baru.
+ * File ini dibiarkan sebagai no-op agar riwayat migration tetap konsisten.
+ */
 module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('muzakki', 'registered_date');
-    await queryInterface.removeColumn('mustahiq', 'registered_date');
+  async up(queryInterface) {
+    // no-op: registered_date sudah tidak ada di schema baru
   },
-
-  async down(queryInterface, Sequelize) {
-    await queryInterface.addColumn('muzakki', 'registered_date', {
-      type: Sequelize.DATEONLY,
-      allowNull: false
-    });
-    await queryInterface.addColumn('mustahiq', 'registered_date', {
-      type: Sequelize.DATEONLY,
-      allowNull: false
-    });
+  async down(queryInterface) {
+    // no-op
   }
 };
