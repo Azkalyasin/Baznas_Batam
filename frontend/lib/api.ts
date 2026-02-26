@@ -317,6 +317,7 @@ export interface DistribusiListParams {
   program_kegiatan_id?: number;
   asnaf_id?: number;
   via_id?: number;
+  status?: 'diterima' | 'ditolak' | '';
   page?: number;
   limit?: number;
 }
@@ -331,8 +332,17 @@ export interface DistribusiBody {
   jumlah?: number;
   quantity?: number;
   via_id?: number;
-  asnaf_id?: number;
+  kategori_mustahiq_id?: number;
+  jenis_zis_distribusi_id?: number;
+  no_rekening?: string;
+  rekomendasi_upz?: string;
   keterangan?: string;
+  tgl_masuk_permohonan?: string;
+  tgl_survei?: string;
+  surveyor?: string;
+  jumlah_permohonan?: number;
+  status?: 'diterima' | 'ditolak';
+  no_reg_bpp?: string;
   created_by?: number;
 }
 

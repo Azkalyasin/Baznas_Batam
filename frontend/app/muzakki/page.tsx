@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { muzakkiApi, refApi } from '@/lib/api';
 import { MuzakkiForm } from '@/components/muzakki-form';
+import { PengumpulanForm } from '@/components/pengumpulan-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  AlertCircle, Loader2, Plus, Edit, Trash2, Eye, Search, ChevronLeft, ChevronRight
+  AlertCircle, Loader2, Plus, Edit, Trash2, Eye, Search, ChevronLeft, ChevronRight, Banknote
 } from 'lucide-react';
 
 export default function MuzakkiPage() {
@@ -29,6 +30,8 @@ export default function MuzakkiPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [penerimaanOpen, setPenerimaanOpen] = useState(false);
+  const [penerimaanMuzakki, setPenerimaanMuzakki] = useState<{ id: number; label: string } | null>(null);
 
   // Ref data untuk resolusi ID → nama
   const [kecamatanList, setKecamatanList] = useState<any[]>([]);
@@ -209,6 +212,12 @@ export default function MuzakkiPage() {
                             <Button size="sm" variant="ghost" onClick={() => handleViewDetail(m.id)} title="Detail">
                               <Eye className="h-4 w-4" />
                             </Button>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              setPenerimaanMuzakki({ id: m.id, label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}` });
+                              setPenerimaanOpen(true);
+                            }} title="Tambah Penerimaan">
+                              <Banknote className="h-4 w-4" />
+                            </Button>
                             <Button size="sm" variant="outline" onClick={() => { setEditingId(m.id); setFormOpen(true); }} title="Edit">
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -242,17 +251,19 @@ export default function MuzakkiPage() {
         </Card>
       </div>
 
-      {/* Form Dialog (Tambah / Edit) */}
+      {/* Form Dialog (Tambah / Edit) — 3/4 layar */}
       <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingId(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editingId ? 'Edit Muzakki' : 'Tambah Muzakki Baru'}</DialogTitle>
           </DialogHeader>
-          <MuzakkiForm
-            onSuccess={handleFormSuccess}
-            editingId={editingId}
-            onCancelEdit={() => { setFormOpen(false); setEditingId(null); }}
-          />
+          <div className="overflow-y-auto flex-1 px-6 pb-6">
+            <MuzakkiForm
+              onSuccess={handleFormSuccess}
+              editingId={editingId}
+              onCancelEdit={() => { setFormOpen(false); setEditingId(null); }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -290,6 +301,28 @@ export default function MuzakkiPage() {
           ) : (
             <p className="text-muted-foreground text-center py-4">Data tidak ditemukan</p>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Tambah Penerimaan Dialog — pre-filled with Muzakki */}
+      <Dialog open={penerimaanOpen} onOpenChange={(o) => { setPenerimaanOpen(o); if (!o) setPenerimaanMuzakki(null); }}>
+        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+            <DialogTitle>
+              Tambah Penerimaan
+              {penerimaanMuzakki && <span className="ml-2 text-muted-foreground font-normal text-sm">— {penerimaanMuzakki.label}</span>}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 px-6 pb-6">
+            {penerimaanMuzakki && (
+              <PengumpulanForm
+                onSuccess={() => { setPenerimaanOpen(false); setPenerimaanMuzakki(null); }}
+                editingId={null}
+                onCancelEdit={() => { setPenerimaanOpen(false); setPenerimaanMuzakki(null); }}
+                prefillMuzakki={penerimaanMuzakki}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

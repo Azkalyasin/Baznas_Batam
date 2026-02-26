@@ -40,7 +40,7 @@ export const queryDistribusiSchema = z.object({
   jenis_zis_distribusi_id: z.string().optional(),
   via_id: z.string().optional(),
   frekuensi_bantuan_id: z.string().optional(),
-  status: z.enum(['diterima', 'ditolak']).optional(),
+  status: z.enum(['diterima', 'ditolak', 'pending']).optional(),
   page: z.string().regex(/^\d+$/).optional().transform(Number),
   limit: z.string().regex(/^\d+$/).optional().transform(Number)
 });

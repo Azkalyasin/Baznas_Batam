@@ -1,100 +1,116 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { penerimaanApi, muzakkiApi, refApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PengumpulanFormProps {
   onSuccess: () => void;
   editingId: number | null;
   onCancelEdit: () => void;
+  /** Pre-fill with muzakki data (e.g. from "Tambah Penerimaan" button on muzakki page) */
+  prefillMuzakki?: { id: number; label: string };
 }
 
-export function PengumpulanForm({ onSuccess, editingId, onCancelEdit }: PengumpulanFormProps) {
+const today = new Date().toISOString().split('T')[0];
+
+const emptyForm = {
+  tanggal: today,
+  muzakki_id: '',
+  via_id: '',
+  metode_bayar_id: '',
+  zis_id: '',
+  jenis_zis_id: '',
+  jumlah: '',
+  persentase_amil_id: '',
+  no_rekening: '',
+  jenis_muzakki_id: '',
+  jenis_upz_id: '',
+  keterangan: '',
+  rekomendasi_upz: '',
+};
+
+export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuzakki }: PengumpulanFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState(emptyForm);
 
-  // Dropdown options dari API
-  const [muzakkiList, setMuzakkiList] = useState<any[]>([]);
-  const [viaList, setViaList] = useState<any[]>([]);           // via pembayaran (tunai, transfer, dll)
-  const [zisList, setZisList] = useState<any[]>([]);           // zakat / infaq / sedekah
-  const [jenisZisList, setJenisZisList] = useState<any[]>([]); // jenis zakat mal, fitrah, dll
+  // Muzakki search state
+  const [muzakkiSearch, setMuzakkiSearch] = useState('');
+  const [muzakkiResults, setMuzakkiResults] = useState<any[]>([]);
+  const [muzakkiSearching, setMuzakkiSearching] = useState(false);
+  const [selectedMuzakki, setSelectedMuzakki] = useState<{ id: number; label: string } | null>(null);
+
+  // Ref lists
+  const [viaList, setViaList] = useState<any[]>([]);
+  const [metodeBayarList, setMetodeBayarList] = useState<any[]>([]);
+  const [zisList, setZisList] = useState<any[]>([]);
+  const [jenisZisList, setJenisZisList] = useState<any[]>([]);
   const [persentaseAmilList, setPersentaseAmilList] = useState<any[]>([]);
-  const [loadingRefs, setLoadingRefs] = useState(false);
-
-  const [formData, setFormData] = useState({
-    tanggal: new Date().toISOString().split('T')[0],
-    muzakki_id: '',
-    via_id: '',
-    zis_id: '',
-    jenis_zis_id: '',
-    jumlah: '',
-    persentase_amil_id: '',
-    keterangan: '',
-  });
+  const [jenisMuzakkiList, setJenisMuzakkiList] = useState<any[]>([]);
+  const [jenisUpzList, setJenisUpzList] = useState<any[]>([]);
+  const [loadingRefs, setLoadingRefs] = useState(true);
 
   useEffect(() => {
     loadRefs();
-    if (editingId) loadEditData();
-    else resetForm();
-  }, [editingId]);
+  }, []);
 
-  // Reset jenisZisList hanya ketika zis_id dikosongkan
   useEffect(() => {
-    if (!formData.zis_id) {
+    if (editingId) {
+      loadEditData();
+    } else {
+      setFormData(emptyForm);
       setJenisZisList([]);
+      setMetodeBayarList([]);
+      if (prefillMuzakki) {
+        setSelectedMuzakki(prefillMuzakki);
+        setFormData((p) => ({ ...p, muzakki_id: String(prefillMuzakki.id) }));
+      } else {
+        setSelectedMuzakki(null);
+      }
     }
-  }, [formData.zis_id]);
-
-  const resetForm = () => {
-    setFormData({
-      tanggal: new Date().toISOString().split('T')[0],
-      muzakki_id: '', via_id: '', zis_id: '', jenis_zis_id: '',
-      jumlah: '', persentase_amil_id: '', keterangan: '',
-    });
-  };
+  }, [editingId, prefillMuzakki]);
 
   const loadRefs = async () => {
     setLoadingRefs(true);
     try {
-      // Muzakki load terpisah supaya error ref lain tidak block ini
-      const muzRes = await muzakkiApi.list({ page: 1, limit: 500 });
-      const muzData: any = muzRes.data;
-      const muzArr = Array.isArray(muzData) ? muzData : muzData?.data ?? [];
-      setMuzakkiList(muzArr);
-
-      // Load ref lainnya secara parallel — error salah satu tidak mempengaruhi yang lain
-      const [viaRes, zisRes, amRes] = await Promise.allSettled([
+      const [viaRes, zisRes, amRes, jmRes, jupzRes] = await Promise.allSettled([
         refApi.list('via-penerimaan'),
         refApi.list('zis'),
         refApi.list('persentase-amil'),
+        refApi.list('jenis-muzakki'),
+        refApi.list('jenis-upz'),
       ]);
-      if (viaRes.status === 'fulfilled' && Array.isArray(viaRes.value.data)) setViaList(viaRes.value.data);
-      if (zisRes.status === 'fulfilled' && Array.isArray(zisRes.value.data)) setZisList(zisRes.value.data);
-      if (amRes.status === 'fulfilled' && Array.isArray(amRes.value.data)) setPersentaseAmilList(amRes.value.data);
-    } catch (err) {
-      console.error('Failed to load muzakki:', err);
-      setError('Gagal memuat daftar Muzakki. Pastikan Anda sudah login.');
+      const g = (r: any) => r.status === 'fulfilled' && Array.isArray(r.value?.data) ? r.value.data : [];
+      setViaList(g(viaRes));
+      setZisList(g(zisRes));
+      setPersentaseAmilList(g(amRes));
+      setJenisMuzakkiList(g(jmRes));
+      setJenisUpzList(g(jupzRes));
     } finally {
       setLoadingRefs(false);
     }
   };
-
 
   const loadJenisZis = async (zisId: string) => {
     try {
       const res = await refApi.list('jenis-zis', { zis_id: zisId });
       if (Array.isArray(res.data)) setJenisZisList(res.data);
       else setJenisZisList([]);
-    } catch {
-      setJenisZisList([]);
-    }
+    } catch { setJenisZisList([]); }
+  };
+
+  const loadMetodeBayar = async (viaId: string) => {
+    try {
+      const res = await refApi.list('metode-bayar', { via_penerimaan_id: viaId });
+      if (Array.isArray(res.data)) setMetodeBayarList(res.data);
+      else setMetodeBayarList([]);
+    } catch { setMetodeBayarList([]); }
   };
 
   const loadEditData = async () => {
@@ -104,36 +120,72 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit }: Pengumpu
       if (res.data) {
         const d: any = res.data;
         const zisId = String(d.zis_id || '');
-        // Load jenisZisList dulu sebelum setFormData agar jenis_zis_id tidak di-reset oleh useEffect
-        if (zisId) {
-          await loadJenisZis(zisId);
-        }
+        const viaId = String(d.via_id || '');
+        if (zisId) await loadJenisZis(zisId);
+        if (viaId) await loadMetodeBayar(viaId);
+
         setFormData({
-          tanggal: d.tanggal ? d.tanggal.split('T')[0] : new Date().toISOString().split('T')[0],
+          tanggal: d.tanggal ? d.tanggal.split('T')[0] : today,
           muzakki_id: String(d.muzakki_id || ''),
-          via_id: String(d.via_id || ''),
+          via_id: viaId,
+          metode_bayar_id: String(d.metode_bayar_id || ''),
           zis_id: zisId,
           jenis_zis_id: String(d.jenis_zis_id || ''),
           jumlah: String(d.jumlah || ''),
           persentase_amil_id: String(d.persentase_amil_id || ''),
+          no_rekening: d.no_rekening || '',
+          jenis_muzakki_id: String(d.jenis_muzakki_id || ''),
+          jenis_upz_id: String(d.jenis_upz_id || ''),
           keterangan: d.keterangan || '',
+          rekomendasi_upz: d.rekomendasi_upz || '',
         });
+
+        const mzk = d.Muzakki || d.muzakki;
+        if (mzk) {
+          setSelectedMuzakki({ id: d.muzakki_id, label: `${mzk.nama}${mzk.npwz ? ` (${mzk.npwz})` : ''}` });
+        } else if (d.nama_muzakki) {
+          setSelectedMuzakki({ id: d.muzakki_id, label: d.nama_muzakki });
+        }
       }
-    } catch (err) {
-      setError('Gagal memuat data untuk edit');
+    } catch {
+      toast.error('Gagal memuat data untuk edit');
     }
   };
+
+  const handleMuzakkiSearch = useCallback(async () => {
+    if (!muzakkiSearch.trim()) { setMuzakkiResults([]); return; }
+    setMuzakkiSearching(true);
+    try {
+      const res = await muzakkiApi.list({ q: muzakkiSearch, page: 1, limit: 10 });
+      const d: any = res.data;
+      const arr = Array.isArray(d) ? d : d?.data ?? [];
+      setMuzakkiResults(arr);
+    } catch { setMuzakkiResults([]); }
+    finally { setMuzakkiSearching(false); }
+  }, [muzakkiSearch]);
+
+  const selectMuzakki = (m: any) => {
+    setSelectedMuzakki({ id: m.id, label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}${m.nik ? ` / NIK: ${m.nik}` : ''}` });
+    setFormData((p) => ({ ...p, muzakki_id: String(m.id) }));
+    setMuzakkiSearch('');
+    setMuzakkiResults([]);
+  };
+
+  const set = (f: keyof typeof emptyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setFormData((p) => ({ ...p, [f]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
 
-    if (!formData.muzakki_id) { setError('Pilih Muzakki terlebih dahulu'); setIsLoading(false); return; }
-    if (!formData.via_id) { setError('Pilih Via Pembayaran terlebih dahulu'); setIsLoading(false); return; }
-    if (!formData.zis_id) { setError('Pilih jenis ZIS terlebih dahulu'); setIsLoading(false); return; }
-    if (!formData.jenis_zis_id) { setError('Pilih Jenis ZIS detail terlebih dahulu'); setIsLoading(false); return; }
-    if (!formData.jumlah || parseInt(formData.jumlah) <= 0) { setError('Jumlah harus lebih dari 0'); setIsLoading(false); return; }
+    // Validation
+    if (!formData.muzakki_id) { toast.error('Field "Muzakki" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.tanggal) { toast.error('Field "Tanggal" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.via_id) { toast.error('Field "Via Pembayaran" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.zis_id) { toast.error('Field "ZIS" (Zakat/Infaq/Sedekah) wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.jenis_zis_id) { toast.error('Field "Jenis ZIS" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.jumlah || parseFloat(formData.jumlah) <= 0) { toast.error('Field "Jumlah" harus lebih dari 0'); setIsLoading(false); return; }
+    if (!formData.persentase_amil_id) { toast.error('Field "Persentase Amil" wajib dipilih'); setIsLoading(false); return; }
 
     try {
       const payload: any = {
@@ -142,150 +194,206 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit }: Pengumpu
         via_id: parseInt(formData.via_id),
         zis_id: parseInt(formData.zis_id),
         jenis_zis_id: parseInt(formData.jenis_zis_id),
-        jumlah: parseInt(formData.jumlah),
+        jumlah: parseFloat(formData.jumlah),
+        persentase_amil_id: parseInt(formData.persentase_amil_id),
       };
-      if (formData.persentase_amil_id) payload.persentase_amil_id = parseInt(formData.persentase_amil_id);
+      if (formData.metode_bayar_id) payload.metode_bayar_id = parseInt(formData.metode_bayar_id);
+      if (formData.jenis_muzakki_id) payload.jenis_muzakki_id = parseInt(formData.jenis_muzakki_id);
+      if (formData.jenis_upz_id) payload.jenis_upz_id = parseInt(formData.jenis_upz_id);
+      if (formData.no_rekening) payload.no_rekening = formData.no_rekening;
       if (formData.keterangan) payload.keterangan = formData.keterangan;
+      if (formData.rekomendasi_upz) payload.rekomendasi_upz = formData.rekomendasi_upz;
 
-      if (editingId) {
-        await penerimaanApi.update(editingId, payload);
-      } else {
-        await penerimaanApi.create(payload);
-      }
+      if (editingId) await penerimaanApi.update(editingId, payload);
+      else await penerimaanApi.create(payload);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan data');
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan data penerimaan';
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const Section = ({ title }: { title: string }) => (
+    <div className="md:col-span-2 pt-3 pb-1 border-b">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
+    </div>
+  );
+
+  const Req = () => <span className="text-destructive ml-1">*</span>;
+
+  const Sel = ({ label, field, items, disabled, placeholder, required }: {
+    label: string; field: keyof typeof emptyForm;
+    items: any[]; disabled?: boolean; placeholder: string; required?: boolean;
+  }) => (
+    <div className="space-y-2">
+      <Label>{label}{required && <Req />}</Label>
+      <Select value={formData[field] as string}
+        onValueChange={(v) => setFormData((p) => ({ ...p, [field]: v }))}
+        disabled={disabled || loadingRefs}>
+        <SelectTrigger>
+          <SelectValue placeholder={loadingRefs ? 'Memuat...' : placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((it) => <SelectItem key={it.id} value={String(it.id)}>{it.label ?? it.nama}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid gap-4 md:grid-cols-2">
+        <Section title="Data Transaksi" />
+
         {/* Tanggal */}
         <div className="space-y-2">
-          <Label htmlFor="tanggal">Tanggal *</Label>
-          <Input id="tanggal" type="date" required value={formData.tanggal}
-            onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })} />
+          <Label htmlFor="tanggal">Tanggal<Req /></Label>
+          <Input id="tanggal" type="date" required value={formData.tanggal} onChange={set('tanggal')} />
         </div>
 
-        {/* Muzakki */}
+        {/* Muzakki Search */}
+        <div className="space-y-2 md:col-span-2">
+          <Label>Muzakki<Req /></Label>
+          {selectedMuzakki ? (
+            <div className="flex items-center gap-2">
+              <Input value={selectedMuzakki.label} readOnly className="bg-muted flex-1" />
+              <Button type="button" size="sm" variant="ghost"
+                onClick={() => { setSelectedMuzakki(null); setFormData((p) => ({ ...p, muzakki_id: '' })); }}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Cari nama / NPWZ / NIK muzakki..."
+                  value={muzakkiSearch}
+                  onChange={(e) => setMuzakkiSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMuzakkiSearch())}
+                />
+                <Button type="button" variant="outline" onClick={handleMuzakkiSearch} disabled={muzakkiSearching}>
+                  {muzakkiSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+              {muzakkiResults.length > 0 && (
+                <div className="border rounded-md divide-y max-h-40 overflow-y-auto shadow-sm bg-background">
+                  {muzakkiResults.map((m) => (
+                    <button key={m.id} type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      onClick={() => selectMuzakki(m)}>
+                      <span className="font-medium">{m.nama}</span>
+                      {m.npwz && <span className="text-muted-foreground ml-2 text-xs">NPWZ: {m.npwz}</span>}
+                      {m.nik && <span className="text-muted-foreground ml-2 text-xs">NIK: {m.nik}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Section title="Informasi ZIS" />
+
+        {/* ZIS */}
         <div className="space-y-2">
-          <Label htmlFor="muzakki">Muzakki *</Label>
-          <Select value={formData.muzakki_id} onValueChange={(v) => setFormData({ ...formData, muzakki_id: v })}>
-            <SelectTrigger id="muzakki" disabled={loadingRefs}>
-              <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih Muzakki'} />
-            </SelectTrigger>
-            <SelectContent>
-              {muzakkiList.map((m) => (
-                <SelectItem key={m.id} value={m.id.toString()}>{m.nama} {m.npwz ? `(${m.npwz})` : ''}</SelectItem>
-              ))}
-            </SelectContent>
+          <Label>ZIS (Zakat/Infaq/Sedekah)<Req /></Label>
+          <Select value={formData.zis_id}
+            onValueChange={async (v) => {
+              setFormData((p) => ({ ...p, zis_id: v, jenis_zis_id: '' }));
+              setJenisZisList([]);
+              if (v) await loadJenisZis(v);
+            }} disabled={loadingRefs}>
+            <SelectTrigger><SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih Zakat / Infaq / Sedekah'} /></SelectTrigger>
+            <SelectContent>{zisList.map((z) => <SelectItem key={z.id} value={String(z.id)}>{z.nama}</SelectItem>)}</SelectContent>
           </Select>
         </div>
 
-        {/* Via / Kanal Pembayaran */}
+        {/* Jenis ZIS */}
         <div className="space-y-2">
-          <Label htmlFor="via">Via Pembayaran</Label>
-          <Select value={formData.via_id} onValueChange={(v) => setFormData({ ...formData, via_id: v })}>
-            <SelectTrigger id="via" disabled={loadingRefs}>
-              <SelectValue placeholder="Pilih via pembayaran" />
+          <Label>Jenis {zisList.find(z => z.id.toString() === formData.zis_id)?.nama || 'ZIS'}<Req /></Label>
+          <Select value={formData.jenis_zis_id}
+            onValueChange={(v) => setFormData((p) => ({ ...p, jenis_zis_id: v }))}
+            disabled={!formData.zis_id || jenisZisList.length === 0}>
+            <SelectTrigger>
+              <SelectValue placeholder={!formData.zis_id ? 'Pilih ZIS dulu' : jenisZisList.length === 0 ? 'Tidak ada pilihan' : 'Pilih jenis detail'} />
             </SelectTrigger>
-            <SelectContent>
-              {viaList.length > 0
-                ? viaList.map((v) => <SelectItem key={v.id} value={v.id.toString()}>{v.nama}</SelectItem>)
-                : [
-                  <SelectItem key="1" value="1">Tunai</SelectItem>,
-                  <SelectItem key="2" value="2">Transfer Bank</SelectItem>,
-                  <SelectItem key="3" value="3">QRIS</SelectItem>,
-                ]}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* ZIS (Zakat / Infaq / Sedekah) */}
-        <div className="space-y-2">
-          <Label htmlFor="zis">Jenis ZIS *</Label>
-          <Select value={formData.zis_id} onValueChange={async (v) => {
-            setFormData({ ...formData, zis_id: v, jenis_zis_id: '' });
-            setJenisZisList([]);
-            if (v) await loadJenisZis(v);
-          }}>
-            <SelectTrigger id="zis" disabled={loadingRefs}>
-              <SelectValue placeholder="Pilih Zakat / Infaq / Sedekah" />
-            </SelectTrigger>
-            <SelectContent>
-              {zisList.length > 0
-                ? zisList.map((z) => <SelectItem key={z.id} value={z.id.toString()}>{z.nama}</SelectItem>)
-                : [
-                  <SelectItem key="1" value="1">Zakat</SelectItem>,
-                  <SelectItem key="2" value="2">Infaq</SelectItem>,
-                  <SelectItem key="3" value="3">Sedekah</SelectItem>,
-                ]}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Jenis ZIS detail (muncul setelah pilih ZIS) */}
-        <div className="space-y-2">
-          <Label htmlFor="jenis_zis">Jenis {zisList.find(z => z.id.toString() === formData.zis_id)?.nama || 'ZIS'} Detail</Label>
-          <Select value={formData.jenis_zis_id} onValueChange={(v) => setFormData({ ...formData, jenis_zis_id: v })}
-            disabled={!formData.zis_id}>
-            <SelectTrigger id="jenis_zis">
-              <SelectValue placeholder={!formData.zis_id ? 'Pilih ZIS dulu' : 'Pilih jenis detail'} />
-            </SelectTrigger>
-            <SelectContent>
-              {jenisZisList.map((j) => (
-                <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Persentase Amil */}
-        <div className="space-y-2">
-          <Label htmlFor="persentase_amil">Persentase Amil</Label>
-          <Select value={formData.persentase_amil_id} onValueChange={(v) => setFormData({ ...formData, persentase_amil_id: v })}>
-            <SelectTrigger id="persentase_amil" disabled={loadingRefs}>
-              <SelectValue placeholder="Pilih persentase amil" />
-            </SelectTrigger>
-            <SelectContent>
-              {persentaseAmilList.length > 0
-                ? persentaseAmilList.map((p) => <SelectItem key={p.id} value={p.id.toString()}>{p.label} {/* {(Number(p.nilai) * 100).toFixed(1)}% */}</SelectItem>)
-                : <SelectItem value="1">Default (1/8 = 12.5%)</SelectItem>}
-            </SelectContent>
+            <SelectContent>{jenisZisList.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nama}</SelectItem>)}</SelectContent>
           </Select>
         </div>
 
         {/* Jumlah */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="jumlah">Jumlah (Rp) *</Label>
-          <Input id="jumlah" type="number" required min="1" placeholder="Masukkan nominal"
-            value={formData.jumlah}
-            onChange={(e) => setFormData({ ...formData, jumlah: e.target.value })} />
+        <div className="space-y-2">
+          <Label htmlFor="jumlah">Jumlah (Rp)<Req /></Label>
+          <Input id="jumlah" type="number" min="1" step="0.01" placeholder="Nominal zakat/infaq/sedekah"
+            value={formData.jumlah} onChange={set('jumlah')} />
         </div>
 
-        {/* Keterangan */}
+        {/* Persentase Amil */}
+        <Sel label="Persentase Amil" field="persentase_amil_id" items={persentaseAmilList}
+          placeholder="Pilih persentase amil" required />
+
+        <Section title="Pembayaran" />
+
+        {/* Via Pembayaran */}
+        <div className="space-y-2">
+          <Label>Via Pembayaran<Req /></Label>
+          <Select value={formData.via_id}
+            onValueChange={async (v) => {
+              setFormData((p) => ({ ...p, via_id: v, metode_bayar_id: '' }));
+              setMetodeBayarList([]);
+              if (v) await loadMetodeBayar(v);
+            }} disabled={loadingRefs}>
+            <SelectTrigger><SelectValue placeholder="Pilih via pembayaran" /></SelectTrigger>
+            <SelectContent>{viaList.map((v) => <SelectItem key={v.id} value={String(v.id)}>{v.nama}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+
+        {/* Metode Bayar */}
+        <div className="space-y-2">
+          <Label>Metode Bayar</Label>
+          <Select value={formData.metode_bayar_id}
+            onValueChange={(v) => setFormData((p) => ({ ...p, metode_bayar_id: v }))}
+            disabled={!formData.via_id || metodeBayarList.length === 0}>
+            <SelectTrigger>
+              <SelectValue placeholder={!formData.via_id ? 'Pilih via dulu' : metodeBayarList.length === 0 ? 'Tidak ada pilihan' : 'Pilih metode bayar'} />
+            </SelectTrigger>
+            <SelectContent>{metodeBayarList.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nama}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+
+        {/* No Rekening */}
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="no_rekening">No. Rekening</Label>
+          <Input id="no_rekening" placeholder="Nomor rekening (jika ada)" maxLength={50}
+            value={formData.no_rekening} onChange={set('no_rekening')} />
+        </div>
+
+        <Section title="Info Muzakki Tambahan" />
+
+        <Sel label="Jenis Muzakki" field="jenis_muzakki_id" items={jenisMuzakkiList} placeholder="Pilih jenis muzakki" />
+        <Sel label="Jenis UPZ" field="jenis_upz_id" items={jenisUpzList} placeholder="Pilih jenis UPZ" />
+
+        <Section title="Lainnya" />
+
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
+          <Textarea id="rekomendasi_upz" placeholder="Nama UPZ yang merekomendasikan" rows={2}
+            value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
+        </div>
+
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="keterangan">Keterangan</Label>
-          <Textarea id="keterangan" placeholder="Keterangan tambahan (opsional)"
-            value={formData.keterangan}
-            onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })} />
+          <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
+            value={formData.keterangan} onChange={set('keterangan')} />
         </div>
       </div>
 
-      <div className="flex gap-2 justify-end">
+      <div className="flex gap-2 justify-end pt-2">
         <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isLoading}>Batal</Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : editingId ? 'Update' : 'Tambah'}
+          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : editingId ? 'Simpan Perubahan' : 'Simpan'}
         </Button>
       </div>
     </form>

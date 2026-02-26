@@ -1,20 +1,20 @@
 import Distribusi from '../models/distribusiModel.js';
 import Mustahiq from '../models/mustahiqModel.js';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import db from '../config/database.js';
 import AppError from '../utils/AppError.js';
-import { 
-  Kecamatan, 
-  Kelurahan, 
-  Asnaf, 
-  NamaProgram, 
-  SubProgram, 
-  ProgramKegiatan, 
-  FrekuensiBantuan, 
-  ViaDistribusi, 
-  KategoriMustahiq, 
-  Infak, 
-  JenisZisDistribusi 
+import {
+  Kecamatan,
+  Kelurahan,
+  Asnaf,
+  NamaProgram,
+  SubProgram,
+  ProgramKegiatan,
+  FrekuensiBantuan,
+  ViaDistribusi,
+  KategoriMustahiq,
+  Infak,
+  JenisZisDistribusi
 } from '../models/ref/index.js';
 import User from '../models/userModel.js';
 
@@ -24,6 +24,7 @@ const getAll = async (query) => {
     q, mustahiq_id, tanggal, bulan, tahun,
     nama_program_id, sub_program_id, program_kegiatan_id,
     asnaf_id, jenis_zis_distribusi_id, via_id, frekuensi_bantuan_id,
+    status,
     page = 1, limit = 10
   } = query;
 
@@ -49,6 +50,17 @@ const getAll = async (query) => {
   if (jenis_zis_distribusi_id) where.jenis_zis_distribusi_id = jenis_zis_distribusi_id;
   if (via_id) where.via_id = via_id;
   if (frekuensi_bantuan_id) where.frekuensi_bantuan_id = frekuensi_bantuan_id;
+  // Filter by status: 'diterima' | 'ditolak' | 'pending' (null = belum ada status)
+  // Note: status is ENUM — must use Sequelize.literal for IS NULL to work reliably
+  if (status === 'diterima' || status === 'ditolak') {
+    where.status = status;
+  } else if (status === 'pending' || status === 'null') {
+    where[Op.and] = [
+      ...(where[Op.and] || []),
+      Sequelize.literal('`distribusi`.`status` IS NULL')
+    ];
+  }
+
 
   const { count, rows } = await Distribusi.findAndCountAll({
     where,
@@ -79,19 +91,19 @@ const getAll = async (query) => {
 const getById = async (id) => {
   const distribusi = await Distribusi.findByPk(id, {
     include: [
-        { model: Mustahiq },
-        { model: Kecamatan },
-        { model: Kelurahan },
-        { model: Asnaf },
-        { model: NamaProgram },
-        { model: SubProgram },
-        { model: ProgramKegiatan },
-        { model: FrekuensiBantuan },
-        { model: ViaDistribusi },
-        { model: KategoriMustahiq },
-        { model: Infak },
-        { model: JenisZisDistribusi },
-        { model: User, as: 'creator', attributes: ['id', 'nama'] }
+      { model: Mustahiq },
+      { model: Kecamatan },
+      { model: Kelurahan },
+      { model: Asnaf },
+      { model: NamaProgram },
+      { model: SubProgram },
+      { model: ProgramKegiatan },
+      { model: FrekuensiBantuan },
+      { model: ViaDistribusi },
+      { model: KategoriMustahiq },
+      { model: Infak },
+      { model: JenisZisDistribusi },
+      { model: User, as: 'creator', attributes: ['id', 'nama'] }
     ]
   });
   if (!distribusi) {
@@ -115,13 +127,13 @@ const create = async (body, userId) => {
     }, { transaction: t, userId });
 
     await t.commit();
-    
+
     await distribusi.reload({
-        include: [
-            { model: NamaProgram, attributes: ['nama'] },
-            { model: SubProgram, attributes: ['nama'] },
-            { model: ProgramKegiatan, attributes: ['nama'] }
-        ]
+      include: [
+        { model: NamaProgram, attributes: ['nama'] },
+        { model: SubProgram, attributes: ['nama'] },
+        { model: ProgramKegiatan, attributes: ['nama'] }
+      ]
     });
     return distribusi;
   } catch (error) {
@@ -175,7 +187,7 @@ const destroy = async (id, userId) => {
 
 const rekapHarian = async (query) => {
   const { tanggal = new Date().toISOString().split('T')[0] } = query;
-  
+
   const [results] = await db.query(`
     SELECT 
       np.nama as nama_program,
@@ -187,7 +199,7 @@ const rekapHarian = async (query) => {
     GROUP BY d.nama_program_id
     ORDER BY np.nama
   `, { replacements: { tanggal } });
-  
+
   return results;
 };
 

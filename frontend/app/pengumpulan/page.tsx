@@ -153,17 +153,19 @@ export default function PengumpulanPage() {
         </Card>
       </div>
 
-      {/* Form Dialog */}
+      {/* Form Dialog — 3/4 layar */}
       <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingId(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editingId ? 'Edit Penerimaan' : 'Tambah Penerimaan Baru'}</DialogTitle>
           </DialogHeader>
-          <PengumpulanForm
-            onSuccess={handleFormSuccess}
-            editingId={editingId}
-            onCancelEdit={() => { setFormOpen(false); setEditingId(null); }}
-          />
+          <div className="overflow-y-auto flex-1 px-6 pb-6">
+            <PengumpulanForm
+              onSuccess={handleFormSuccess}
+              editingId={editingId}
+              onCancelEdit={() => { setFormOpen(false); setEditingId(null); }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

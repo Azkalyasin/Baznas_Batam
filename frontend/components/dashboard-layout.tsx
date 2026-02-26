@@ -124,10 +124,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">{user?.nama}</span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleLogout}
-              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              className="text-primary-foreground border border-primary-foreground/50 hover:bg-primary-foreground hover:text-primary"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline ml-2">Logout</span>
