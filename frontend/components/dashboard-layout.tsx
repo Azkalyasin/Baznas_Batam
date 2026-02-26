@@ -23,7 +23,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   {
-    label: 'Pengumpulan',
+    label: 'Penerimaan',
     icon: '💵',
     children: [
       { href: '/pengumpulan', label: 'Daftar Penerimaan', icon: '📋' },

@@ -71,8 +71,8 @@ export default function PengumpulanPage() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Pengumpulan Dana Zakat</h1>
-            <p className="text-muted-foreground mt-1">Catat penerimaan dana zakat dari Muzakki</p>
+            <h1 className="text-3xl font-bold">Penerimaan ZIS</h1>
+            <p className="text-muted-foreground mt-1">Catat penerimaan ZIS</p>
           </div>
           <Button onClick={() => { setEditingId(null); setFormOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Tambah Pengumpulan

@@ -15,8 +15,10 @@ export const getAll = async (req, res, next) => {
     // Build WHERE clause hanya dari filter yang diizinkan
     const where = { is_active: 1 };
     for (const field of allowedFilters) {
-      if (req.query[field]) {
-        where[field] = req.query[field];
+      if (req.query[field] !== undefined && req.query[field] !== '') {
+        // Query params are always strings; parseInt so Sequelize gets the correct integer type
+        const parsed = parseInt(req.query[field], 10);
+        where[field] = isNaN(parsed) ? req.query[field] : parsed;
       }
     }
 

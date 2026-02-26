@@ -67,6 +67,16 @@ export function MuzakkiForm({ onSuccess, editingId, onCancelEdit }: MuzakkiFormP
           if (res.data) {
             const d: any = res.data;
             const kecId = String(d.kecamatan_id || '');
+            const kelId = String(d.kelurahan_id || '');
+
+            // Fetch kelurahan list FIRST, then set both list and form value together
+            // so Radix UI Select finds the matching option in the same render cycle
+            let fetchedKelList: any[] = [];
+            if (kecId) {
+              const kelRes = await refApi.list('kelurahan', { kecamatan_id: kecId });
+              if (Array.isArray(kelRes.data)) fetchedKelList = kelRes.data;
+            }
+            setKelurahanList(fetchedKelList);
             setFormData({
               npwz: d.npwz || '',
               nama: d.nama || '',
@@ -75,17 +85,14 @@ export function MuzakkiForm({ onSuccess, editingId, onCancelEdit }: MuzakkiFormP
               jenis_muzakki_id: String(d.jenis_muzakki_id || ''),
               jenis_upz_id: String(d.jenis_upz_id || ''),
               kecamatan_id: kecId,
-              kelurahan_id: String(d.kelurahan_id || ''),
+              kelurahan_id: kelId,
               alamat: d.alamat || '',
               keterangan: d.keterangan || '',
               tgl_lahir: d.tgl_lahir ? d.tgl_lahir.split('T')[0] : '',
               registered_date: d.registered_date ? d.registered_date.split('T')[0] : today,
             });
-            if (kecId) {
-              const kelRes = await refApi.list('kelurahan', { kecamatan_id: kecId });
-              if (Array.isArray(kelRes.data)) setKelurahanList(kelRes.data);
-            }
           }
+
         } else {
           setFormData({ ...emptyForm, registered_date: today });
           setKelurahanList([]);

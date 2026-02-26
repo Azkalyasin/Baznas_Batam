@@ -65,6 +65,15 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
           if (res.data) {
             const d: any = res.data;
             const kecId = String(d.kecamatan_id || '');
+            const kelId = String(d.kelurahan_id || '');
+
+            // Fetch kelurahan list FIRST so Radix UI Select can match the value
+            let fetchedKelList: any[] = [];
+            if (kecId) {
+              const kelRes = await refApi.list('kelurahan', { kecamatan_id: kecId });
+              if (Array.isArray(kelRes.data)) fetchedKelList = kelRes.data;
+            }
+            setKelurahan(fetchedKelList);
             setFormData({
               nrm: d.nrm || '',
               nama: d.nama || '',
@@ -72,7 +81,7 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
               no_hp: d.no_hp || '',
               alamat: d.alamat || '',
               kecamatan_id: kecId,
-              kelurahan_id: String(d.kelurahan_id || ''),
+              kelurahan_id: kelId,
               asnaf_id: String(d.asnaf_id || ''),
               kategori_mustahiq_id: String(d.kategori_mustahiq_id || ''),
               rekomendasi_upz: d.rekomendasi_upz || '',
@@ -80,11 +89,8 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
               tgl_lahir: d.tgl_lahir ? d.tgl_lahir.split('T')[0] : '',
               registered_date: d.registered_date ? d.registered_date.split('T')[0] : today,
             });
-            if (kecId) {
-              const kelRes = await refApi.list('kelurahan', { kecamatan_id: kecId });
-              if (Array.isArray(kelRes.data)) setKelurahan(kelRes.data);
-            }
           }
+
         } else {
           setFormData({ ...emptyForm, registered_date: today });
           setKelurahan([]);

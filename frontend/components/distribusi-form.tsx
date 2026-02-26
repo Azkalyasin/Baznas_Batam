@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { distribusiApi, mustahiqApi, refApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,7 @@ const emptyForm = {
 export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: DistribusiFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const isInitializingRef = useRef(false);
 
   // Refs
   const [programList, setProgramList] = useState<any[]>([]);
@@ -64,39 +65,88 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
   const [mustahiqSearching, setMustahiqSearching] = useState(false);
   const [selectedMustahiq, setSelectedMustahiq] = useState<{ id: number; label: string } | null>(null);
 
+  // Single init effect: load refs THEN edit data (sequentially to avoid race)
   useEffect(() => {
-    loadRefs();
-    if (editingId) loadEditData();
-    else { setForm(emptyForm); setSelectedMustahiq(null); }
+    const init = async () => {
+      isInitializingRef.current = true;
+      setLoadingRefs(true);
+      try {
+        const [progRes, kegRes, frekRes, viaRes, kategoriRes, jenisZisRes] = await Promise.allSettled([
+          refApi.list('nama-program'),
+          refApi.list('program-kegiatan'),
+          refApi.list('frekuensi-bantuan'),
+          refApi.list('via-distribusi'),
+          refApi.list('kategori-mustahiq'),
+          refApi.list('jenis-zis-distribusi'),
+        ]);
+        const g = (r: any) => r.status === 'fulfilled' && Array.isArray(r.value?.data) ? r.value.data : [];
+        setProgramList(g(progRes));
+        setKegiatanList(g(kegRes));
+        setFrekuensiList(g(frekRes));
+        setViaList(g(viaRes));
+        setKategoriList(g(kategoriRes));
+        setJenisZisList(g(jenisZisRes));
+
+        if (editingId) {
+          const res = await distribusiApi.get(editingId);
+          if (res.data) {
+            const d: any = res.data;
+            const progId = String(d.nama_program_id || '');
+            // Load sub-programs for the existing program
+            if (progId) {
+              const subRes = await refApi.list('sub-program', { nama_program_id: progId });
+              if (Array.isArray(subRes.data)) setSubProgramList(subRes.data);
+            }
+            setForm({
+              tanggal: d.tanggal ? d.tanggal.split('T')[0] : new Date().toISOString().split('T')[0],
+              mustahiq_id: String(d.mustahiq_id || ''),
+              nama_program_id: progId,
+              sub_program_id: String(d.sub_program_id || ''),
+              program_kegiatan_id: String(d.program_kegiatan_id || ''),
+              frekuensi_bantuan_id: String(d.frekuensi_bantuan_id || ''),
+              jenis_zis_distribusi_id: String(d.jenis_zis_distribusi_id || ''),
+              via_id: String(d.via_id || ''),
+              kategori_mustahiq_id: String(d.kategori_mustahiq_id || ''),
+              jumlah: String(d.jumlah || ''),
+              quantity: String(d.quantity || ''),
+              no_rekening: d.no_rekening || '',
+              tgl_masuk_permohonan: d.tgl_masuk_permohonan ? d.tgl_masuk_permohonan.split('T')[0] : '',
+              jumlah_permohonan: String(d.jumlah_permohonan || ''),
+              tgl_survei: d.tgl_survei ? d.tgl_survei.split('T')[0] : '',
+              surveyor: d.surveyor || '',
+              no_reg_bpp: d.no_reg_bpp || '',
+              status: d.status || '',
+              rekomendasi_upz: d.rekomendasi_upz || '',
+              keterangan: d.keterangan || '',
+            });
+            const mstq = d.Mustahiq || d.mustahiq;
+            if (mstq) {
+              setSelectedMustahiq({ id: d.mustahiq_id, label: `${mstq.nama}${mstq.nrm ? ` – ${mstq.nrm}` : ''}` });
+            } else if (d.nama_mustahik) {
+              setSelectedMustahiq({ id: d.mustahiq_id, label: d.nama_mustahik });
+            }
+          }
+        } else {
+          setForm(emptyForm);
+          setSelectedMustahiq(null);
+          setSubProgramList([]);
+        }
+      } catch (err) {
+        if (editingId) toast.error('Gagal memuat data untuk edit');
+      } finally {
+        setLoadingRefs(false);
+        isInitializingRef.current = false;
+      }
+    };
+    init();
   }, [editingId]);
 
+  // Watcher for USER-DRIVEN program changes only (not during initial load)
   useEffect(() => {
+    if (isInitializingRef.current) return;
     if (form.nama_program_id) loadSubProgram(form.nama_program_id);
     else setSubProgramList([]);
   }, [form.nama_program_id]);
-
-  const loadRefs = async () => {
-    setLoadingRefs(true);
-    try {
-      const [progRes, kegRes, frekRes, viaRes, kategoriRes, jenisZisRes] = await Promise.allSettled([
-        refApi.list('nama-program'),
-        refApi.list('program-kegiatan'),
-        refApi.list('frekuensi-bantuan'),
-        refApi.list('via-distribusi'),
-        refApi.list('kategori-mustahiq'),
-        refApi.list('jenis-zis-distribusi'),
-      ]);
-      const g = (r: any) => r.status === 'fulfilled' && Array.isArray(r.value?.data) ? r.value.data : [];
-      setProgramList(g(progRes));
-      setKegiatanList(g(kegRes));
-      setFrekuensiList(g(frekRes));
-      setViaList(g(viaRes));
-      setKategoriList(g(kategoriRes));
-      setJenisZisList(g(jenisZisRes));
-    } finally {
-      setLoadingRefs(false);
-    }
-  };
 
   const loadSubProgram = async (programId: string) => {
     try {
@@ -106,48 +156,6 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
     } catch { setSubProgramList([]); }
   };
 
-  const loadEditData = async () => {
-    if (!editingId) return;
-    try {
-      const res = await distribusiApi.get(editingId);
-      if (res.data) {
-        const d: any = res.data;
-        const progId = String(d.nama_program_id || '');
-        if (progId) loadSubProgram(progId);
-
-        setForm({
-          tanggal: d.tanggal ? d.tanggal.split('T')[0] : new Date().toISOString().split('T')[0],
-          mustahiq_id: String(d.mustahiq_id || ''),
-          nama_program_id: progId,
-          sub_program_id: String(d.sub_program_id || ''),
-          program_kegiatan_id: String(d.program_kegiatan_id || ''),
-          frekuensi_bantuan_id: String(d.frekuensi_bantuan_id || ''),
-          jenis_zis_distribusi_id: String(d.jenis_zis_distribusi_id || ''),
-          via_id: String(d.via_id || ''),
-          kategori_mustahiq_id: String(d.kategori_mustahiq_id || ''),
-          jumlah: String(d.jumlah || ''),
-          quantity: String(d.quantity || ''),
-          no_rekening: d.no_rekening || '',
-          tgl_masuk_permohonan: d.tgl_masuk_permohonan ? d.tgl_masuk_permohonan.split('T')[0] : '',
-          jumlah_permohonan: String(d.jumlah_permohonan || ''),
-          tgl_survei: d.tgl_survei ? d.tgl_survei.split('T')[0] : '',
-          surveyor: d.surveyor || '',
-          no_reg_bpp: d.no_reg_bpp || '',
-          status: d.status || '',
-          rekomendasi_upz: d.rekomendasi_upz || '',
-          keterangan: d.keterangan || '',
-        });
-
-        // Set selected mustahiq label for display
-        const mstq = d.Mustahiq || d.mustahiq;
-        if (mstq) {
-          setSelectedMustahiq({ id: d.mustahiq_id, label: `${mstq.nama}${mstq.nrm ? ` – ${mstq.nrm}` : ''}` });
-        } else if (d.nama_mustahik) {
-          setSelectedMustahiq({ id: d.mustahiq_id, label: d.nama_mustahik });
-        }
-      }
-    } catch { toast.error('Gagal memuat data untuk edit'); }
-  };
 
   const handleMustahiqSearch = useCallback(async () => {
     if (!mustahiqSearch.trim()) { setMustahiqResults([]); return; }
