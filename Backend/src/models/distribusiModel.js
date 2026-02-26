@@ -2,18 +2,18 @@ import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
 import { registerAuditHooks } from '../utils/auditHooks.js';
 import Mustahiq from './mustahiqModel.js';
-import { 
-  Kecamatan, 
-  Kelurahan, 
-  Asnaf, 
-  NamaProgram, 
-  SubProgram, 
-  ProgramKegiatan, 
-  FrekuensiBantuan, 
-  ViaDistribusi, 
-  KategoriMustahiq, 
-  Infak, 
-  JenisZisDistribusi 
+import {
+  Kecamatan,
+  Kelurahan,
+  Asnaf,
+  NamaProgram,
+  SubProgram,
+  ProgramKegiatan,
+  FrekuensiBantuan,
+  ViaDistribusi,
+  KategoriMustahiq,
+  Infak,
+  JenisZisDistribusi
 } from './ref/index.js';
 import User from './userModel.js';
 
@@ -58,7 +58,7 @@ const Distribusi = db.define('distribusi', {
       key: 'id'
     }
   },
-  
+
   tanggal: {
     type: DataTypes.DATEONLY,
     allowNull: false
@@ -87,7 +87,7 @@ const Distribusi = db.define('distribusi', {
       key: 'id'
     }
   },
-  
+
   frekuensi_bantuan_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -95,13 +95,13 @@ const Distribusi = db.define('distribusi', {
       key: 'id'
     }
   },
-  
+
   jumlah: {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false
   },
   quantity: { type: DataTypes.INTEGER },
-  
+
   via_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -116,7 +116,7 @@ const Distribusi = db.define('distribusi', {
       key: 'id'
     }
   },
-  
+
   infak_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -131,12 +131,23 @@ const Distribusi = db.define('distribusi', {
       key: 'id'
     }
   },
-  
+
   keterangan: { type: DataTypes.TEXT },
   rekomendasi_upz: { type: DataTypes.TEXT },
   no_rekening: { type: DataTypes.STRING(50) },
-  
-  created_by: { 
+
+  // Kolom Permohonan & Survei
+  tgl_masuk_permohonan: { type: DataTypes.DATEONLY },
+  tgl_survei: { type: DataTypes.DATEONLY },
+  surveyor: { type: DataTypes.STRING(100) },
+  jumlah_permohonan: { type: DataTypes.DECIMAL(15, 2) },
+  status: {
+    type: DataTypes.ENUM('diterima', 'ditolak'),
+    allowNull: true
+  },
+  no_reg_bpp: { type: DataTypes.STRING(12) },
+
+  created_by: {
     type: DataTypes.INTEGER,
     references: {
       model: User,
@@ -149,13 +160,13 @@ const Distribusi = db.define('distribusi', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
-      { fields: ['mustahiq_id'] },
-      { fields: ['nrm'] },
-      { fields: ['nik'] },
-      { fields: ['tanggal'] },
-      { fields: ['nama_program_id'] },
-      { fields: ['sub_program_id'] },
-      { fields: ['program_kegiatan_id'] }
+    { fields: ['mustahiq_id'] },
+    { fields: ['nrm'] },
+    { fields: ['nik'] },
+    { fields: ['tanggal'] },
+    { fields: ['nama_program_id'] },
+    { fields: ['sub_program_id'] },
+    { fields: ['program_kegiatan_id'] }
   ]
 });
 

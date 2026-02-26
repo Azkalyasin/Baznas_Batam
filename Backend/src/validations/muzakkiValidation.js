@@ -19,7 +19,9 @@ export const createMuzakkiSchema = z.object({
   alamat: z.string().optional(),
   kelurahan_id: z.number().int().positive(),
   kecamatan_id: z.number().int().positive(),
-  keterangan: z.string().optional()
+  keterangan: z.string().optional(),
+  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional(),
+  tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional()
 });
 
 // --- Update Muzakki ---
@@ -33,7 +35,9 @@ export const updateMuzakkiSchema = z.object({
   alamat: z.string().optional(),
   kelurahan_id: z.number().int().positive().optional(),
   kecamatan_id: z.number().int().positive().optional(),
-  keterangan: z.string().optional()
+  keterangan: z.string().optional(),
+  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: 'Minimal satu field harus diisi untuk update.' }

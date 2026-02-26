@@ -6,7 +6,7 @@ const statusEnum = z.enum(['active', 'inactive', 'blacklist']);
 
 // idParamSchema di-import dari shared.js
 export { idParamSchema };
-  
+
 // --- Create Mustahiq ---
 export const createMustahiqSchema = z.object({
   nrm: z.string().min(1, 'NRM wajib diisi.').max(24, 'NRM terlalu panjang.').trim(),
@@ -19,7 +19,9 @@ export const createMustahiqSchema = z.object({
   kategori_mustahiq_id: z.number().int().positive().optional(),
   asnaf_id: z.number().int().positive(),
   rekomendasi_upz: z.string().optional(),
-  keterangan: z.string().optional()
+  keterangan: z.string().optional(),
+  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional(),
+  tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional()
 });
 
 // --- Update Mustahiq ---
@@ -34,7 +36,9 @@ export const updateMustahiqSchema = z.object({
   kategori_mustahiq_id: z.number().int().positive().optional(),
   asnaf_id: z.number().int().positive().optional(),
   rekomendasi_upz: z.string().optional(),
-  keterangan: z.string().optional()
+  keterangan: z.string().optional(),
+  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: 'Minimal satu field harus diisi untuk update.' }

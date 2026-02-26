@@ -1,11 +1,11 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
 import { registerAuditHooks } from '../utils/auditHooks.js';
-import { 
-  Kecamatan, 
-  Kelurahan, 
-  JenisMuzakki, 
-  JenisUpz 
+import {
+  Kecamatan,
+  Kelurahan,
+  JenisMuzakki,
+  JenisUpz
 } from './ref/index.js';
 import User from './userModel.js';
 
@@ -83,6 +83,12 @@ const Muzakki = db.define('muzakki', {
   keterangan: {
     type: DataTypes.TEXT
   },
+  registered_date: {
+    type: DataTypes.DATEONLY
+  },
+  tgl_lahir: {
+    type: DataTypes.DATEONLY
+  },
   registered_by: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -98,8 +104,8 @@ const Muzakki = db.define('muzakki', {
   updatedAt: 'updated_at',
   indexes: [
     { unique: true, fields: ['npwz'], name: 'npwz_unique' },
-    { unique: true, fields: ['nik'],  name: 'nik_unique'  },
-    { fields: ['nama'],               name: 'nama_index'  }
+    { unique: true, fields: ['nik'], name: 'nik_unique' },
+    { fields: ['nama'], name: 'nama_index' }
   ]
 });
 

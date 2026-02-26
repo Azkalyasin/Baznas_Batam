@@ -16,7 +16,13 @@ export const createDistribusiSchema = z.object({
   jenis_zis_distribusi_id: z.number().int().positive().optional(),
   no_rekening: z.string().max(50).optional(),
   rekomendasi_upz: z.string().optional(),
-  keterangan: z.string().optional()
+  keterangan: z.string().optional(),
+  tgl_masuk_permohonan: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional(),
+  tgl_survei: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  surveyor: z.string().max(100).optional(),
+  jumlah_permohonan: z.number().nonnegative().optional(),
+  status: z.enum(['diterima', 'ditolak']).optional(),
+  no_reg_bpp: z.string().max(12).optional()
 });
 
 export const updateDistribusiSchema = createDistribusiSchema.partial();
@@ -34,6 +40,7 @@ export const queryDistribusiSchema = z.object({
   jenis_zis_distribusi_id: z.string().optional(),
   via_id: z.string().optional(),
   frekuensi_bantuan_id: z.string().optional(),
+  status: z.enum(['diterima', 'ditolak']).optional(),
   page: z.string().regex(/^\d+$/).optional().transform(Number),
   limit: z.string().regex(/^\d+$/).optional().transform(Number)
 });
