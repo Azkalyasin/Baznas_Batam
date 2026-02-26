@@ -1,269 +1,256 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
-import { dashboardApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2, TrendingUp, BarChart3, PieChart, RefreshCw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { dashboardApi } from '@/lib/api';
+import { toast } from 'sonner';
+import { ArrowUpRight, Loader2, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-// ── Helper format angka ──
-const fmt = (n: number) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
-const fmtNum = (n: number) => new Intl.NumberFormat('id-ID').format(n);
+const MONTHS = [
+  { val: 'all', label: 'Semua Bulan' },
+  { val: 'Januari', label: 'Januari' },
+  { val: 'Februari', label: 'Februari' },
+  { val: 'Maret', label: 'Maret' },
+  { val: 'April', label: 'April' },
+  { val: 'Mei', label: 'Mei' },
+  { val: 'Juni', label: 'Juni' },
+  { val: 'Juli', label: 'Juli' },
+  { val: 'Agustus', label: 'Agustus' },
+  { val: 'September', label: 'September' },
+  { val: 'Oktober', label: 'Oktober' },
+  { val: 'November', label: 'November' },
+  { val: 'Desember', label: 'Desember' },
+];
 
-// ── Bar mini horizontal ──
-function MiniBar({ value, max, color = 'bg-primary' }: { value: number; max: number; color?: string }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-      <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
+const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6', '#0ea5e9', '#f43f5e'];
 
-// ── Kartu ringkasan ──
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-xl border bg-card p-4 space-y-1 shadow-sm">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-bold truncate">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
-
-// ── Filter tahun/bulan ──
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
-const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 4 }, (_, i) => currentYear - i);
-
-export default function StatistikPenerimaanPage() {
+export default function ReceiptStatisticsPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
-  const [tahun, setTahun] = useState(currentYear);
-  const [bulan, setBulan] = useState<number | ''>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [selectedMonth, setSelectedMonth] = useState('all');
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [summary, setSummary] = useState<any>(null);
-  const [byUpz, setByUpz] = useState<any[]>([]);
-  const [byChannel, setByChannel] = useState<any[]>([]);
-  const [zakatBreakdown, setZakatBreakdown] = useState<any[]>([]);
-  const [infaqBreakdown, setInfaqBreakdown] = useState<any[]>([]);
+  const years = Array.from({ length: currentYear - 2020 + 1 }, (_, i) => (currentYear - i).toString());
 
   useEffect(() => {
-    if (!isAuthenticated) router.push('/login');
+    if (!isAuthenticated) {
+      router.push('/login');
+    }
   }, [isAuthenticated, router]);
 
-  const loadAll = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    const params = { tahun, ...(bulan !== '' ? { bulan: Number(bulan) } : {}) };
+  useEffect(() => {
+    fetchData();
+  }, [selectedYear, selectedMonth]);
+
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const [sumRes, upzRes, channelRes, zakatRes, infaqRes] = await Promise.all([
-        dashboardApi.getSummary(params),
-        dashboardApi.getByUpz(params),
-        dashboardApi.getByChannel(params),
-        dashboardApi.getZakatBreakdown(params),
-        dashboardApi.getInfaqBreakdown(params),
-      ]);
-      setSummary(sumRes.data ?? sumRes);
-      setByUpz(Array.isArray(upzRes.data) ? upzRes.data : Array.isArray(upzRes) ? upzRes : []);
-      setByChannel(Array.isArray(channelRes.data) ? channelRes.data : Array.isArray(channelRes) ? channelRes : []);
-      setZakatBreakdown(Array.isArray(zakatRes.data) ? zakatRes.data : Array.isArray(zakatRes) ? zakatRes : []);
-      setInfaqBreakdown(Array.isArray(infaqRes.data) ? infaqRes.data : Array.isArray(infaqRes) ? infaqRes : []);
+      const params: any = { tahun: parseInt(selectedYear) };
+      if (selectedMonth !== 'all') params.bulan = selectedMonth;
+
+      const res = await dashboardApi.getUtama(params);
+      if (res.success) {
+        setData(res.data);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat statistik');
+      toast.error('Gagal memuat data statistik');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [tahun, bulan]);
+  };
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0
+    }).format(val);
+  };
 
-  // Hitung max untuk bar
-  const maxUpz = Math.max(...byUpz.map((u) => u.total ?? u.jumlah ?? 0), 1);
-  const maxChannel = Math.max(...byChannel.map((c) => c.total ?? c.jumlah ?? 0), 1);
-  const maxZakat = Math.max(...zakatBreakdown.map((z) => z.total ?? z.jumlah ?? 0), 1);
-  const maxInfaq = Math.max(...infaqBreakdown.map((i) => i.total ?? i.jumlah ?? 0), 1);
+  const renderStatsChart = (stats: any[], title: string) => {
+    if (!stats || stats.length === 0) {
+      return (
+        <div className="h-[400px] flex flex-col items-center justify-center text-muted-foreground bg-muted/5 rounded-xl border-2 border-dashed">
+          <PieChartIcon className="h-10 w-10 mb-2 opacity-20" />
+          <p className="italic text-sm">Tidak ada data {title} untuk periode ini</p>
+        </div>
+      );
+    }
 
-  const COLORS = ['bg-green-500','bg-blue-500','bg-yellow-500','bg-purple-500','bg-red-400','bg-teal-500','bg-orange-400'];
+    return (
+      <div className="h-[450px] w-full mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={stats}
+              cx="50%"
+              cy="45%"
+              labelLine={true}
+              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              outerRadius={120}
+              innerRadius={60}
+              paddingAngle={5}
+              dataKey="total"
+              nameKey="category"
+            >
+              {stats.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: any) => formatCurrency(Number(value))}
+              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+            />
+            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
+  if (!isAuthenticated) return null;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Statistik Penerimaan</h1>
-            <p className="text-muted-foreground mt-1">Analisis data pengumpulan dana ZIS</p>
+            <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
+              <BarChart3 className="h-8 w-8 text-primary" />
+              Statistik Penerimaan
+            </h1>
+            <p className="text-muted-foreground mt-2 font-medium">Analisis mendalam penerimaan dana ZIS berdasarkan berbagai kategori.</p>
           </div>
-          {/* Filter */}
-          <div className="flex gap-2 items-center">
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={tahun}
-              onChange={(e) => setTahun(Number(e.target.value))}
-            >
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={bulan}
-              onChange={(e) => setBulan(e.target.value === '' ? '' : Number(e.target.value))}
-            >
-              <option value="">Semua Bulan</option>
-              {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-            </select>
-            <button
-              onClick={loadAll}
-              className="h-9 w-9 rounded-md border flex items-center justify-center hover:bg-muted"
-              title="Refresh"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-border">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-muted-foreground">Bulan:</span>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[160px] font-medium border-muted-foreground/20">
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map(m => (
+                    <SelectItem key={m.val} value={m.val}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-muted-foreground">Tahun:</span>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-[120px] font-medium border-muted-foreground/20">
+                  <SelectValue placeholder="Pilih Tahun" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <>
-            {/* ── SUMMARY ── */}
-            {summary && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <StatCard
-                  label="Total Penerimaan"
-                  value={fmt(summary.total_penerimaan ?? summary.total ?? 0)}
-                  sub={`${fmtNum(summary.jumlah_transaksi ?? summary.count ?? 0)} transaksi`}
-                />
-                <StatCard
-                  label="Total Zakat"
-                  value={fmt(summary.total_zakat ?? 0)}
-                />
-                <StatCard
-                  label="Total Infaq / Sedekah"
-                  value={fmt((summary.total_infaq ?? 0) + (summary.total_sedekah ?? 0))}
-                />
-                <StatCard
-                  label="Rata-rata / Transaksi"
-                  value={fmt(
-                    (summary.total_penerimaan ?? summary.total ?? 0) /
-                    Math.max(summary.jumlah_transaksi ?? summary.count ?? 1, 1)
-                  )}
-                />
+        {/* Summary for Selected Period */}
+        <Card className="bg-primary text-primary-foreground shadow-lg border-none overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+          <CardContent className="p-8 relative">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <p className="text-primary-foreground/80 font-medium mb-1">Total Penerimaan Dana</p>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+                  {loading ? <Loader2 className="h-10 w-10 animate-spin" /> : formatCurrency(data?.overview?.total_penerimaan || 0)}
+                </h2>
+                <div className="flex items-center gap-2 mt-4 bg-white/10 w-fit px-3 py-1 rounded-full text-sm font-medium">
+                  <ArrowUpRight className="h-4 w-4" />
+                  <span>Periode {selectedMonth === 'all' ? selectedYear : `${selectedMonth} ${selectedYear}`}</span>
+                </div>
               </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* ── BY UPZ ── */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <BarChart3 className="h-4 w-4 text-primary" /> Penerimaan per UPZ
-                  </CardTitle>
-                  <CardDescription>Distribusi berdasarkan unit pengumpul zakat</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {byUpz.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Tidak ada data</p>
-                  ) : byUpz.map((u, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="truncate max-w-[60%]">{u.nama_upz ?? u.upz ?? u.nama ?? u.jenis_upz ?? '-'}</span>
-                        <span className="font-medium text-right">{fmt(u.total ?? u.jumlah ?? 0)}</span>
-                      </div>
-                      <MiniBar value={u.total ?? u.jumlah ?? 0} max={maxUpz} color={COLORS[i % COLORS.length]} />
-                      <p className="text-xs text-muted-foreground">{fmtNum(u.count ?? u.jumlah_transaksi ?? 0)} transaksi</p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* ── BY CHANNEL ── */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <TrendingUp className="h-4 w-4 text-blue-500" /> Penerimaan per Channel
-                  </CardTitle>
-                  <CardDescription>Distribusi berdasarkan metode / saluran pembayaran</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {byChannel.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Tidak ada data</p>
-                  ) : byChannel.map((c, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="truncate max-w-[60%]">{c.channel ?? c.via ?? c.nama ?? c.metode ?? '-'}</span>
-                        <span className="font-medium text-right">{fmt(c.total ?? c.jumlah ?? 0)}</span>
-                      </div>
-                      <MiniBar value={c.total ?? c.jumlah ?? 0} max={maxChannel} color={COLORS[(i + 2) % COLORS.length]} />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* ── ZAKAT BREAKDOWN ── */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <PieChart className="h-4 w-4 text-green-600" /> Rincian Zakat
-                  </CardTitle>
-                  <CardDescription>Breakdown penerimaan per jenis zakat</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {zakatBreakdown.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Tidak ada data</p>
-                  ) : zakatBreakdown.map((z, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="truncate max-w-[60%]">{z.jenis_zakat ?? z.nama ?? z.kategori ?? '-'}</span>
-                        <span className="font-medium text-right">{fmt(z.total ?? z.jumlah ?? 0)}</span>
-                      </div>
-                      <MiniBar value={z.total ?? z.jumlah ?? 0} max={maxZakat} color="bg-green-500" />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* ── INFAQ BREAKDOWN ── */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <PieChart className="h-4 w-4 text-yellow-500" /> Rincian Infaq & Sedekah
-                  </CardTitle>
-                  <CardDescription>Breakdown penerimaan infaq dan sedekah</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {infaqBreakdown.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Tidak ada data</p>
-                  ) : infaqBreakdown.map((inf, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="truncate max-w-[60%]">{inf.jenis ?? inf.nama ?? inf.kategori ?? '-'}</span>
-                        <span className="font-medium text-right">{fmt(inf.total ?? inf.jumlah ?? 0)}</span>
-                      </div>
-                      <MiniBar value={inf.total ?? inf.jumlah ?? 0} max={maxInfaq} color="bg-yellow-500" />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              <div className="hidden lg:block">
+                <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20">
+                  <BarChart3 className="h-16 w-16 opacity-50" />
+                </div>
+              </div>
             </div>
-          </>
-        )}
+          </CardContent>
+        </Card>
+
+        {/* Detailed Breakdown Tabs */}
+        <Card className="shadow-xl border-none ring-1 ring-border">
+          <CardHeader className="border-b bg-muted/5 pb-0">
+            <Tabs defaultValue="muzakki" className="w-full">
+              <TabsList className="flex w-full overflow-x-auto bg-transparent border-none gap-2 p-1 no-scrollbar justify-start">
+                <TabsTrigger value="muzakki" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">Jenis Muzakki</TabsTrigger>
+                <TabsTrigger value="zakat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">Sub-Zakat</TabsTrigger>
+                <TabsTrigger value="infak" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">Sub-Infak</TabsTrigger>
+                <TabsTrigger value="via" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">Via</TabsTrigger>
+                <TabsTrigger value="upz" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">Jenis UPZ</TabsTrigger>
+              </TabsList>
+
+              <div className="pt-8 pb-6 px-4 md:px-6">
+                <TabsContent value="muzakki" className="mt-0 focus-visible:outline-none">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-primary">Berdasarkan Jenis Muzakki</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Proporsi penerimaan dari Individu, Entitas, maupun UPZ</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-[400px] flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>
+                  ) : renderStatsChart(data?.details?.by_jenis_muzakki, 'Jenis Muzakki')}
+                </TabsContent>
+
+                <TabsContent value="zakat" className="mt-0 focus-visible:outline-none">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-primary">Detail Jenis Zakat</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Rincian penerimaan berdasarkan sub-kategori Zakat</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-[400px] flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>
+                  ) : renderStatsChart(data?.details?.by_jenis_zakat, 'Jenis Zakat')}
+                </TabsContent>
+
+                <TabsContent value="infak" className="mt-0 focus-visible:outline-none">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-primary">Detail Jenis Infak/Sedekah</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Rincian penerimaan berdasarkan sub-kategori Infak</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-[400px] flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>
+                  ) : renderStatsChart(data?.details?.by_jenis_infak, 'Jenis Infak')}
+                </TabsContent>
+
+                <TabsContent value="via" className="mt-0 focus-visible:outline-none">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-primary">Jalur Penerimaan</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Perbandingan penerimaan melalui Cash, Transfer, maupun Digital</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-[400px] flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>
+                  ) : renderStatsChart(data?.details?.by_via, 'Via Penerimaan')}
+                </TabsContent>
+
+                <TabsContent value="upz" className="mt-0 focus-visible:outline-none">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-primary">Distribusi Jenis UPZ</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Proporsi penerimaan berdasarkan jenis Unit Pengumpul Zakat</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-[400px] flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>
+                  ) : renderStatsChart(data?.details?.by_jenis_upz, 'Jenis UPZ')}
+                </TabsContent>
+              </div>
+            </Tabs>
+          </CardHeader>
+        </Card>
       </div>
     </DashboardLayout>
   );

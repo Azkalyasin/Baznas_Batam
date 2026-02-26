@@ -62,15 +62,15 @@ export default function DashboardPage() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-balance">Selamat Datang di BAZNAS Batam</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-3xl font-bold text-balance text-primary">Selamat Datang di BAZNAS Batam</h1>
+            <p className="text-muted-foreground mt-2 font-medium">
               Sistem Manajemen Dana Zakat, Infaq, dan Sedekah
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Filter Tahun:</span>
+          <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-lg border border-border">
+            <span className="text-sm font-semibold">Tahun:</span>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[120px] bg-background">
                 <SelectValue placeholder="Pilih Tahun" />
               </SelectTrigger>
               <SelectContent>
@@ -84,10 +84,12 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="hover:shadow-md transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Muzakki</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Total Muzakki</CardTitle>
+              <div className="bg-primary/10 p-2 rounded-full">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -95,16 +97,18 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-2xl font-bold">{data?.overview?.total_muzakki || 0}</div>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Aktif & terdaftar tahun {selectedYear}
+              <p className="text-xs text-muted-foreground mt-2">
+                Terdaftar aktif tahun {selectedYear}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Mustahiq</CardTitle>
-              <UserCheck className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Total Mustahiq</CardTitle>
+              <div className="bg-indigo-500/10 p-2 rounded-full">
+                <UserCheck className="h-4 w-4 text-indigo-500" />
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -112,16 +116,18 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-2xl font-bold">{data?.overview?.total_mustahiq || 0}</div>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Aktif & terdaftar tahun {selectedYear}
+              <p className="text-xs text-muted-foreground mt-2">
+                Terdaftar aktif tahun {selectedYear}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-emerald-500">
+          <Card className="border-l-4 border-l-emerald-500 hover:shadow-md transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Penerimaan</CardTitle>
-              <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+              <CardTitle className="text-sm font-semibold">Total Penerimaan</CardTitle>
+              <div className="bg-emerald-500/10 p-2 rounded-full">
+                <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -129,16 +135,18 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-2xl font-bold">{formatCurrency(data?.overview?.total_penerimaan || 0)}</div>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Dana diterima periode {selectedYear}
+              <p className="text-xs text-muted-foreground mt-2 font-medium">
+                Total dana masuk tahun {selectedYear}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-orange-500">
+          <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Disalurkan</CardTitle>
-              <ArrowDownRight className="h-4 w-4 text-orange-500" />
+              <CardTitle className="text-sm font-semibold">Total Disalurkan</CardTitle>
+              <div className="bg-orange-500/10 p-2 rounded-full">
+                <ArrowDownRight className="h-4 w-4 text-orange-500" />
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -146,31 +154,34 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-2xl font-bold">{formatCurrency(data?.overview?.total_distribusi || 0)}</div>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Dana disalurkan periode {selectedYear}
+              <p className="text-xs text-muted-foreground mt-2 font-medium">
+                Total dana keluar tahun {selectedYear}
               </p>
             </CardContent>
           </Card>
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-4 text-balance">Menu Utama</h2>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <div className="w-1.5 h-6 bg-primary rounded-full" />
+            Menu Utama
+          </h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[
               { title: 'Penerimaan', desc: 'Catat Penerimaan ZIS', icon: '💵', href: '/pengumpulan', color: 'bg-emerald-50 border-emerald-200' },
+              { title: 'Statistik', desc: 'Detail Statistik Penerimaan', icon: '📈', href: '/statistik-penerimaan', color: 'bg-rose-50 border-rose-200' },
               { title: 'Distribusi', desc: 'Catat Distribusi Dana', icon: '📦', href: '/distribusi', color: 'bg-orange-50 border-orange-200' },
-              { title: 'Muzakki', desc: 'Kelola data Pemberi Zakat', icon: '💰', href: '/muzakki', color: 'bg-blue-50 border-blue-200' },
-              { title: 'Mustahiq', desc: 'Kelola data Penerima Zakat', icon: '👥', href: '/pelayanan', color: 'bg-indigo-50 border-indigo-200' },
+              { title: 'Muzakki', desc: 'Kelola data Pemberi Zakat', icon: '🧑‍💼', href: '/muzakki', color: 'bg-blue-50 border-blue-200' },
+              { title: 'Mustahiq', desc: 'Kelola data Pemberi Zakat', icon: '👥', href: '/pelayanan', color: 'bg-indigo-50 border-indigo-200' },
               { title: 'Laporan', desc: 'Generate laporan data', icon: '📄', href: '/laporan', color: 'bg-yellow-50 border-yellow-200' },
-              { title: 'Migrasi', desc: 'Import data dari Excel', icon: '📁', href: '/migrasi-excel', color: 'bg-slate-50 border-slate-200' },
             ].map((link) => (
               <Link key={link.href} href={link.href}>
                 <Card className={`cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 border-2 ${link.color}`}>
                   <CardHeader className="pb-3 flex flex-row items-center gap-4">
-                    <div className="text-3xl">{link.icon}</div>
+                    <div className="text-3xl filter grayscale-0">{link.icon}</div>
                     <div>
-                      <CardTitle className="text-base">{link.title}</CardTitle>
-                      <CardDescription className="text-xs">{link.desc}</CardDescription>
+                      <CardTitle className="text-base font-bold">{link.title}</CardTitle>
+                      <CardDescription className="text-xs font-medium">{link.desc}</CardDescription>
                     </div>
                   </CardHeader>
                 </Card>
