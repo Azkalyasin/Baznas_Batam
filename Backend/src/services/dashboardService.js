@@ -6,123 +6,28 @@ import db from '../config/database.js';
 const getDashboardInfo = async (query) => {
   const now = new Date();
   const tahun = parseInt(query.tahun) || now.getFullYear();
-  const bulan = query.bulan; 
-  const tanggal = query.tanggal; 
 
-  const wherePenerimaan = { tahun };
-  const whereDistribusi = { tahun };
-
-  if (bulan) {
-    wherePenerimaan.bulan = bulan;
-    whereDistribusi.bulan = bulan;
-  }
-  if (tanggal) {
-    wherePenerimaan.tanggal = tanggal;
-    whereDistribusi.tanggal = tanggal;
-  }
-
-  const [penerimaanStats, distribusiStats] = await Promise.all([
-    Penerimaan.findAll({
-      attributes: [
-        'jenis_zis',
-        [db.fn('SUM', db.col('jumlah')), 'total']
-      ],
-      where: wherePenerimaan,
-      group: ['jenis_zis']
-    }),
-    Distribusi.findAll({
-      attributes: [
-        [db.fn('SUM', db.col('jumlah')), 'total']
-      ],
-      where: whereDistribusi
-    })
-  ]);
-
-  let total_zakat = 0;
-  let total_infaq = 0;
-  let total_pemasukan = 0;
-
-  penerimaanStats.forEach(item => {
-    const val = parseFloat(item.get('total')) || 0;
-    if (item.jenis_zis === 'Zakat') total_zakat += val;
-    else if (item.jenis_zis === 'Infak Terikat' || item.jenis_zis === 'Infak Tidak Terikat' || item.jenis_zis === 'Sedekah') {
-       total_infaq += val;
+  // Call the stored procedure for overview statistics
+  const [results] = await db.query(
+    'CALL sp_dashboard_overview_by_year(:tahun)',
+    {
+      replacements: { tahun },
+      type: db.QueryTypes.RAW
     }
-    total_pemasukan += val;
-  });
+  );
 
-  const total_pengeluaran = parseFloat(distribusiStats[0]?.get('total')) || 0;
-  
-  const total_dana_amil = total_zakat * 0.125; 
-  const total_dana_bersih = total_pemasukan - total_dana_amil;
-  const saldo_bersih = total_dana_bersih - total_pengeluaran;
-
-  let grafik_penerimaan_bulanan = [];
-  let grafik_distribusi_bulanan = [];
-  
-  if (!tanggal) {
-    [grafik_penerimaan_bulanan, grafik_distribusi_bulanan] = await Promise.all([
-      Penerimaan.findAll({
-        attributes: [
-          'bulan',
-          [db.fn('SUM', db.col('jumlah')), 'total']
-        ],
-        where: { tahun },
-        group: ['bulan'],
-        order: [[db.literal("FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember')"), 'ASC']]
-      }),
-      Distribusi.findAll({
-        attributes: [
-          'bulan',
-          [db.fn('SUM', db.col('jumlah')), 'total']
-        ],
-        where: { tahun },
-        group: ['bulan'],
-        order: [[db.literal("FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember')"), 'ASC']]
-      })
-    ]);
-  }
-
-  const [breakdown_zis, breakdown_program, breakdown_asnaf, breakdown_upz, breakdown_channel] = await Promise.all([
-    Penerimaan.findAll({
-      attributes: ['jenis_zis', [db.fn('COUNT', db.col('id')), 'count'], [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: wherePenerimaan, group: ['jenis_zis']
-    }),
-    Distribusi.findAll({
-      attributes: ['nama_program', [db.fn('COUNT', db.col('id')), 'count'], [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: whereDistribusi, group: ['nama_program']
-    }),
-    Distribusi.findAll({
-      attributes: ['asnaf', [db.fn('COUNT', db.col('id')), 'count'], [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: whereDistribusi, group: ['asnaf']
-    }),
-    Penerimaan.findAll({
-      attributes: ['jenis_upz', [db.fn('COUNT', db.col('id')), 'count'], [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: wherePenerimaan, group: ['jenis_upz']
-    }),
-    Penerimaan.findAll({
-      attributes: ['via', [db.fn('COUNT', db.col('id')), 'count'], [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: wherePenerimaan, group: ['via']
-    })
-  ]);
+  // Results will be an array since it's a multi-statement result from a stored procedure
+  // With db.query and RAW, it usually returns the first result set as the first element of an array
+  const overview = results || {};
 
   return {
-    ringkasan: {
-      total_pemasukan,
-      total_zakat,
-      total_infaq,
-      total_dana_amil,
-      total_dana_bersih,
-      total_pengeluaran,
-      saldo_bersih
+    overview: {
+      total_muzakki: parseInt(overview.total_muzakki) || 0,
+      total_mustahiq: parseInt(overview.total_mustahiq) || 0,
+      total_penerimaan: parseFloat(overview.total_penerimaan) || 0,
+      total_distribusi: parseFloat(overview.total_distribusi) || 0
     },
-    grafik_penerimaan_bulanan,
-    grafik_distribusi_bulanan,
-    breakdown_zis,
-    breakdown_program,
-    breakdown_asnaf,
-    breakdown_upz,
-    breakdown_channel
+    tahun
   };
 };
 

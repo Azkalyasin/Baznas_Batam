@@ -1,11 +1,11 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
 import { registerAuditHooks } from '../utils/auditHooks.js';
-import { 
-  Kecamatan, 
-  Kelurahan, 
-  Asnaf, 
-  KategoriMustahiq 
+import {
+  Kecamatan,
+  Kelurahan,
+  Asnaf,
+  KategoriMustahiq
 } from './ref/index.js';
 import User from './userModel.js';
 
@@ -86,6 +86,12 @@ const Mustahiq = db.define('mustahiq', {
   },
   keterangan: {
     type: DataTypes.TEXT
+  },
+  registered_date: {
+    type: DataTypes.DATEONLY
+  },
+  tgl_lahir: {
+    type: DataTypes.DATEONLY
   },
   registered_by: {
     type: DataTypes.INTEGER,
