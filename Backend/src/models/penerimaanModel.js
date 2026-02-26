@@ -2,14 +2,14 @@ import { Sequelize, DataTypes } from 'sequelize';
 import db from '../config/database.js';
 import { registerAuditHooks } from '../utils/auditHooks.js';
 import Muzakki from './muzakkiModel.js';
-import { 
-  JenisMuzakki, 
-  JenisUpz, 
-  ViaPenerimaan, 
-  MetodeBayar, 
-  Zis, 
-  JenisZis, 
-  PersentaseAmil 
+import {
+  JenisMuzakki,
+  JenisUpz,
+  ViaPenerimaan,
+  MetodeBayar,
+  Zis,
+  JenisZis,
+  PersentaseAmil
 } from './ref/index.js';
 import User from './userModel.js';
 
@@ -39,8 +39,8 @@ const Penerimaan = db.define('penerimaan', {
   bulan: { type: DataTypes.STRING(20) },
   tahun: { type: DataTypes.INTEGER },
 
-  via_id: { 
-    type: DataTypes.INTEGER, 
+  via_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
     references: {
       model: ViaPenerimaan,
@@ -57,15 +57,15 @@ const Penerimaan = db.define('penerimaan', {
   },
   no_rekening: { type: DataTypes.STRING(50) },
 
-  zis_id: { 
-    type: DataTypes.INTEGER, 
+  zis_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
     references: {
       model: Zis,
       key: 'id'
     }
   },
-  
+
   jenis_zis_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -87,15 +87,15 @@ const Penerimaan = db.define('penerimaan', {
       key: 'id'
     }
   },
-  
+
   dana_amil: { type: DataTypes.DECIMAL(15, 2) },
   dana_bersih: { type: DataTypes.DECIMAL(15, 2) },
 
   keterangan: { type: DataTypes.TEXT },
   rekomendasi_upz: { type: DataTypes.TEXT },
-  
-  created_by: { 
-    type: DataTypes.INTEGER, 
+
+  created_by: {
+    type: DataTypes.INTEGER,
     allowNull: false,
     references: {
       model: User,
@@ -109,23 +109,23 @@ const Penerimaan = db.define('penerimaan', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
-      { fields: ['muzakki_id'] },
-      { fields: ['npwz'] },
-      { fields: ['tanggal'] },
-      { fields: ['jenis_zis_id'] },
-      { fields: ['via_id'] }
+    { fields: ['muzakki_id'] },
+    { fields: ['npwz'] },
+    { fields: ['tanggal'] },
+    { fields: ['jenis_zis_id'] },
+    { fields: ['via_id'] }
   ]
 });
 
 // Associations
 Penerimaan.belongsTo(Muzakki, { foreignKey: 'muzakki_id' });
-Penerimaan.belongsTo(JenisMuzakki, { foreignKey: 'jenis_muzakki_id' });
-Penerimaan.belongsTo(JenisUpz, { foreignKey: 'jenis_upz_id' });
-Penerimaan.belongsTo(ViaPenerimaan, { foreignKey: 'via_id' });
-Penerimaan.belongsTo(MetodeBayar, { foreignKey: 'metode_bayar_id' });
-Penerimaan.belongsTo(Zis, { foreignKey: 'zis_id' });
-Penerimaan.belongsTo(JenisZis, { foreignKey: 'jenis_zis_id' });
-Penerimaan.belongsTo(PersentaseAmil, { foreignKey: 'persentase_amil_id' });
+Penerimaan.belongsTo(JenisMuzakki, { foreignKey: 'jenis_muzakki_id', as: 'jenis_muzakki' });
+Penerimaan.belongsTo(JenisUpz, { foreignKey: 'jenis_upz_id', as: 'jenis_upz' });
+Penerimaan.belongsTo(ViaPenerimaan, { foreignKey: 'via_id', as: 'via' });
+Penerimaan.belongsTo(MetodeBayar, { foreignKey: 'metode_bayar_id', as: 'metode_bayar' });
+Penerimaan.belongsTo(Zis, { foreignKey: 'zis_id', as: 'zis' });
+Penerimaan.belongsTo(JenisZis, { foreignKey: 'jenis_zis_id', as: 'jenis_zis' });
+Penerimaan.belongsTo(PersentaseAmil, { foreignKey: 'persentase_amil_id', as: 'persentase_amil' });
 Penerimaan.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
 registerAuditHooks(Penerimaan, 'penerimaan');

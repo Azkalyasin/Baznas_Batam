@@ -3,11 +3,11 @@ import Distribusi from '../models/distribusiModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
 import AppError from '../utils/AppError.js';
-import { 
-  Kecamatan, 
-  Kelurahan, 
-  Asnaf, 
-  KategoriMustahiq 
+import {
+  Kecamatan,
+  Kelurahan,
+  Asnaf,
+  KategoriMustahiq
 } from '../models/ref/index.js';
 
 
@@ -48,8 +48,7 @@ const getAll = async (query) => {
     where[Op.or] = [
       { nama: { [Op.like]: `%${q}%` } },
       { nik: { [Op.like]: `%${q}%` } },
-      { nrm: { [Op.like]: `%${q}%` } },
-      { no_reg_bpp: { [Op.like]: `%${q}%` } }
+      { nrm: { [Op.like]: `%${q}%` } }
     ];
   }
 

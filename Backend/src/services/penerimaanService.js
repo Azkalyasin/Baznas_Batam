@@ -3,23 +3,23 @@ import Muzakki from '../models/muzakkiModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
 import AppError from '../utils/AppError.js';
-import { 
-  ViaPenerimaan, 
-  MetodeBayar, 
-  Zis, 
-  JenisZis, 
-  PersentaseAmil, 
-  JenisMuzakki, 
-  JenisUpz 
+import {
+  ViaPenerimaan,
+  MetodeBayar,
+  Zis,
+  JenisZis,
+  PersentaseAmil,
+  JenisMuzakki,
+  JenisUpz
 } from '../models/ref/index.js';
 import User from '../models/userModel.js';
 
 // --- GET /api/penerimaan (list + filter + search + pagination) ---
 const getAll = async (query) => {
-  const { 
-    q, muzakki_id, tanggal, bulan, tahun, 
-    via_id, metode_bayar_id, zis_id, jenis_zis_id, 
-    page = 1, limit = 10 
+  const {
+    q, muzakki_id, tanggal, bulan, tahun,
+    via_id, metode_bayar_id, zis_id, jenis_zis_id,
+    page = 1, limit = 10
   } = query;
   const offset = (page - 1) * limit;
 
@@ -48,11 +48,11 @@ const getAll = async (query) => {
     order: [['tanggal', 'DESC'], ['created_at', 'DESC']],
     include: [
       { model: Muzakki, attributes: ['id', 'nama', 'npwz'] },
-      { model: ViaPenerimaan, attributes: ['id', 'nama'] },
-      { model: MetodeBayar, attributes: ['id', 'nama'] },
-      { model: Zis, attributes: ['id', 'nama'] },
-      { model: JenisZis, attributes: ['id', 'nama'] },
-      { model: PersentaseAmil, attributes: ['id', 'label', 'nilai'] }
+      { model: ViaPenerimaan, attributes: ['id', 'nama'], as: 'via' },
+      { model: MetodeBayar, attributes: ['id', 'nama'], as: 'metode_bayar' },
+      { model: Zis, attributes: ['id', 'nama'], as: 'zis' },
+      { model: JenisZis, attributes: ['id', 'nama'], as: 'jenis_zis' },
+      { model: PersentaseAmil, attributes: ['id', 'label', 'nilai'], as: 'persentase_amil' }
     ]
   });
 
@@ -69,14 +69,14 @@ const getById = async (id) => {
   const penerimaan = await Penerimaan.findByPk(id, {
     include: [
       { model: Muzakki },
-      { model: ViaPenerimaan },
-      { model: MetodeBayar },
-      { model: Zis },
-      { model: JenisZis },
-      { model: PersentaseAmil },
+      { model: ViaPenerimaan, as: 'via' },
+      { model: MetodeBayar, as: 'metode_bayar' },
+      { model: Zis, as: 'zis' },
+      { model: JenisZis, as: 'jenis_zis' },
+      { model: PersentaseAmil, as: 'persentase_amil' },
       { model: User, as: 'creator', attributes: ['id', 'nama'] },
-      { model: JenisMuzakki },
-      { model: JenisUpz }
+      { model: JenisMuzakki, as: 'jenis_muzakki' },
+      { model: JenisUpz, as: 'jenis_upz' }
     ]
   });
   if (!penerimaan) throw Object.assign(new Error('Data penerimaan tidak ditemukan.'), { status: 404 });
@@ -103,11 +103,11 @@ const create = async (body, userId) => {
 
     // Reload triggers (calculations & snapshots)
     await penerimaan.reload({
-        include: [
-            { model: ViaPenerimaan, attributes: ['nama'] },
-            { model: Zis, attributes: ['nama'] },
-            { model: JenisZis, attributes: ['nama'] }
-        ]
+      include: [
+        { model: ViaPenerimaan, as: 'via', attributes: ['nama'] },
+        { model: Zis, as: 'zis', attributes: ['nama'] },
+        { model: JenisZis, as: 'jenis_zis', attributes: ['nama'] }
+      ]
     });
     return penerimaan;
   } catch (error) {
@@ -131,13 +131,13 @@ const update = async (id, updateData, userId) => {
 
   // Application layer handling for amil/bersih calculation if trigger is not enough (optional)
   if (updateData.jumlah || updateData.persentase_amil_id) {
-      const jumlah = updateData.jumlah ?? penerimaan.jumlah;
-      const pId = updateData.persentase_amil_id ?? penerimaan.persentase_amil_id;
-      const refAmil = await PersentaseAmil.findByPk(pId);
-      if (refAmil) {
-          updateData.dana_amil = parseFloat((jumlah * refAmil.nilai).toFixed(2));
-          updateData.dana_bersih = parseFloat((jumlah - updateData.dana_amil).toFixed(2));
-      }
+    const jumlah = updateData.jumlah ?? penerimaan.jumlah;
+    const pId = updateData.persentase_amil_id ?? penerimaan.persentase_amil_id;
+    const refAmil = await PersentaseAmil.findByPk(pId);
+    if (refAmil) {
+      updateData.dana_amil = parseFloat((jumlah * refAmil.nilai).toFixed(2));
+      updateData.dana_bersih = parseFloat((jumlah - updateData.dana_amil).toFixed(2));
+    }
   }
 
   const t = await db.transaction();
