@@ -56,7 +56,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl">BAZNAS Batam</CardTitle>
           <CardDescription>
-            Sistem Manajemen Dana Zakat
+            Sistem Manajemen Dana Zakat Infak Sedekah
           </CardDescription>
         </CardHeader>
         <CardContent>

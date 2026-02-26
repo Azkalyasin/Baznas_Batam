@@ -7,21 +7,23 @@ const statusEnum = z.enum(['active', 'inactive', 'blacklist']);
 // idParamSchema di-import dari shared.js
 export { idParamSchema };
 
+const emptyToNull = (v) => v === '' ? null : v;
+
 // --- Create Mustahiq ---
 export const createMustahiqSchema = z.object({
   nrm: z.string().min(1, 'NRM wajib diisi.').max(24, 'NRM terlalu panjang.').trim(),
-  nik: z.string().max(16, 'NIK maksimal 16 karakter.').trim().optional(),
+  nik: z.preprocess(emptyToNull, z.string().max(16, 'NIK maksimal 16 karakter.').trim().nullable().optional()),
   nama: z.string().min(1, 'Nama wajib diisi.').max(100, 'Nama terlalu panjang.').trim(),
-  no_hp: z.string().max(14, 'Nomor HP terlalu panjang.').trim().optional(),
-  alamat: z.string().optional(),
+  no_hp: z.preprocess(emptyToNull, z.string().max(14, 'Nomor HP terlalu panjang.').trim().nullable().optional()),
+  alamat: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
   kelurahan_id: z.number().int().positive(),
   kecamatan_id: z.number().int().positive(),
-  kategori_mustahiq_id: z.number().int().positive().optional(),
+  kategori_mustahiq_id: z.number().int().positive().optional().default(1), // Default: Individu
   asnaf_id: z.number().int().positive(),
-  rekomendasi_upz: z.string().optional(),
-  keterangan: z.string().optional(),
-  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional(),
-  tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional()
+  rekomendasi_upz: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  keterangan: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  registered_date: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional()),
+  tgl_lahir: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional())
 });
 
 // --- Update Mustahiq ---

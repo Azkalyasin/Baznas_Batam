@@ -8,20 +8,22 @@ export const idParamSchema = z.object({
   id: z.string().regex(/^\d+$/, 'ID harus berupa angka positif.').transform(Number)
 });
 
+const emptyToNull = (v) => v === '' ? null : v;
+
 // --- Create Muzakki ---
 export const createMuzakkiSchema = z.object({
   npwz: z.string().min(1, 'NPWZ wajib diisi.').max(15, 'NPWZ terlalu panjang.').trim(),
   nama: z.string().min(1, 'Nama wajib diisi.').max(50, 'Nama terlalu panjang.').trim(),
-  nik: z.string().max(16, 'NIK maksimal 16 karakter.').trim().optional(),
-  no_hp: z.string().max(14, 'Nomor HP terlalu panjang.').trim().optional(),
-  jenis_muzakki_id: z.number().int().positive().optional(),
-  jenis_upz_id: z.number().int().positive().optional(),
-  alamat: z.string().optional(),
+  nik: z.preprocess(emptyToNull, z.string().max(16, 'NIK maksimal 16 karakter.').trim().nullable().optional()),
+  no_hp: z.preprocess(emptyToNull, z.string().max(14, 'Nomor HP terlalu panjang.').trim().nullable().optional()),
+  jenis_muzakki_id: z.number().int().positive().optional().default(1),
+  jenis_upz_id: z.number().int().positive().nullable().optional(),
+  alamat: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
   kelurahan_id: z.number().int().positive(),
   kecamatan_id: z.number().int().positive(),
-  keterangan: z.string().optional(),
-  registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional(),
-  tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').optional()
+  keterangan: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  registered_date: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional()),
+  tgl_lahir: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional())
 });
 
 // --- Update Muzakki ---

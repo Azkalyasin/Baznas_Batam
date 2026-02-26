@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
@@ -8,19 +8,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Upload, Loader2, CheckCircle2, FileUp } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertCircle, Upload, Loader2, CheckCircle2, FileUp, Download, Info } from 'lucide-react';
+import { migrasiApi } from '@/lib/api';
+
+type DataType = 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi';
 
 export default function MigrasiExcelPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<any[]>([]);
-  const [fileName, setFileName] = useState('');
-  const [dataType, setDataType] = useState<'mustahiq' | 'muzakki' | null>(null);
+  
+  const [file, setFile] = useState<File | null>(null);
+  const [dataType, setDataType] = useState<DataType>('mustahiq');
+  
+  const [previewResult, setPreviewResult] = useState<any>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isAuthenticated) {
     router.push('/login');
@@ -36,42 +44,36 @@ export default function MigrasiExcelPage() {
     setIsDragging(false);
   };
 
-  const handleFile = async (file: File) => {
+  const resetState = () => {
+    setFile(null);
+    setPreviewResult(null);
     setError(null);
     setSuccess(null);
-    setPreviewData([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
+  const processFile = async (selectedFile: File, selectedType: DataType) => {
+    setError(null);
+    setSuccess(null);
+    setPreviewResult(null);
+
+    if (!selectedFile.name.match(/\.(xlsx|xls|csv)$/i)) {
       setError('File harus berformat .xlsx, .xls, atau .csv');
       return;
     }
 
     try {
       setIsLoading(true);
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(worksheet);
-
-      if (data.length === 0) {
-        setError('File Excel kosong');
-        return;
+      const res = await migrasiApi.preview(selectedFile, selectedType);
+      
+      if (res.success) {
+        setFile(selectedFile);
+        setPreviewResult(res.data);
+      } else {
+        setError(res.message || 'Gagal memproses file Excel');
       }
-
-      setFileName(file.name);
-      setPreviewData(data.slice(0, 5)); // Show first 5 rows
-
-      // Auto-detect data type
-      const firstRow = data[0] as any;
-      if (firstRow.nrm || firstRow.nama_mustahiq) {
-        setDataType('mustahiq');
-      } else if (firstRow.npwz || firstRow.nama_muzakki) {
-        setDataType('muzakki');
-      }
-
-      setSuccess(`${data.length} baris data berhasil dimuat dari file`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal membaca file Excel');
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat membaca file');
     } finally {
       setIsLoading(false);
     }
@@ -80,50 +82,53 @@ export default function MigrasiExcelPage() {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFile(files[0]);
+    if (e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0], dataType);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.currentTarget.files;
-    if (files && files.length > 0) {
-      handleFile(files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      processFile(e.target.files[0], dataType);
     }
   };
 
   const handleImport = async () => {
-    if (previewData.length === 0) {
-      setError('Tidak ada data untuk diimport');
-      return;
-    }
+    if (!file) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      // Simulate import - dalam implementasi real, data akan dikirim ke backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setSuccess(`${previewData.length}+ baris data berhasil diimport ke sistem`);
-      setPreviewData([]);
-      setFileName('');
-      setDataType(null);
+      const res = await migrasiApi.import(file, dataType);
+      if (res.success) {
+        setSuccess(`Berhasil mengimport ${res.berhasil} baris data. Gagal: ${res.gagal} baris.`);
+        setPreviewResult(null);
+        setFile(null);
+      } else {
+        setError(res.message || 'Gagal mengimport data');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal mengimport data');
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat import');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDownloadTemplate = (jenis: DataType) => {
+    window.location.href = migrasiApi.templateUrl(jenis);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-balance">Migrasi Data Excel</h1>
-          <p className="text-muted-foreground mt-1">
-            Import data Mustahiq atau Muzakki dari file Excel
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-balance">Migrasi Data Excel</h1>
+            <p className="text-muted-foreground mt-1">
+              Import data master dan transaksi sekaligus menggunakan file Excel
+            </p>
+          </div>
         </div>
 
         {error && (
@@ -140,140 +145,229 @@ export default function MigrasiExcelPage() {
           </Alert>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload File Excel</CardTitle>
-            <CardDescription>
-              Drag & drop atau klik untuk memilih file Excel (.xlsx, .xls, .csv)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-background hover:border-primary/50'
-              }`}
-            >
-              <input
-                type="file"
-                id="file-input"
-                className="hidden"
-                accept=".xlsx,.xls,.csv"
-                onChange={handleFileInput}
-                disabled={isLoading}
-              />
-              <label htmlFor="file-input" className="cursor-pointer">
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Drag file Excel ke sini</p>
-                    <p className="text-sm text-muted-foreground">
-                      atau klik untuk memilih file
-                    </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="md:col-span-2">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center mb-4">
+                <CardTitle>Upload File</CardTitle>
+                <div className="flex gap-2">
+                  {(['mustahiq', 'muzakki', 'penerimaan', 'distribusi'] as DataType[]).map((t) => (
+                    <Button 
+                      key={t}
+                      size="sm" 
+                      variant={dataType === t ? 'default' : 'outline'}
+                      onClick={() => {
+                        setDataType(t);
+                        resetState();
+                      }}
+                    >
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <CardDescription>
+                Pilih tab tipe data di atas, lalu upload file Excel yang sesuai
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-background hover:border-primary/50'
+                }`}
+              >
+                <input
+                  type="file"
+                  id="file-input"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileInput}
+                  disabled={isLoading}
+                />
+                <label htmlFor="file-input" className="cursor-pointer block w-full h-full">
+                  <div className="flex flex-col items-center gap-3">
+                    <Upload className="h-10 w-10 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium text-lg">Pilih file atau drag & drop</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Format .xlsx untuk <strong>{dataType.toUpperCase()}</strong>
+                      </p>
+                    </div>
+                    {isLoading && <Loader2 className="h-5 w-5 animate-spin text-primary mt-2" />}
                   </div>
-                </div>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
 
-        {previewData.length > 0 && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileUp className="h-5 w-5" />
-                  Preview Data
-                </CardTitle>
-                <CardDescription>
-                  File: {fileName} ({previewData.length}+ baris)
-                  {dataType && ` - Tipe: ${dataType === 'mustahiq' ? 'Mustahiq' : 'Muzakki'}`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {Object.keys(previewData[0] || {}).map((key) => (
-                          <TableHead key={key} className="text-xs">
-                            {key}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {previewData.map((row, idx) => (
-                        <TableRow key={idx}>
-                          {Object.values(row).map((value, i) => (
-                            <TableCell key={i} className="text-xs">
-                              {String(value).length > 50
-                                ? String(value).substring(0, 50) + '...'
-                                : String(value)}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Download Template</CardTitle>
+              <CardDescription>
+                Gunakan template Excel berikut agar format data sesuai dengan sistem
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(['mustahiq', 'muzakki', 'penerimaan', 'distribusi'] as DataType[]).map((t) => (
+                <Button 
+                  key={t} 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleDownloadTemplate(t)}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Template {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Button>
+              ))}
+              
+              <Alert className="mt-4 bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-xs text-blue-800">
+                  Untuk data referensi (Kelurahan, Asnaf, Program), Anda cukup mengetikkan <strong>namanya</strong> di dalam Excel. Sistem akan otomatis mencari ID-nya.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        </div>
 
-                <div className="mt-4 flex gap-2 justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setPreviewData([]);
-                      setFileName('');
-                      setDataType(null);
-                    }}
-                    disabled={isLoading}
-                  >
+        {previewResult && (
+          <Card className="border-primary/50 shadow-md">
+            <CardHeader className="bg-primary/5 border-b">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileUp className="h-5 w-5 text-primary" />
+                    Preview {dataType.charAt(0).toUpperCase() + dataType.slice(1)}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    File: <strong>{file?.name}</strong> • Total baris: <strong>{previewResult.total}</strong>
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={resetState} disabled={isLoading}>
                     Batal
                   </Button>
-                  <Button onClick={handleImport} disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Mengimport...
-                      </>
-                    ) : (
-                      `Import ${previewData.length} Baris`
-                    )}
+                  <Button 
+                    onClick={handleImport} 
+                    disabled={isLoading || previewResult.siap_import === 0}
+                    className="gap-2"
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    Import {previewResult.siap_import} Baris Valid
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+              </div>
+              
+              <div className="flex gap-4 mt-4">
+                <div className="bg-green-100 text-green-800 px-3 py-1.5 rounded-md text-sm font-medium">
+                  {previewResult.siap_import} Siap Import
+                </div>
+                {previewResult.bermasalah > 0 && (
+                  <div className="bg-red-100 text-red-800 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" /> {previewResult.bermasalah} Bermasalah
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Tabs defaultValue="valid" className="w-full">
+                <div className="px-6 py-2 border-b">
+                  <TabsList>
+                    <TabsTrigger value="valid">Contoh Valid ({previewResult.preview_valid.length})</TabsTrigger>
+                    {previewResult.preview_invalid.length > 0 && (
+                      <TabsTrigger value="invalid" className="text-red-600">
+                        Error ({previewResult.preview_invalid.length})
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+                </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Format File Excel</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2">Format Mustahiq:</h3>
-              <div className="bg-muted p-3 rounded text-sm font-mono overflow-x-auto">
-                <p>nrm | nama | nik | no_hp | alamat | kecamatan_id | kelurahan_id | asnaf_id</p>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Format Muzakki:</h3>
-              <div className="bg-muted p-3 rounded text-sm font-mono overflow-x-auto">
-                <p>npwz | nama | nik | no_hp | jenis_muzakki_id | jenis_upz_id | kecamatan_id</p>
-              </div>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <p>• File harus memiliki header di baris pertama</p>
-              <p>• Format yang didukung: .xlsx, .xls, .csv</p>
-              <p>• Maksimal: 10.000 baris per file</p>
-            </div>
-          </CardContent>
-        </Card>
+                <TabsContent value="valid" className="p-0 m-0">
+                  {previewResult.preview_valid.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">Tidak ada baris yang valid</div>
+                  ) : (
+                    <div className="overflow-x-auto max-h-[500px]">
+                      <Table>
+                        <TableHeader className="bg-muted/50 sticky top-0">
+                          <TableRow>
+                            <TableHead className="w-16">Baris</TableHead>
+                            {Object.keys(previewResult.preview_valid[0]?.data || {}).map((key) => (
+                              <TableHead key={key} className="text-xs whitespace-nowrap">{key}</TableHead>
+                            ))}
+                            <TableHead className="text-xs">Catatan</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {previewResult.preview_valid.map((item: any, idx: number) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium text-xs text-muted-foreground">{item.row}</TableCell>
+                              {Object.values(item.data).map((value: any, i: number) => (
+                                <TableCell key={i} className="text-xs whitespace-nowrap">
+                                  {value !== null && value !== undefined ? String(value) : '-'}
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-xs text-orange-600 max-w-[200px] truncate">
+                                {item.koreksi_otomatis ? item.koreksi_otomatis.join(', ') : ''}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="invalid" className="p-0 m-0">
+                  <div className="overflow-x-auto max-h-[500px]">
+                    <Table>
+                      <TableHeader className="bg-red-50 sticky top-0">
+                        <TableRow>
+                          <TableHead className="w-16 text-red-900">Baris</TableHead>
+                          <TableHead className="text-red-900">Alasan Error</TableHead>
+                          <TableHead className="text-red-900">Data Mentah Excel</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {previewResult.preview_invalid.map((item: any, idx: number) => (
+                          <TableRow key={idx} className="bg-red-50/10">
+                            <TableCell className="font-medium text-xs text-red-600">{item.row}</TableCell>
+                            <TableCell className="text-xs text-red-600 max-w-md">
+                              <ul className="list-disc list-inside">
+                                {Object.entries(item.errors)
+                                  .filter(([key]) => key !== '_errors')
+                                  .map(([key, errObj]: [string, any]) => (
+                                    <li key={key}>
+                                      <strong>{key}</strong>: {errObj._errors?.join(', ') || 'Invalid'}
+                                    </li>
+                                  ))}
+                              </ul>
+                              {item.koreksi_otomatis && (
+                                <div className="mt-2 text-orange-600">
+                                  <strong>Koreksi:</strong> {item.koreksi_otomatis.join(', ')}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs p-2">
+                              <pre className="bg-muted p-2 rounded max-h-24 overflow-auto text-[10px]">
+                                {JSON.stringify(item.data, null, 2)}
+                              </pre>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
