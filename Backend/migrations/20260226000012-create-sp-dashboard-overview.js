@@ -34,6 +34,7 @@ module.exports = {
           (SELECT COALESCE(SUM(jumlah), 0)
            FROM distribusi
            WHERE tahun = p_tahun
+             AND status = 'diterima'
           ) AS total_distribusi;
       END
     `);
