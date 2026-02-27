@@ -248,175 +248,151 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* ── INFORMASI DASAR ── */}
-        <Section title="Informasi Dasar" />
-
-        {/* Tanggal */}
-        <div className="space-y-2">
-          <Label htmlFor="tanggal">Tanggal Distribusi <span className="text-destructive">*</span></Label>
-          <Input id="tanggal" type="date" required value={form.tanggal} onChange={set('tanggal')} />
-        </div>
-
-        {/* Mustahiq search */}
-        <div className="space-y-2 md:col-span-3">
-          <Label>Mustahiq <span className="text-destructive">*</span></Label>
-          {selectedMustahiq ? (
-            <div className="flex items-center gap-2">
-              <Input value={selectedMustahiq.label} readOnly className="bg-muted flex-1" />
-              <Button type="button" size="sm" variant="ghost"
-                onClick={() => { setSelectedMustahiq(null); setForm((p) => ({ ...p, mustahiq_id: '' })); }}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Cari nama / NRM / NIK mustahiq..."
-                  value={mustahiqSearch}
-                  onChange={(e) => setMustahiqSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMustahiqSearch())}
-                />
-                <Button type="button" variant="outline" onClick={handleMustahiqSearch} disabled={mustahiqSearching}>
-                  {mustahiqSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Kolom 1: Dasar & Mustahiq */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Dasar & Mustahiq</h3>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tanggal">Tanggal Distribusi <span className="text-destructive">*</span></Label>
+            <Input id="tanggal" type="date" required value={form.tanggal} onChange={set('tanggal')} />
+          </div>
+          <div className="space-y-2">
+            <Label>Mustahiq <span className="text-destructive">*</span></Label>
+            {selectedMustahiq ? (
+              <div className="flex items-center gap-2">
+                <Input value={selectedMustahiq.label} readOnly className="bg-muted flex-1 text-xs" />
+                <Button type="button" size="sm" variant="ghost"
+                  onClick={() => { setSelectedMustahiq(null); setForm((p) => ({ ...p, mustahiq_id: '' })); }}>
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
-              {mustahiqResults.length > 0 && (
-                <div className="border rounded-md divide-y max-h-40 overflow-y-auto shadow-sm bg-background">
-                  {mustahiqResults.map((m) => (
-                    <button key={m.id} type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
-                      onClick={() => selectMustahiq(m)}>
-                      <span className="font-medium">{m.nama}</span>
-                      {m.nrm && <span className="text-muted-foreground ml-2 text-xs">NRM: {m.nrm}</span>}
-                      {m.nik && <span className="text-muted-foreground ml-2 text-xs">NIK: {m.nik}</span>}
-                    </button>
-                  ))}
+            ) : (
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Cari mustahiq..."
+                    value={mustahiqSearch}
+                    onChange={(e) => setMustahiqSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMustahiqSearch())}
+                  />
+                  <Button type="button" variant="outline" onClick={handleMustahiqSearch} disabled={mustahiqSearching}>
+                    {mustahiqSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
                 </div>
-              )}
-            </div>
-          )}
+                {mustahiqResults.length > 0 && (
+                  <div className="border rounded-md divide-y max-h-40 overflow-y-auto shadow-sm bg-background">
+                    {mustahiqResults.map((m) => (
+                      <button key={m.id} type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        onClick={() => selectMustahiq(m)}>
+                        {m.nama} {m.nrm && `(${m.nrm})`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <Sel label="Kategori Mustahiq" field="kategori_mustahiq_id" items={kategoriList} placeholder="Pilih kategori" />
+          <div className="space-y-2">
+            <Label>Status Permohonan</Label>
+            <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
+              <SelectTrigger><SelectValue placeholder="Menunggu Persetujuan" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="diterima">Diterima</SelectItem>
+                <SelectItem value="ditolak">Ditolak</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="no_reg_bpp">No. Reg BPP</Label>
+            <Input id="no_reg_bpp" placeholder="No. Reg BPP" maxLength={12}
+              value={form.no_reg_bpp} onChange={set('no_reg_bpp')} />
+          </div>
         </div>
 
-        {/* ── PROGRAM ── */}
-        <Section title="Program Distribusi" />
-
-        {/* Nama Program */}
-        <div className="space-y-2">
-          <Label>Program</Label>
-          <Select value={form.nama_program_id}
-            onValueChange={(v) => setForm((p) => ({ ...p, nama_program_id: v, sub_program_id: '' }))}
-            disabled={loadingRefs}>
-            <SelectTrigger><SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih program'} /></SelectTrigger>
-            <SelectContent>
-              {programList.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.nama}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        {/* Kolom 2: Program & Permohonan */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Program & Permohonan</h3>
+          </div>
+          <div className="space-y-2">
+            <Label>Program</Label>
+            <Select value={form.nama_program_id}
+              onValueChange={(v) => setForm((p) => ({ ...p, nama_program_id: v, sub_program_id: '' }))}
+              disabled={loadingRefs}>
+              <SelectTrigger><SelectValue placeholder="Pilih program" /></SelectTrigger>
+              <SelectContent>
+                {programList.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Sub Program</Label>
+            <Select value={form.sub_program_id}
+              onValueChange={(v) => setForm((p) => ({ ...p, sub_program_id: v }))}
+              disabled={!form.nama_program_id || subProgramList.length === 0}>
+              <SelectTrigger><SelectValue placeholder="Pilih sub-program" /></SelectTrigger>
+              <SelectContent>
+                {subProgramList.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Sel label="Program Kegiatan" field="program_kegiatan_id" items={kegiatanList} placeholder="Pilih kegiatan" />
+          <Sel label="Frekuensi Bantuan" field="frekuensi_bantuan_id" items={frekuensiList} placeholder="Pilih frekuensi" />
+          <div className="space-y-2">
+            <Label htmlFor="tgl_masuk_permohonan">Tgl. Masuk Permohonan</Label>
+            <Input id="tgl_masuk_permohonan" type="date"
+              value={form.tgl_masuk_permohonan} onChange={set('tgl_masuk_permohonan')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="jumlah_permohonan">Jumlah Permohonan (Rp)</Label>
+            <Input id="jumlah_permohonan" type="number" min="0" step="0.01"
+              value={form.jumlah_permohonan} onChange={set('jumlah_permohonan')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tgl_survei">Tgl. Survei</Label>
+            <Input id="tgl_survei" type="date" value={form.tgl_survei} onChange={set('tgl_survei')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="surveyor">Nama Surveyor</Label>
+            <Input id="surveyor" placeholder="Nama surveyor" maxLength={100}
+              value={form.surveyor} onChange={set('surveyor')} />
+          </div>
         </div>
 
-        {/* Sub Program */}
-        <div className="space-y-2">
-          <Label>Sub Program</Label>
-          <Select value={form.sub_program_id}
-            onValueChange={(v) => setForm((p) => ({ ...p, sub_program_id: v }))}
-            disabled={!form.nama_program_id || subProgramList.length === 0}>
-            <SelectTrigger>
-              <SelectValue placeholder={!form.nama_program_id ? 'Pilih program dulu' : subProgramList.length === 0 ? 'Tidak ada sub-program' : 'Pilih sub-program'} />
-            </SelectTrigger>
-            <SelectContent>
-              {subProgramList.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.nama}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Sel label="Program Kegiatan" field="program_kegiatan_id" items={kegiatanList} placeholder="Pilih kegiatan" />
-        <Sel label="Frekuensi Bantuan" field="frekuensi_bantuan_id" items={frekuensiList} placeholder="Pilih frekuensi" />
-
-        {/* ── JUMLAH & JENIS ── */}
-        <Section title="Jumlah & Jenis Bantuan" />
-
-        <div className="space-y-2">
-          <Label htmlFor="jumlah">Jumlah Penyaluran (Rp) <span className="text-destructive">*</span></Label>
-          <Input id="jumlah" type="number" min="0" step="0.01" placeholder="Nominal penyaluran"
-            value={form.jumlah} onChange={set('jumlah')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="quantity">Kuantitas</Label>
-          <Input id="quantity" type="number" min="0" placeholder="Jumlah unit/item"
-            value={form.quantity} onChange={set('quantity')} />
-        </div>
-
-        <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih jenis ZIS" />
-        <Sel label="Kategori Mustahiq" field="kategori_mustahiq_id" items={kategoriList} placeholder="Pilih kategori" />
-        <Sel label="Via Pembayaran" field="via_id" items={viaList} placeholder="Pilih via" />
-
-        <div className="space-y-2">
-          <Label htmlFor="no_rekening">No. Rekening</Label>
-          <Input id="no_rekening" placeholder="Nomor rekening (jika transfer)" maxLength={50}
-            value={form.no_rekening} onChange={set('no_rekening')} />
-        </div>
-
-        {/* ── PERMOHONAN & SURVEI ── */}
-        <Section title="Permohonan & Survei" />
-
-        <div className="space-y-2">
-          <Label htmlFor="no_reg_bpp">No. Reg BPP</Label>
-          <Input id="no_reg_bpp" placeholder="No. Reg BPP" maxLength={12}
-            value={form.no_reg_bpp} onChange={set('no_reg_bpp')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tgl_masuk_permohonan">Tgl. Masuk Permohonan</Label>
-          <Input id="tgl_masuk_permohonan" type="date"
-            value={form.tgl_masuk_permohonan} onChange={set('tgl_masuk_permohonan')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="jumlah_permohonan">Jumlah Permohonan (Rp)</Label>
-          <Input id="jumlah_permohonan" type="number" min="0" step="0.01"
-            placeholder="Jumlah yang dimohonkan"
-            value={form.jumlah_permohonan} onChange={set('jumlah_permohonan')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tgl_survei">Tgl. Survei</Label>
-          <Input id="tgl_survei" type="date"
-            value={form.tgl_survei} onChange={set('tgl_survei')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="surveyor">Nama Surveyor</Label>
-          <Input id="surveyor" placeholder="Nama surveyor" maxLength={100}
-            value={form.surveyor} onChange={set('surveyor')} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Status Permohonan</Label>
-          <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
-            <SelectTrigger><SelectValue placeholder="Menunggu Persetujuan" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="diterima">Diterima</SelectItem>
-              <SelectItem value="ditolak">Ditolak</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* ── LAINNYA ── */}
-        <Section title="Lainnya" />
-
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
-          <Textarea id="rekomendasi_upz" placeholder="Nama UPZ yang merekomendasikan" rows={2}
-            value={form.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
-        </div>
-
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor="keterangan">Keterangan</Label>
-          <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
-            value={form.keterangan} onChange={set('keterangan')} />
+        {/* Kolom 3: Penyaluran & Lainnya */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Penyaluran & Lainnya</h3>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="jumlah">Jumlah Penyaluran (Rp) <span className="text-destructive">*</span></Label>
+            <Input id="jumlah" type="number" min="0" step="0.01" value={form.jumlah} onChange={set('jumlah')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quantity">Kuantitas</Label>
+            <Input id="quantity" type="number" min="0" value={form.quantity} onChange={set('quantity')} />
+          </div>
+          <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih ZIS" />
+          <Sel label="Via Pembayaran" field="via_id" items={viaList} placeholder="Pilih via" />
+          <div className="space-y-2">
+            <Label htmlFor="no_rekening">No. Rekening</Label>
+            <Input id="no_rekening" placeholder="Nomor rekening" value={form.no_rekening} onChange={set('no_rekening')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
+            <Textarea id="rekomendasi_upz" placeholder="Nama UPZ" rows={2}
+              value={form.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="keterangan">Keterangan</Label>
+            <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
+              value={form.keterangan} onChange={set('keterangan')} />
+          </div>
         </div>
       </div>
 

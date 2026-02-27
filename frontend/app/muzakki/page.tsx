@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +44,7 @@ export default function MuzakkiPage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   // Helper: cari nama dari list ref berdasarkan ID
@@ -78,16 +79,17 @@ export default function MuzakkiPage() {
     loadRefs();
   }, []);
 
-  useEffect(() => { fetchData(); }, [page, searchQ]);
+  useEffect(() => { fetchData(); }, [page, limit, searchQ]);
 
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const res = await muzakkiApi.list({ q: searchQ || undefined, page, limit });
-      const resData: any = res.data;
+      const resData: any = res; // Response object { success, data, total, ... }
       if (resData) {
-        const arr = Array.isArray(resData) ? resData : resData.data ?? [];
+        // Correctly handle response structure
+        const arr = resData.data ?? [];
         setList(arr);
         setTotal(resData.total ?? arr.length);
       }
@@ -232,17 +234,34 @@ export default function MuzakkiPage() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Halaman {page} dari {totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Entries per page:</span>
+                    <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm text-muted-foreground">
+                      Halaman {page} dari {totalPages}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </>
@@ -296,6 +315,11 @@ export default function MuzakkiPage() {
                 <span>{detailData.Kelurahan?.nama || detailData.kelurahan?.nama || detailData.nama_kelurahan || refName(kelurahanAll, detailData.kelurahan_id)}</span>
                 <span className="text-muted-foreground">Tanggal Registrasi</span>
                 <span>{detailData.created_at ? new Date(detailData.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
+                
+                <span className="text-muted-foreground border-t pt-2 mt-2">Jumlah Setoran</span>
+                <span className="font-medium border-t pt-2 mt-2">{detailData.total_setor_count || 0} kali</span>
+                <span className="text-muted-foreground">Total Nominal Setoran</span>
+                <span className="font-bold text-primary">Rp {Number(detailData.total_setor_amount || 0).toLocaleString('id-ID')}</span>
               </div>
             </div>
           ) : (

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertCircle, Loader2, Plus, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, FileText,
@@ -40,7 +41,7 @@ export default function PelayananPage() {
   const [searchInput, setSearchInput] = useState('');
   const [searchQ, setSearchQ] = useState('');
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -71,15 +72,15 @@ export default function PelayananPage() {
     load();
   }, []);
 
-  useEffect(() => { fetchMustahiq(); }, [page, searchQ]);
+  useEffect(() => { fetchMustahiq(); }, [page, limit, searchQ]);
 
   const fetchMustahiq = async () => {
     setIsLoading(true); setError(null);
     try {
       const response = await mustahiqApi.list({ q: searchQ || undefined, page, limit });
-      const resData: any = response.data;
+      const resData: any = response;
       if (resData) {
-        const arr = Array.isArray(resData) ? resData : resData.data ?? [];
+        const arr = resData.data ?? [];
         setMustahiqList(arr);
         setTotal(resData.total ?? arr.length);
       }
@@ -110,7 +111,7 @@ export default function PelayananPage() {
     setAjuOpen(true);
   };
 
-  const totalPages = Math.ceil(total / limit) || 1;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
     <DashboardLayout>
@@ -191,17 +192,37 @@ export default function PelayananPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-muted-foreground">Halaman {page} dari {totalPages}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+                {/* Pagination */}
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Entries per page:</span>
+                    <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm text-muted-foreground">
+                      Halaman {page} dari {totalPages}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
           </CardContent>
         </Card>
       </div>
@@ -238,6 +259,23 @@ export default function PelayananPage() {
               <Row label="Kelurahan" value={detailData.kelurahan?.nama ?? refName(kelurahanAll, detailData.kelurahan_id)} />
               <Row label="Asnaf" value={detailData.asnaf?.nama ?? refName(asnafList, detailData.asnaf_id)} />
               <Row label="Kategori" value={detailData.kategoriMustahiq?.nama ?? refName(kategoriList, detailData.kategori_mustahiq_id)} />
+              
+              <div className="mt-4 pt-4 border-t space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium uppercase text-xs tracking-wider">Statistik Penyaluran</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="bg-muted/50 p-3 rounded-lg border">
+                    <div className="text-xs text-muted-foreground mb-1 font-medium">Jumlah Penyaluran</div>
+                    <div className="text-lg font-bold">{detailData.total_penerimaan_count || 0} kali</div>
+                  </div>
+                  <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
+                    <div className="text-xs text-primary/70 mb-1 font-medium">Total Bantuan Disalurkan</div>
+                    <div className="text-lg font-bold text-primary">Rp {Number(detailData.total_penerimaan_amount || 0).toLocaleString('id-ID')}</div>
+                  </div>
+                </div>
+              </div>
+
               {detailData.rekomendasi_upz && <Row label="Rek. UPZ" value={detailData.rekomendasi_upz} />}
               {detailData.keterangan && <Row label="Keterangan" value={detailData.keterangan} />}
               <div className="flex gap-2 pt-2 justify-end">
