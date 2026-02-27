@@ -253,7 +253,7 @@ export default function MuzakkiPage() {
 
       {/* Form Dialog (Tambah / Edit) — 3/4 layar */}
       <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingId(null); }}>
-        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-none h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editingId ? 'Edit Muzakki' : 'Tambah Muzakki Baru'}</DialogTitle>
           </DialogHeader>
@@ -269,7 +269,7 @@ export default function MuzakkiPage() {
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-7xl sm:max-w-none w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detail Muzakki</DialogTitle>
           </DialogHeader>
@@ -306,7 +306,7 @@ export default function MuzakkiPage() {
 
       {/* Tambah Penerimaan Dialog — pre-filled with Muzakki */}
       <Dialog open={penerimaanOpen} onOpenChange={(o) => { setPenerimaanOpen(o); if (!o) setPenerimaanMuzakki(null); }}>
-        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-none h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>
               Tambah Penerimaan

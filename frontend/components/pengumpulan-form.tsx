@@ -216,7 +216,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
   };
 
   const Section = ({ title }: { title: string }) => (
-    <div className="md:col-span-2 pt-3 pb-1 border-b">
+    <div className="md:col-span-3 pt-3 pb-1 border-b">
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
     </div>
   );
@@ -244,7 +244,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Section title="Data Transaksi" />
 
         {/* Tanggal */}
@@ -254,7 +254,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
         </div>
 
         {/* Muzakki Search */}
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label>Muzakki<Req /></Label>
           {selectedMuzakki ? (
             <div className="flex items-center gap-2">
@@ -364,7 +364,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
         </div>
 
         {/* No Rekening */}
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="no_rekening">No. Rekening</Label>
           <Input id="no_rekening" placeholder="Nomor rekening (jika ada)" maxLength={50}
             value={formData.no_rekening} onChange={set('no_rekening')} />
@@ -377,13 +377,13 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
 
         <Section title="Lainnya" />
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
           <Textarea id="rekomendasi_upz" placeholder="Nama UPZ yang merekomendasikan" rows={2}
             value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="keterangan">Keterangan</Label>
           <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
             value={formData.keterangan} onChange={set('keterangan')} />

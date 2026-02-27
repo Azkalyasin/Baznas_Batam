@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
-import { LogOut, ChevronDown, ChevronRight } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronRight, Menu } from 'lucide-react';
 
 interface NavChild {
   href: string;
@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
   { href: '/laporan', label: 'Laporan', icon: '📄' },
 ];
 
-function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
+function NavGroup({ item, pathname, isCollapsed }: { item: NavItem; pathname: string; isCollapsed: boolean }) {
   const isChildActive = item.children?.some((c) => pathname.startsWith(c.href)) ?? false;
   const [open, setOpen] = useState(isChildActive);
 
@@ -48,34 +48,40 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
       <li>
         <Link
           href={item.href}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active
+          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${active
             ? 'bg-sidebar-primary text-sidebar-primary-foreground'
             : 'hover:bg-sidebar-primary hover:text-sidebar-primary-foreground'
-            }`}
+            } ${isCollapsed ? 'justify-center px-0' : ''}`}
+          title={isCollapsed ? item.label : undefined}
         >
-          <span>{item.icon}</span>
-          <span>{item.label}</span>
+          <span className="text-lg">{item.icon}</span>
+          {!isCollapsed && <span>{item.label}</span>}
         </Link>
       </li>
     );
   }
 
   // Group with children (dropdown)
-  return (
-    <li>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isChildActive
-          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-          : 'hover:bg-sidebar-primary hover:text-sidebar-primary-foreground'
-          }`}
-      >
-        <span>{item.icon}</span>
-        <span className="flex-1 text-left">{item.label}</span>
-        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-      </button>
+    return (
+      <li>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${isChildActive
+            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+            : 'hover:bg-sidebar-primary hover:text-sidebar-primary-foreground'
+            } ${isCollapsed ? 'justify-center px-0' : ''}`}
+          title={isCollapsed ? item.label : undefined}
+        >
+          <span className="text-lg">{item.icon}</span>
+          {!isCollapsed && (
+            <>
+              <span className="flex-1 text-left">{item.label}</span>
+              {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            </>
+          )}
+        </button>
 
-      {open && (
+        {open && !isCollapsed && (
         <ul className="mt-1 ml-4 space-y-1 border-l border-sidebar-border pl-3">
           {item.children?.map((child) => {
             const active = pathname === child.href || pathname.startsWith(child.href + '/');
@@ -104,6 +110,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   const handleLogout = async () => {
     await logout();
@@ -116,6 +125,14 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-50 border-b border-border bg-primary text-primary-foreground shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="text-primary-foreground hover:bg-primary-foreground/20"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
             <div className="text-2xl font-bold">BAZNAS</div>
             <div className="hidden text-sm md:block">
               Sistem Manajemen Dana Zakat Batam
@@ -138,12 +155,12 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-screen">
         {/* Sidebar Navigation */}
-        <nav className="hidden w-64 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:block">
-          <div className="p-4">
-            <div className="text-sm font-semibold text-sidebar-foreground mb-4">Menu Utama</div>
+        <nav className={`hidden shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:block transition-all duration-300 ${isCollapsed ? 'w-0 overflow-hidden border-none' : 'w-64'}`}>
+          <div className={`p-4 transition-opacity duration-300 ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+            {!isCollapsed && <div className="text-sm font-semibold text-sidebar-foreground mb-4">Menu Utama</div>}
             <ul className="space-y-1">
               {navItems.map((item) => (
-                <NavGroup key={item.href ?? item.label} item={item} pathname={pathname} />
+                <NavGroup key={item.href ?? item.label} item={item} pathname={pathname} isCollapsed={isCollapsed} />
               ))}
             </ul>
           </div>

@@ -155,7 +155,7 @@ export default function PengumpulanPage() {
 
       {/* Form Dialog — 3/4 layar */}
       <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingId(null); }}>
-        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-none h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editingId ? 'Edit Penerimaan' : 'Tambah Penerimaan Baru'}</DialogTitle>
           </DialogHeader>

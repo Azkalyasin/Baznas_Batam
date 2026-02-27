@@ -208,7 +208,7 @@ export default function PelayananPage() {
 
       {/* ── Dialog: Tambah / Edit Mustahiq (3/4 screen) ── */}
       <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setEditingId(null); }}>
-        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-none h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editingId ? 'Edit Mustahiq' : 'Tambah Mustahiq Baru'}</DialogTitle>
           </DialogHeader>
@@ -221,7 +221,7 @@ export default function PelayananPage() {
 
       {/* ── Dialog: Detail (normal size) ── */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-7xl sm:max-w-none w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Detail Mustahiq</DialogTitle></DialogHeader>
           {detailLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -257,7 +257,7 @@ export default function PelayananPage() {
 
       {/* ── Dialog: Aju Permohonan (3/4 screen) ── */}
       <Dialog open={ajuOpen} onOpenChange={(o) => { setAjuOpen(o); if (!o) setAjuMustahiq(null); }}>
-        <DialogContent className="w-[75vw] max-w-[75vw] h-[85vh] flex flex-col p-0">
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-none h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>Aju Permohonan — {ajuMustahiq?.label}</DialogTitle>
           </DialogHeader>

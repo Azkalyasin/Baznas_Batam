@@ -223,7 +223,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
   };
 
   const Section = ({ title }: { title: string }) => (
-    <div className="md:col-span-2 pt-3 pb-1 border-b">
+    <div className="md:col-span-3 pt-3 pb-1 border-b">
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
     </div>
   );
@@ -249,7 +249,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         {/* ── INFORMASI DASAR ── */}
         <Section title="Informasi Dasar" />
 
@@ -260,7 +260,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
         </div>
 
         {/* Mustahiq search */}
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label>Mustahiq <span className="text-destructive">*</span></Label>
           {selectedMustahiq ? (
             <div className="flex items-center gap-2">
@@ -407,13 +407,13 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
         {/* ── LAINNYA ── */}
         <Section title="Lainnya" />
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
           <Textarea id="rekomendasi_upz" placeholder="Nama UPZ yang merekomendasikan" rows={2}
             value={form.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-3">
           <Label htmlFor="keterangan">Keterangan</Label>
           <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
             value={form.keterangan} onChange={set('keterangan')} />
