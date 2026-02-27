@@ -71,6 +71,12 @@ module.exports = {
       },
 
       keterangan:      { type: Sequelize.TEXT },
+      tgl_masuk_permohonan: { type: Sequelize.DATEONLY, allowNull: true },
+      tgl_survei:           { type: Sequelize.DATEONLY, allowNull: true },
+      surveyor:             { type: Sequelize.STRING(100), allowNull: true },
+      jumlah_permohonan:    { type: Sequelize.DECIMAL(15, 2), allowNull: true },
+      status:               { type: Sequelize.ENUM('menunggu', 'diterima', 'ditolak'), allowNull: true, defaultValue: 'menunggu' },
+      no_reg_bpp:           { type: Sequelize.STRING(12), allowNull: true },
       rekomendasi_upz: { type: Sequelize.TEXT },
       no_rekening:     { type: Sequelize.STRING(50) },
       created_by: {

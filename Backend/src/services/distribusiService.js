@@ -22,6 +22,7 @@ import User from '../models/userModel.js';
 const getAll = async (query) => {
   const {
     q, mustahiq_id, tanggal, bulan, tahun,
+    startDate, endDate, dateField = 'tanggal',
     nama_program_id, sub_program_id, program_kegiatan_id,
     asnaf_id, jenis_zis_distribusi_id, via_id, frekuensi_bantuan_id,
     status,
@@ -41,6 +42,15 @@ const getAll = async (query) => {
 
   if (mustahiq_id) where.mustahiq_id = mustahiq_id;
   if (tanggal) where.tanggal = tanggal;
+  
+  // Date Range Filter
+  if (startDate || endDate) {
+    const field = (dateField === 'tgl_masuk_permohonan') ? 'tgl_masuk_permohonan' : 'tanggal';
+    where[field] = {};
+    if (startDate) where[field][Op.gte] = startDate;
+    if (endDate) where[field][Op.lte] = endDate;
+  }
+
   if (bulan) where.bulan = bulan;
   if (tahun) where.tahun = tahun;
   if (nama_program_id) where.nama_program_id = nama_program_id;
@@ -119,12 +129,17 @@ const create = async (body, userId) => {
     throw new AppError('Mustahiq tidak ditemukan.', 404);
   }
 
+  // Distribution Date Logic:
+  // If status = menunggu persetujuan/menunggu, do NOT auto-fill tanggal_distribusi (must be NULL/empty).
+  // Only fill tanggal_distribusi when status = diterima.
+  const payload = { ...body, created_by: userId };
+  if (body.status === 'menunggu' || !body.status) {
+    payload.tanggal = null;
+  }
+
   const t = await db.transaction();
   try {
-    const distribusi = await Distribusi.create({
-      ...body,
-      created_by: userId
-    }, { transaction: t, userId });
+    const distribusi = await Distribusi.create(payload, { transaction: t, userId });
 
     await t.commit();
 
@@ -156,9 +171,16 @@ const update = async (id, body, userId) => {
     }
   }
 
+  // Distribution Date Logic:
+  // If status = menunggu persetujuan (menunggu), do NOT auto-fill tanggal_distribusi (must be NULL/empty).
+  const payload = { ...body };
+  if (body.status === 'menunggu') {
+    payload.tanggal = null;
+  }
+
   const t = await db.transaction();
   try {
-    await distribusi.update(body, { transaction: t, userId });
+    await distribusi.update(payload, { transaction: t, userId });
     await t.commit();
     await distribusi.reload();
     return distribusi;

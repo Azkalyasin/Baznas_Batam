@@ -61,7 +61,7 @@ const Distribusi = db.define('distribusi', {
 
   tanggal: {
     type: DataTypes.DATEONLY,
-    allowNull: false
+    allowNull: true
   },
   bulan: { type: DataTypes.STRING(20) },
   tahun: { type: DataTypes.INTEGER },
@@ -142,8 +142,9 @@ const Distribusi = db.define('distribusi', {
   surveyor: { type: DataTypes.STRING(100) },
   jumlah_permohonan: { type: DataTypes.DECIMAL(15, 2) },
   status: {
-    type: DataTypes.ENUM('diterima', 'ditolak'),
-    allowNull: true
+    type: DataTypes.ENUM('menunggu', 'diterima', 'ditolak'),
+    allowNull: true,
+    defaultValue: 'menunggu'
   },
   no_reg_bpp: { type: DataTypes.STRING(12) },
 

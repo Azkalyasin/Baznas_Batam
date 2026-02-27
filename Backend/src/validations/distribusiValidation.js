@@ -3,7 +3,7 @@ import { idParamSchema } from './shared.js';
 
 export const createDistribusiSchema = z.object({
   mustahiq_id: z.number().int().positive(),
-  tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD'),
+  tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD').nullable().optional(),
   program_kegiatan_id: z.number().int().positive().optional(),
   sub_program_id: z.number().int().positive().optional(),
   nama_program_id: z.number().int().positive().optional(),
@@ -41,6 +41,9 @@ export const queryDistribusiSchema = z.object({
   via_id: z.string().optional(),
   frekuensi_bantuan_id: z.string().optional(),
   status: z.enum(['diterima', 'ditolak', 'pending']).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateField: z.enum(['tanggal', 'tgl_masuk_permohonan']).optional(),
   page: z.string().regex(/^\d+$/).optional().transform(Number),
   limit: z.string().regex(/^\d+$/).optional().transform(Number)
 });
