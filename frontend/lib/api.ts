@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5501';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -554,37 +554,37 @@ export const userApi = {
     apiFetch<void>(`/api/user/${id}`, { method: 'DELETE' }),
 };
 
-// ─────────────────────────────────────────
-// 10. MIGRASI DATA  (/api/migasi)
-// ─────────────────────────────────────────
-// Note: path di backend adalah /migasi (bukan /migrasi)
 export const migrasiApi = {
-  /** GET /api/migasi/template/mustahiq — Download template Excel mustahiq */
-  templateMustahiqUrl: () =>
-    `${API_BASE_URL}/api/migasi/template/mustahiq`,
+  /** GET /api/migrasi/template/:jenis */
+  templateUrl: (jenis: 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi') => 
+    `${API_BASE_URL}/api/migrasi/template/${jenis}`,
 
-  /** GET /api/migasi/template/muzakki — Download template Excel muzakki */
-  templateMuzakkiUrl: () =>
-    `${API_BASE_URL}/api/migasi/template/muzakki`,
+  /** GET /api/migrasi/log */
+  getLog: (params: { page?: number; limit?: number; jenis?: string } = {}) =>
+    apiFetch<any[]>(`/api/migrasi/log${buildQuery(params)}`, { method: 'GET' }),
 
-  /** GET /api/migasi/log — Log riwayat migrasi */
-  getLog: (params: { page?: number; limit?: number } = {}) =>
-    apiFetch<any[]>(`/api/migasi/log${buildQuery(params)}`, { method: 'GET' }),
-
-  /** POST /api/migasi/mustahiq — Upload Excel mustahiq */
-  uploadMustahiq: (formData: FormData) =>
-    fetch(`${API_BASE_URL}/api/migasi/mustahiq`, {
+  /** POST /api/migrasi/preview */
+  preview: (file: File, jenis: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('jenis', jenis);
+    return fetch(`${API_BASE_URL}/api/migrasi/preview`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${getAuthToken()}` },
       body: formData,
-    }).then(r => r.json()),
+    }).then(r => r.json());
+  },
 
-  /** POST /api/migasi/muzakki — Upload Excel muzakki */
-  uploadMuzakki: (formData: FormData) =>
-    fetch(`${API_BASE_URL}/api/migasi/muzakki`, {
+  /** POST /api/migrasi/import */
+  import: (file: File, jenis: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('jenis', jenis);
+    return fetch(`${API_BASE_URL}/api/migrasi/import`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${getAuthToken()}` },
       body: formData,
-    }).then(r => r.json()),
+    }).then(r => r.json());
+  },
 };
 

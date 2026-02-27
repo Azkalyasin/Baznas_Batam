@@ -18,6 +18,7 @@ import User from '../models/userModel.js';
 const getAll = async (query) => {
   const {
     q, muzakki_id, tanggal, bulan, tahun,
+    startDate, endDate,
     via_id, metode_bayar_id, zis_id, jenis_zis_id,
     page = 1, limit = 10
   } = query;
@@ -26,6 +27,13 @@ const getAll = async (query) => {
   const where = {};
   if (muzakki_id) where.muzakki_id = muzakki_id;
   if (tanggal) where.tanggal = tanggal;
+  
+  if (startDate || endDate) {
+    where.tanggal = { ...(where.tanggal || {}) };
+    if (startDate) where.tanggal[Op.gte] = startDate;
+    if (endDate) where.tanggal[Op.lte] = endDate;
+  }
+  
   if (bulan) where.bulan = bulan;
   if (tahun) where.tahun = tahun;
   if (via_id) where.via_id = via_id;

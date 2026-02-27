@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { penerimaanApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PengumpulanForm } from '@/components/pengumpulan-form';
@@ -23,20 +25,27 @@ export default function PengumpulanPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
   const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/login');
   }, [isAuthenticated, router]);
 
-  useEffect(() => { fetchData(); }, [page]);
+  useEffect(() => { fetchData(); }, [page, limit, startDate, endDate]);
 
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await penerimaanApi.list({ page, limit });
+      const params: any = { page, limit };
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const res = await penerimaanApi.list(params);
       const resData: any = res.data;
       if (resData) {
         const arr = Array.isArray(resData) ? resData : resData.data ?? [];
@@ -77,6 +86,31 @@ export default function PengumpulanPage() {
           <Button onClick={() => { setEditingId(null); setFormOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Tambah Pengumpulan
           </Button>
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+          <div className="flex flex-col gap-2 p-3 border rounded-md bg-muted/30">
+            <span className="text-xs font-semibold uppercase text-muted-foreground">Filter Tanggal:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="space-y-1">
+                <span className="text-[10px] text-muted-foreground uppercase ml-1">Dari</span>
+                <Input type="date" size={1} className="h-8 text-xs w-36" 
+                  value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] text-muted-foreground uppercase ml-1">Sampai</span>
+                <Input type="date" size={1} className="h-8 text-xs w-36" 
+                  value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
+              </div>
+              {(startDate || endDate) && (
+                <Button variant="ghost" size="sm" className="h-8 mt-4" 
+                  onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}>
+                  Bersihkan
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -136,15 +170,34 @@ export default function PengumpulanPage() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">Halaman {page} dari {totalPages} (Total: {total})</p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Entries per page:</span>
+                    <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-[70px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm text-muted-foreground">
+                      Halaman {page} dari {totalPages}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </>

@@ -48,6 +48,8 @@ export const queryPenerimaanSchema = z.object({
   metode_bayar_id: z.string().optional(),
   zis_id: z.string().optional(),
   jenis_zis_id: z.string().optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional()
 });

@@ -108,9 +108,13 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
   const loadMetodeBayar = async (viaId: string) => {
     try {
       const res = await refApi.list('metode-bayar', { via_penerimaan_id: viaId });
-      if (Array.isArray(res.data)) setMetodeBayarList(res.data);
-      else setMetodeBayarList([]);
-    } catch { setMetodeBayarList([]); }
+      const data = Array.isArray(res.data) ? res.data : [];
+      setMetodeBayarList(data);
+      return data;
+    } catch { 
+      setMetodeBayarList([]);
+      return [];
+    }
   };
 
   const loadEditData = async () => {
@@ -243,150 +247,159 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Section title="Data Transaksi" />
-
-        {/* Tanggal */}
-        <div className="space-y-2">
-          <Label htmlFor="tanggal">Tanggal<Req /></Label>
-          <Input id="tanggal" type="date" required value={formData.tanggal} onChange={set('tanggal')} />
-        </div>
-
-        {/* Muzakki Search */}
-        <div className="space-y-2 md:col-span-3">
-          <Label>Muzakki<Req /></Label>
-          {selectedMuzakki ? (
-            <div className="flex items-center gap-2">
-              <Input value={selectedMuzakki.label} readOnly className="bg-muted flex-1" />
-              <Button type="button" size="sm" variant="ghost"
-                onClick={() => { setSelectedMuzakki(null); setFormData((p) => ({ ...p, muzakki_id: '' })); }}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Cari nama / NPWZ / NIK muzakki..."
-                  value={muzakkiSearch}
-                  onChange={(e) => setMuzakkiSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMuzakkiSearch())}
-                />
-                <Button type="button" variant="outline" onClick={handleMuzakkiSearch} disabled={muzakkiSearching}>
-                  {muzakkiSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Kolom 1: Transaksi & Muzakki */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Muzakki & Waktu</h3>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tanggal">Tanggal<Req /></Label>
+            <Input id="tanggal" type="date" required value={formData.tanggal} onChange={set('tanggal')} />
+          </div>
+          <div className="space-y-2">
+            <Label>Muzakki<Req /></Label>
+            {selectedMuzakki ? (
+              <div className="flex items-center gap-2">
+                <Input value={selectedMuzakki.label} readOnly className="bg-muted flex-1" />
+                <Button type="button" size="sm" variant="ghost"
+                  onClick={() => { setSelectedMuzakki(null); setFormData((p) => ({ ...p, muzakki_id: '' })); }}>
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
-              {muzakkiResults.length > 0 && (
-                <div className="border rounded-md divide-y max-h-40 overflow-y-auto shadow-sm bg-background">
-                  {muzakkiResults.map((m) => (
-                    <button key={m.id} type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
-                      onClick={() => selectMuzakki(m)}>
-                      <span className="font-medium">{m.nama}</span>
-                      {m.npwz && <span className="text-muted-foreground ml-2 text-xs">NPWZ: {m.npwz}</span>}
-                      {m.nik && <span className="text-muted-foreground ml-2 text-xs">NIK: {m.nik}</span>}
-                    </button>
-                  ))}
+            ) : (
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Cari muzakki..."
+                    value={muzakkiSearch}
+                    onChange={(e) => setMuzakkiSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMuzakkiSearch())}
+                  />
+                  <Button type="button" variant="outline" onClick={handleMuzakkiSearch} disabled={muzakkiSearching}>
+                    {muzakkiSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
                 </div>
-              )}
-            </div>
-          )}
+                {muzakkiResults.length > 0 && (
+                  <div className="border rounded-md divide-y max-h-40 overflow-y-auto shadow-sm bg-background">
+                    {muzakkiResults.map((m) => (
+                      <button key={m.id} type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        onClick={() => selectMuzakki(m)}>
+                        {m.nama} {m.npwz && `(${m.npwz})`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <Sel label="Jenis Muzakki" field="jenis_muzakki_id" items={jenisMuzakkiList} placeholder="Pilih jenis" />
+          <Sel label="Jenis UPZ" field="jenis_upz_id" items={jenisUpzList} placeholder="Pilih jenis" />
         </div>
 
-        <Section title="Informasi ZIS" />
-
-        {/* ZIS */}
-        <div className="space-y-2">
-          <Label>ZIS (Zakat/Infaq/Sedekah)<Req /></Label>
-          <Select value={formData.zis_id}
-            onValueChange={async (v) => {
-              setFormData((p) => ({ ...p, zis_id: v, jenis_zis_id: '' }));
-              setJenisZisList([]);
-              if (v) await loadJenisZis(v);
-            }} disabled={loadingRefs}>
-            <SelectTrigger><SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih Zakat / Infaq / Sedekah'} /></SelectTrigger>
-            <SelectContent>{zisList.map((z) => <SelectItem key={z.id} value={String(z.id)}>{z.nama}</SelectItem>)}</SelectContent>
-          </Select>
+        {/* Kolom 2: Detail ZIS */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detail ZIS</h3>
+          </div>
+          <div className="space-y-2">
+            <Label>ZIS (Zakat/Infaq/Sedekah)<Req /></Label>
+            <Select value={formData.zis_id}
+              onValueChange={async (v) => {
+                setFormData((p) => {
+                  const newData = { ...p, zis_id: v, jenis_zis_id: '' };
+                  const selectedZis = zisList.find(z => String(z.id) === v);
+                  if (selectedZis) {
+                    const label = selectedZis.nama.toLowerCase();
+                    if (label === 'zakat') {
+                      const amil = persentaseAmilList.find(a => a.label === '12.5%');
+                      if (amil) newData.persentase_amil_id = String(amil.id);
+                    } else if (label === 'infaq' || label === 'infak' || label === 'sedekah') {
+                      const amil = persentaseAmilList.find(a => a.label === '20%');
+                      if (amil) newData.persentase_amil_id = String(amil.id);
+                    }
+                  }
+                  return newData;
+                });
+                setJenisZisList([]);
+                if (v) await loadJenisZis(v);
+              }} disabled={loadingRefs}>
+              <SelectTrigger><SelectValue placeholder="Pilih Zakat / Infaq / Sedekah" /></SelectTrigger>
+              <SelectContent>{zisList.map((z) => <SelectItem key={z.id} value={String(z.id)}>{z.nama}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Jenis {zisList.find(z => z.id.toString() === formData.zis_id)?.nama || 'ZIS'}<Req /></Label>
+            <Select value={formData.jenis_zis_id}
+              onValueChange={(v) => setFormData((p) => ({ ...p, jenis_zis_id: v }))}
+              disabled={!formData.zis_id || jenisZisList.length === 0}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih jenis detail" />
+              </SelectTrigger>
+              <SelectContent>{jenisZisList.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nama}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="jumlah">Jumlah (Rp)<Req /></Label>
+            <Input id="jumlah" type="number" min="1" step="0.01" placeholder="Nominal"
+              value={formData.jumlah} onChange={set('jumlah')} />
+          </div>
+          <Sel label="Persentase Amil" field="persentase_amil_id" items={persentaseAmilList}
+            placeholder="Pilih amil" required />
         </div>
 
-        {/* Jenis ZIS */}
-        <div className="space-y-2">
-          <Label>Jenis {zisList.find(z => z.id.toString() === formData.zis_id)?.nama || 'ZIS'}<Req /></Label>
-          <Select value={formData.jenis_zis_id}
-            onValueChange={(v) => setFormData((p) => ({ ...p, jenis_zis_id: v }))}
-            disabled={!formData.zis_id || jenisZisList.length === 0}>
-            <SelectTrigger>
-              <SelectValue placeholder={!formData.zis_id ? 'Pilih ZIS dulu' : jenisZisList.length === 0 ? 'Tidak ada pilihan' : 'Pilih jenis detail'} />
-            </SelectTrigger>
-            <SelectContent>{jenisZisList.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nama}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-
-        {/* Jumlah */}
-        <div className="space-y-2">
-          <Label htmlFor="jumlah">Jumlah (Rp)<Req /></Label>
-          <Input id="jumlah" type="number" min="1" step="0.01" placeholder="Nominal zakat/infaq/sedekah"
-            value={formData.jumlah} onChange={set('jumlah')} />
-        </div>
-
-        {/* Persentase Amil */}
-        <Sel label="Persentase Amil" field="persentase_amil_id" items={persentaseAmilList}
-          placeholder="Pilih persentase amil" required />
-
-        <Section title="Pembayaran" />
-
-        {/* Via Pembayaran */}
-        <div className="space-y-2">
-          <Label>Via Pembayaran<Req /></Label>
-          <Select value={formData.via_id}
-            onValueChange={async (v) => {
-              setFormData((p) => ({ ...p, via_id: v, metode_bayar_id: '' }));
-              setMetodeBayarList([]);
-              if (v) await loadMetodeBayar(v);
-            }} disabled={loadingRefs}>
-            <SelectTrigger><SelectValue placeholder="Pilih via pembayaran" /></SelectTrigger>
-            <SelectContent>{viaList.map((v) => <SelectItem key={v.id} value={String(v.id)}>{v.nama}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-
-        {/* Metode Bayar */}
-        <div className="space-y-2">
-          <Label>Metode Bayar</Label>
-          <Select value={formData.metode_bayar_id}
-            onValueChange={(v) => setFormData((p) => ({ ...p, metode_bayar_id: v }))}
-            disabled={!formData.via_id || metodeBayarList.length === 0}>
-            <SelectTrigger>
-              <SelectValue placeholder={!formData.via_id ? 'Pilih via dulu' : metodeBayarList.length === 0 ? 'Tidak ada pilihan' : 'Pilih metode bayar'} />
-            </SelectTrigger>
-            <SelectContent>{metodeBayarList.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nama}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-
-        {/* No Rekening */}
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor="no_rekening">No. Rekening</Label>
-          <Input id="no_rekening" placeholder="Nomor rekening (jika ada)" maxLength={50}
-            value={formData.no_rekening} onChange={set('no_rekening')} />
-        </div>
-
-        <Section title="Info Muzakki Tambahan" />
-
-        <Sel label="Jenis Muzakki" field="jenis_muzakki_id" items={jenisMuzakkiList} placeholder="Pilih jenis muzakki" />
-        <Sel label="Jenis UPZ" field="jenis_upz_id" items={jenisUpzList} placeholder="Pilih jenis UPZ" />
-
-        <Section title="Lainnya" />
-
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
-          <Textarea id="rekomendasi_upz" placeholder="Nama UPZ yang merekomendasikan" rows={2}
-            value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
-        </div>
-
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor="keterangan">Keterangan</Label>
-          <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
-            value={formData.keterangan} onChange={set('keterangan')} />
+        {/* Kolom 3: Pembayaran & Lainnya */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pembayaran & Lainnya</h3>
+          </div>
+          <div className="space-y-2">
+            <Label>Via Pembayaran<Req /></Label>
+            <Select value={formData.via_id}
+              onValueChange={async (v) => {
+                setFormData((p) => ({ ...p, via_id: v, metode_bayar_id: '' }));
+                setMetodeBayarList([]);
+                if (v) {
+                  const via = viaList.find(it => String(it.id) === v);
+                  const results = await loadMetodeBayar(v);
+                  if (via && via.nama.toLowerCase() === 'cash') {
+                    const tunai = results?.find((m: any) => m.nama.toLowerCase() === 'tunai');
+                    if (tunai) setFormData(p => ({ ...p, metode_bayar_id: String(tunai.id) }));
+                  }
+                }
+              }} disabled={loadingRefs}>
+              <SelectTrigger><SelectValue placeholder="Pilih via" /></SelectTrigger>
+              <SelectContent>{viaList.map((v) => <SelectItem key={v.id} value={String(v.id)}>{v.nama}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Metode Bayar</Label>
+            <Select value={formData.metode_bayar_id}
+              onValueChange={(v) => setFormData((p) => ({ ...p, metode_bayar_id: v }))}
+              disabled={!formData.via_id || metodeBayarList.length === 0}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih metode" />
+              </SelectTrigger>
+              <SelectContent>{metodeBayarList.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nama}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="no_rekening">No. Rekening</Label>
+            <Input id="no_rekening" placeholder="Nomor rekening" maxLength={50}
+              value={formData.no_rekening} onChange={set('no_rekening')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
+            <Textarea id="rekomendasi_upz" placeholder="Nama UPZ" rows={2}
+              value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="keterangan">Keterangan</Label>
+            <Textarea id="keterangan" placeholder="Catatan" rows={2}
+              value={formData.keterangan} onChange={set('keterangan')} />
+          </div>
         </div>
       </div>
 
