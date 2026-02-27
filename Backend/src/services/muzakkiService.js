@@ -62,7 +62,22 @@ const getById = async (id) => {
     ]
   });
   if (!muzakki) throw new AppError('Muzakki tidak ditemukan.', 404);
-  return muzakki;
+
+  // Calculate statistics
+  const stats = await Penerimaan.findOne({
+    where: { muzakki_id: id },
+    attributes: [
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'total_setor_count'],
+      [Sequelize.fn('SUM', Sequelize.col('jumlah')), 'total_setor_amount']
+    ],
+    raw: true
+  });
+
+  const result = muzakki.toJSON();
+  result.total_setor_count = parseInt(stats?.total_setor_count || 0);
+  result.total_setor_amount = parseFloat(stats?.total_setor_amount || 0);
+
+  return result;
 };
 
 // --- GET /api/muzakki/:id/riwayat ---

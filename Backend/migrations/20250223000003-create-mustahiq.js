@@ -39,6 +39,8 @@ module.exports = {
       total_penerimaan_count:  { type: Sequelize.INTEGER,      defaultValue: 0 },
       total_penerimaan_amount: { type: Sequelize.DECIMAL(15,2), defaultValue: 0 },
       last_received_date: { type: Sequelize.DATEONLY },
+      registered_date:    { type: Sequelize.DATEONLY, allowNull: true },
+      tgl_lahir:          { type: Sequelize.DATEONLY, allowNull: true },
       keterangan: { type: Sequelize.TEXT },
       registered_by: {
         type: Sequelize.INTEGER,

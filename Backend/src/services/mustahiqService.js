@@ -84,7 +84,25 @@ const getById = async (id) => {
     ]
   });
   if (!mustahiq) throw new AppError('Mustahiq tidak ditemukan.', 404);
-  return mustahiq;
+
+  // Calculate statistics (only sum amounts with status = diterima)
+  const stats = await Distribusi.findOne({
+    where: { 
+      mustahiq_id: id,
+      status: 'diterima'
+    },
+    attributes: [
+      [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'total_penerimaan_count'],
+      [db.Sequelize.fn('SUM', db.Sequelize.col('jumlah')), 'total_penerimaan_amount']
+    ],
+    raw: true
+  });
+
+  const result = mustahiq.toJSON();
+  result.total_penerimaan_count = parseInt(stats?.total_penerimaan_count || 0);
+  result.total_penerimaan_amount = parseFloat(stats?.total_penerimaan_amount || 0);
+
+  return result;
 };
 
 // --- GET /api/mustahiq/:id/riwayat ---

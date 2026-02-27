@@ -35,11 +35,38 @@ module.exports = {
     viaRows.forEach(r => { viaMap[r.nama] = r.id; });
 
     await queryInterface.bulkInsert('ref_metode_bayar', [
-      { nama: 'Tunai',        via_penerimaan_id: viaMap['Cash'] },
-      { nama: 'Transfer BRI', via_penerimaan_id: viaMap['Bank'] },
-      { nama: 'Transfer BSI', via_penerimaan_id: viaMap['Bank'] },
-      { nama: 'QRIS',         via_penerimaan_id: viaMap['Kantor Digital'] },
-      { nama: 'Shopeepay',    via_penerimaan_id: viaMap['Kantor Digital'] }
+      { nama: 'Tunai',              via_penerimaan_id: viaMap['Cash'] },
+      { nama: 'Bank Mandiri',       via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank Riau Kepri',    via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank Riau Syariah',  via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'BNI',                via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank BSI 2025',      via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'BTN Syariah Zakat',  via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'BTN Syariah Infak',  via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank Muamalat',      via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'BSI Zakat',          via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'BSI Infaq',          via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank BRI',           via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank BRI Syariah',   via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank OCBC Syariah',  via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'Bank BCA',           via_penerimaan_id: viaMap['Bank'] },
+      { nama: 'BSI 2025',           via_penerimaan_id: viaMap['Bank'] },
+      // Same for Kantor Digital
+      { nama: 'Bank Mandiri',       via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank Riau Kepri',    via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank Riau Syariah',  via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'BNI',                via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank BSI 2025',      via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'BTN Syariah Zakat',  via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'BTN Syariah Infak',  via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank Muamalat',      via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'BSI Zakat',          via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'BSI Infaq',          via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank BRI',           via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank BRI Syariah',   via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank OCBC Syariah',  via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'Bank BCA',           via_penerimaan_id: viaMap['Kantor Digital'] },
+      { nama: 'BSI 2025',           via_penerimaan_id: viaMap['Kantor Digital'] }
     ], { ignoreDuplicates: true });
 
     // --- ref_jenis_zis ---

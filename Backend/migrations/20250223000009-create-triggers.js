@@ -50,11 +50,13 @@ module.exports = {
       AFTER INSERT ON distribusi
       FOR EACH ROW
       BEGIN
-        UPDATE mustahiq
-        SET total_penerimaan_count  = total_penerimaan_count + 1,
-            total_penerimaan_amount = total_penerimaan_amount + NEW.jumlah,
-            last_received_date      = NEW.tanggal
-        WHERE id = NEW.mustahiq_id;
+        IF NEW.status = 'diterima' THEN
+          UPDATE mustahiq
+          SET total_penerimaan_count  = total_penerimaan_count + 1,
+              total_penerimaan_amount = total_penerimaan_amount + NEW.jumlah,
+              last_received_date      = NEW.tanggal
+          WHERE id = NEW.mustahiq_id;
+        END IF;
       END
     `);
 
@@ -64,24 +66,51 @@ module.exports = {
       AFTER UPDATE ON distribusi
       FOR EACH ROW
       BEGIN
+        /* 1. Handle Mustahiq ID change */
         IF NEW.mustahiq_id != OLD.mustahiq_id THEN
-          UPDATE mustahiq
-          SET total_penerimaan_count  = GREATEST(total_penerimaan_count - 1, 0),
-              total_penerimaan_amount = GREATEST(total_penerimaan_amount - OLD.jumlah, 0),
-              last_received_date      = (SELECT MAX(tanggal) FROM distribusi WHERE mustahiq_id = OLD.mustahiq_id)
-          WHERE id = OLD.mustahiq_id;
+          /* Adjust OLD mustahiq if it was 'diterima' */
+          IF OLD.status = 'diterima' THEN
+            UPDATE mustahiq
+            SET total_penerimaan_count  = GREATEST(total_penerimaan_count - 1, 0),
+                total_penerimaan_amount = GREATEST(total_penerimaan_amount - OLD.jumlah, 0),
+                last_received_date      = (SELECT MAX(tanggal) FROM distribusi WHERE mustahiq_id = OLD.mustahiq_id AND status = 'diterima')
+            WHERE id = OLD.mustahiq_id;
+          END IF;
+          
+          /* Adjust NEW mustahiq if it is 'diterima' */
+          IF NEW.status = 'diterima' THEN
+            UPDATE mustahiq
+            SET total_penerimaan_count  = total_penerimaan_count + 1,
+                total_penerimaan_amount = total_penerimaan_amount + NEW.jumlah,
+                last_received_date      = NEW.tanggal
+            WHERE id = NEW.mustahiq_id;
+          END IF;
 
-          UPDATE mustahiq
-          SET total_penerimaan_count  = total_penerimaan_count + 1,
-              total_penerimaan_amount = total_penerimaan_amount + NEW.jumlah,
-              last_received_date      = NEW.tanggal
-          WHERE id = NEW.mustahiq_id;
-
-        ELSEIF NEW.jumlah != OLD.jumlah THEN
-          UPDATE mustahiq
-          SET total_penerimaan_amount = total_penerimaan_amount + (NEW.jumlah - OLD.jumlah),
-              last_received_date      = NEW.tanggal
-          WHERE id = NEW.mustahiq_id;
+        /* 2. Handle Status or Amount change within SAME mustahiq */
+        ELSEIF (OLD.status != NEW.status OR OLD.jumlah != NEW.jumlah) THEN
+          IF OLD.status = 'diterima' AND NEW.status != 'diterima' THEN
+            /* Was diterima, now not -> Subtract */
+            UPDATE mustahiq
+            SET total_penerimaan_count  = GREATEST(total_penerimaan_count - 1, 0),
+                total_penerimaan_amount = GREATEST(total_penerimaan_amount - OLD.jumlah, 0),
+                last_received_date      = (SELECT MAX(tanggal) FROM distribusi WHERE mustahiq_id = NEW.mustahiq_id AND status = 'diterima')
+            WHERE id = NEW.mustahiq_id;
+          
+          ELSEIF OLD.status != 'diterima' AND NEW.status = 'diterima' THEN
+            /* Was not diterima, now is -> Add */
+            UPDATE mustahiq
+            SET total_penerimaan_count  = total_penerimaan_count + 1,
+                total_penerimaan_amount = total_penerimaan_amount + NEW.jumlah,
+                last_received_date      = NEW.tanggal
+            WHERE id = NEW.mustahiq_id;
+          
+          ELSEIF OLD.status = 'diterima' AND NEW.status = 'diterima' AND OLD.jumlah != NEW.jumlah THEN
+            /* Both were diterima, amount changed -> Diff */
+            UPDATE mustahiq
+            SET total_penerimaan_amount = total_penerimaan_amount + (NEW.jumlah - OLD.jumlah),
+                last_received_date      = NEW.tanggal
+            WHERE id = NEW.mustahiq_id;
+          END IF;
         END IF;
       END
     `);
@@ -92,11 +121,13 @@ module.exports = {
       AFTER DELETE ON distribusi
       FOR EACH ROW
       BEGIN
-        UPDATE mustahiq
-        SET total_penerimaan_count  = GREATEST(total_penerimaan_count - 1, 0),
-            total_penerimaan_amount = GREATEST(total_penerimaan_amount - OLD.jumlah, 0),
-            last_received_date      = (SELECT MAX(tanggal) FROM distribusi WHERE mustahiq_id = OLD.mustahiq_id)
-        WHERE id = OLD.mustahiq_id;
+        IF OLD.status = 'diterima' THEN
+          UPDATE mustahiq
+          SET total_penerimaan_count  = GREATEST(total_penerimaan_count - 1, 0),
+              total_penerimaan_amount = GREATEST(total_penerimaan_amount - OLD.jumlah, 0),
+              last_received_date      = (SELECT MAX(tanggal) FROM distribusi WHERE mustahiq_id = OLD.mustahiq_id AND status = 'diterima')
+          WHERE id = OLD.mustahiq_id;
+        END IF;
       END
     `);
 

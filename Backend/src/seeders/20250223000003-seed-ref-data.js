@@ -69,8 +69,8 @@ module.exports = {
 
     // 8. ref_persentase_amil
     await queryInterface.bulkInsert('ref_persentase_amil', [
-      { label: '12.50%', nilai: 0.1250 },
-      { label: '100%',   nilai: 1.0000 }
+      { label: '12.5%', nilai: 0.125 },
+      { label: '20%',   nilai: 0.20 }
     ], { ignoreDuplicates: true });
 
     // 9. ref_jenis_muzakki

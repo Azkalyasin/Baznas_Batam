@@ -157,113 +157,110 @@ export function MuzakkiForm({ onSuccess, editingId, onCancelEdit }: MuzakkiFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* NPWZ */}
-        <div className="space-y-2">
-          <Label htmlFor="npwz">NPWZ</Label>
-          <Input id="npwz" placeholder="Nomor Pokok Wajib Zakat" maxLength={15}
-            value={formData.npwz} onChange={set('npwz')} />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Kolom 1: Identitas */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identitas</h3>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="npwz">NPWZ</Label>
+            <Input id="npwz" placeholder="Nomor Pokok Wajib Zakat" maxLength={15}
+              value={formData.npwz} onChange={set('npwz')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nama">Nama<Req /></Label>
+            <Input id="nama" required placeholder="Nama lengkap muzakki"
+              value={formData.nama} onChange={set('nama')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nik">NIK</Label>
+            <Input id="nik" placeholder="16 digit NIK" maxLength={16}
+              value={formData.nik} onChange={set('nik')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="no_hp">No. HP</Label>
+            <Input id="no_hp" placeholder="08xxxxxxxxxx" maxLength={14}
+              value={formData.no_hp} onChange={set('no_hp')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tgl_lahir">Tanggal Lahir</Label>
+            <Input id="tgl_lahir" type="date" value={formData.tgl_lahir} onChange={set('tgl_lahir')} />
+          </div>
         </div>
 
-        {/* Nama */}
-        <div className="space-y-2">
-          <Label htmlFor="nama">Nama<Req /></Label>
-          <Input id="nama" required placeholder="Nama lengkap muzakki"
-            value={formData.nama} onChange={set('nama')} />
+        {/* Kolom 2: Registrasi & Klasifikasi */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Klasifikasi</h3>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registered_date">Tanggal Registrasi</Label>
+            <Input id="registered_date" type="date" value={formData.registered_date} onChange={set('registered_date')} />
+          </div>
+          <div className="space-y-2">
+            <Label>Jenis Muzakki</Label>
+            <Select value={formData.jenis_muzakki_id} onValueChange={(v) => setFormData((p) => ({ ...p, jenis_muzakki_id: v }))}>
+              <SelectTrigger disabled={loadingRefs}>
+                <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih jenis muzakki'} />
+              </SelectTrigger>
+              <SelectContent>
+                {jenisMuzakkiList.map((j) => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Jenis UPZ</Label>
+            <Select value={formData.jenis_upz_id} onValueChange={(v) => setFormData((p) => ({ ...p, jenis_upz_id: v }))}>
+              <SelectTrigger disabled={loadingRefs}>
+                <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih jenis UPZ'} />
+              </SelectTrigger>
+              <SelectContent>
+                {jenisUpzList.map((j) => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* NIK */}
-        <div className="space-y-2">
-          <Label htmlFor="nik">NIK</Label>
-          <Input id="nik" placeholder="16 digit NIK" maxLength={16}
-            value={formData.nik} onChange={set('nik')} />
-        </div>
-
-        {/* No HP */}
-        <div className="space-y-2">
-          <Label htmlFor="no_hp">No. HP</Label>
-          <Input id="no_hp" placeholder="08xxxxxxxxxx" maxLength={14}
-            value={formData.no_hp} onChange={set('no_hp')} />
-        </div>
-
-        {/* Tanggal Lahir */}
-        <div className="space-y-2">
-          <Label htmlFor="tgl_lahir">Tanggal Lahir</Label>
-          <Input id="tgl_lahir" type="date" value={formData.tgl_lahir} onChange={set('tgl_lahir')} />
-        </div>
-
-        {/* Tanggal Registrasi */}
-        <div className="space-y-2">
-          <Label htmlFor="registered_date">Tanggal Registrasi</Label>
-          <Input id="registered_date" type="date" value={formData.registered_date} onChange={set('registered_date')} />
-        </div>
-
-        {/* Jenis Muzakki */}
-        <div className="space-y-2">
-          <Label>Jenis Muzakki</Label>
-          <Select value={formData.jenis_muzakki_id} onValueChange={(v) => setFormData((p) => ({ ...p, jenis_muzakki_id: v }))}>
-            <SelectTrigger disabled={loadingRefs}>
-              <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih jenis muzakki'} />
-            </SelectTrigger>
-            <SelectContent>
-              {jenisMuzakkiList.map((j) => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Jenis UPZ */}
-        <div className="space-y-2">
-          <Label>Jenis UPZ</Label>
-          <Select value={formData.jenis_upz_id} onValueChange={(v) => setFormData((p) => ({ ...p, jenis_upz_id: v }))}>
-            <SelectTrigger disabled={loadingRefs}>
-              <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih jenis UPZ'} />
-            </SelectTrigger>
-            <SelectContent>
-              {jenisUpzList.map((j) => <SelectItem key={j.id} value={j.id.toString()}>{j.nama}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Kecamatan */}
-        <div className="space-y-2">
-          <Label>Kecamatan<Req /></Label>
-          <Select value={formData.kecamatan_id} onValueChange={handleKecamatanChange}>
-            <SelectTrigger disabled={loadingRefs}>
-              <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih Kecamatan'} />
-            </SelectTrigger>
-            <SelectContent>
-              {kecamatanList.map((k) => <SelectItem key={k.id} value={k.id.toString()}>{k.nama}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Kelurahan */}
-        <div className="space-y-2">
-          <Label>Kelurahan<Req /></Label>
-          <Select value={formData.kelurahan_id} onValueChange={(v) => setFormData((p) => ({ ...p, kelurahan_id: v }))}
-            disabled={!formData.kecamatan_id || loadingRefs}>
-            <SelectTrigger>
-              <SelectValue placeholder={!formData.kecamatan_id ? 'Pilih Kecamatan dulu' : kelurahanList.length === 0 ? 'Memuat...' : 'Pilih Kelurahan'} />
-            </SelectTrigger>
-            <SelectContent>
-              {kelurahanList.map((k) => <SelectItem key={k.id} value={k.id.toString()}>{k.nama}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Alamat */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="alamat">Alamat</Label>
-          <Textarea id="alamat" placeholder="Alamat lengkap" rows={2}
-            value={formData.alamat} onChange={set('alamat')} />
-        </div>
-
-        {/* Keterangan */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="keterangan">Keterangan</Label>
-          <Textarea id="keterangan" placeholder="Catatan tambahan (opsional)" rows={2}
-            value={formData.keterangan} onChange={set('keterangan')} />
+        {/* Kolom 3: Lokasi & Detail */}
+        <div className="space-y-4">
+          <div className="pb-2 border-b">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Lokasi & Detail</h3>
+          </div>
+          <div className="space-y-2">
+            <Label>Kecamatan<Req /></Label>
+            <Select value={formData.kecamatan_id} onValueChange={handleKecamatanChange}>
+              <SelectTrigger disabled={loadingRefs}>
+                <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih Kecamatan'} />
+              </SelectTrigger>
+              <SelectContent>
+                {kecamatanList.map((k) => <SelectItem key={k.id} value={k.id.toString()}>{k.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Kelurahan<Req /></Label>
+            <Select value={formData.kelurahan_id} onValueChange={(v) => setFormData((p) => ({ ...p, kelurahan_id: v }))}
+              disabled={!formData.kecamatan_id || loadingRefs}>
+              <SelectTrigger>
+                <SelectValue placeholder={!formData.kecamatan_id ? 'Pilih Kecamatan dulu' : kelurahanList.length === 0 ? 'Memuat...' : 'Pilih Kelurahan'} />
+              </SelectTrigger>
+              <SelectContent>
+                {kelurahanList.map((k) => <SelectItem key={k.id} value={k.id.toString()}>{k.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="alamat">Alamat</Label>
+            <Textarea id="alamat" placeholder="Alamat lengkap" rows={3}
+              value={formData.alamat} onChange={set('alamat')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="keterangan">Keterangan</Label>
+            <Textarea id="keterangan" placeholder="Catatan tambahan (opsional)" rows={3}
+              value={formData.keterangan} onChange={set('keterangan')} />
+          </div>
         </div>
       </div>
 
