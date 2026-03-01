@@ -266,6 +266,42 @@ const rekapTahunan = async (query) => {
   return results;
 };
 
+const getStats = async (query) => {
+  const { bulan = 'all', tahun = new Date().getFullYear() } = query;
+
+  const connection = await db.connectionManager.getConnection();
+
+  try {
+    const promiseConn = connection.promise();
+
+    const [results] = await promiseConn.query(
+      'CALL sp_distribusi_stats_by_month_year(?, ?)',
+      [bulan, tahun]
+    );
+
+    const stats = Array.isArray(results) ? results : [];
+
+    const ensureArray = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      return [val];
+    };
+
+    return {
+      by_asnaf: ensureArray(stats[0]),
+      by_program: ensureArray(stats[1]),
+      by_kecamatan: ensureArray(stats[2]),
+      summary: (stats[3] && stats[3][0]) ? stats[3][0] : {
+        total_distribusi_zis: 0,
+        total_distribusi_zakat: 0,
+        total_distribusi_infaq: 0
+      }
+    };
+  } finally {
+    await db.connectionManager.releaseConnection(connection);
+  }
+};
+
 export default {
   getAll,
   getById,
@@ -274,6 +310,7 @@ export default {
   destroy,
   rekapHarian,
   rekapBulanan,
-  rekapTahunan
+  rekapTahunan,
+  getStats
 };
 

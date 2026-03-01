@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
     icon: '📦',
     children: [
       { href: '/distribusi', label: 'Daftar Distribusi', icon: '📋' },
-      { href: '/distribusi/statistik', label: 'Statistik', icon: '📈' },
+      { href: '/statistik-distribusi', label: 'Statistik', icon: '📈' },
     ],
   },
   {
@@ -162,7 +162,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-screen">
         {/* Sidebar Navigation */}
-        <nav className={`hidden shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:block transition-all duration-300 ${isCollapsed ? 'w-0 overflow-hidden border-none' : 'w-64'}`}>
+        <nav className={`hidden shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:block transition-all duration-300 sticky top-16 h-[calc(100vh-4rem)] z-40 ${isCollapsed ? 'w-0 overflow-hidden border-none' : 'w-64 overflow-y-auto overflow-x-hidden'}`}>
           <div className={`p-4 transition-opacity duration-300 ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
             {!isCollapsed && <div className="text-sm font-semibold text-sidebar-foreground mb-4">Menu Utama</div>}
             <ul className="space-y-1">

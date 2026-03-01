@@ -21,6 +21,11 @@ router.get('/',
   distribusiController.getAll
 );
 
+router.get('/stats', 
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  distribusiController.getStats
+);
+
 router.get('/rekap/harian', 
   roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
   distribusiController.rekapHarian

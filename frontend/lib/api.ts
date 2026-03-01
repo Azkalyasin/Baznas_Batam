@@ -362,6 +362,10 @@ export const distribusiApi = {
   rekapBulanan: (bulan: number | string, tahun: number) =>
     apiFetch<any>(`/api/distribusi/rekap/bulanan${buildQuery({ bulan, tahun })}`, { method: 'GET' }),
 
+  /** GET /api/distribusi/stats */
+  getStats: (params: { bulan?: string; tahun?: number } = {}) =>
+    apiFetch<any>(`/api/distribusi/stats${buildQuery(params)}`, { method: 'GET' }),
+
   /** POST /api/distribusi */
   create: (data: DistribusiBody) =>
     apiFetch<any>('/api/distribusi', { method: 'POST', body: JSON.stringify(data) }),

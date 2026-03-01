@@ -194,6 +194,15 @@ const cetakBuktiPenyaluran = async (req, res, next) => {
   }
 };
 
+const getStats = async (req, res, next) => {
+  try {
+    const data = await distribusiService.getStats(req.query);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getAll,
   getById,
@@ -203,5 +212,6 @@ export default {
   rekapHarian,
   rekapBulanan,
   rekapTahunan,
-  cetakBuktiPenyaluran
+  cetakBuktiPenyaluran,
+  getStats
 };

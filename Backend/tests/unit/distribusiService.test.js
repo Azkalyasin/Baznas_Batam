@@ -106,6 +106,7 @@ describe('distribusiService', () => {
       expect(Distribusi.create).toHaveBeenCalledWith(
         expect.objectContaining({
           ...payload,
+          tanggal: null, // Since payload doesn't have status, it defaults to null/menunggu logic in service
           created_by: 1
         }),
         expect.objectContaining({ transaction: mockTransaction })
