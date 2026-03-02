@@ -8,6 +8,7 @@ interface User {
   username: string;
   nama?: string;
   email?: string;
+  role: 'superadmin' | 'pelayanan' | 'distribusi' | 'keuangan' | 'penerimaan';
 }
 
 interface AuthContextType {

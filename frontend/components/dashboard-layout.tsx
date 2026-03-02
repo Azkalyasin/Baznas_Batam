@@ -11,6 +11,7 @@ interface NavChild {
   href: string;
   label: string;
   icon: string;
+  roles?: string[];
 }
 
 interface NavItem {
@@ -18,11 +19,12 @@ interface NavItem {
   label: string;
   icon: string;
   children?: NavChild[];
+  roles?: string[];
 }
 
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/muzakki', label: 'Muzakki', icon: '🧑‍💼' },
+  { href: '/muzakki', label: 'Muzakki', icon: '🧑‍💼', roles: ['superadmin', 'distribusi', 'keuangan', 'penerimaan'] },
   { href: '/pelayanan', label: 'Mustahiq', icon: '👥' },
   {
     label: 'Distribusi',
@@ -36,12 +38,21 @@ const navItems: NavItem[] = [
     label: 'Penerimaan',
     icon: '💵',
     children: [
-      { href: '/pengumpulan', label: 'Daftar Penerimaan', icon: '📋' },
+      { href: '/pengumpulan', label: 'Daftar Penerimaan', icon: '📋', roles: ['superadmin', 'distribusi', 'keuangan', 'penerimaan'] },
       { href: '/statistik-penerimaan', label: 'Statistik', icon: '📈' },
     ],
   },
   { href: '/migrasi-excel', label: 'Migrasi Excel', icon: '📁' },
   { href: '/laporan', label: 'Laporan', icon: '📄' },
+  {
+    label: 'Administrasi',
+    icon: '⚙️',
+    roles: ['superadmin'],
+    children: [
+      { href: '/admin/users', label: 'Manajemen User', icon: '👤' },
+      { href: '/admin/reference', label: 'Data Referensi', icon: '📚' },
+    ],
+  },
 ];
 
 function NavGroup({ item, pathname, isCollapsed }: { item: NavItem; pathname: string; isCollapsed: boolean }) {
@@ -69,26 +80,26 @@ function NavGroup({ item, pathname, isCollapsed }: { item: NavItem; pathname: st
   }
 
   // Group with children (dropdown)
-    return (
-      <li>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${isChildActive
-            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-            : 'hover:bg-sidebar-primary hover:text-sidebar-primary-foreground'
-            } ${isCollapsed ? 'justify-center px-0' : ''}`}
-          title={isCollapsed ? item.label : undefined}
-        >
-          <span className="text-lg">{item.icon}</span>
-          {!isCollapsed && (
-            <>
-              <span className="flex-1 text-left">{item.label}</span>
-              {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </>
-          )}
-        </button>
+  return (
+    <li>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${isChildActive
+          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+          : 'hover:bg-sidebar-primary hover:text-sidebar-primary-foreground'
+          } ${isCollapsed ? 'justify-center px-0' : ''}`}
+        title={isCollapsed ? item.label : undefined}
+      >
+        <span className="text-lg">{item.icon}</span>
+        {!isCollapsed && (
+          <>
+            <span className="flex-1 text-left">{item.label}</span>
+            {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </>
+        )}
+      </button>
 
-        {open && !isCollapsed && (
+      {open && !isCollapsed && (
         <ul className="mt-1 ml-4 space-y-1 border-l border-sidebar-border pl-3">
           {item.children?.map((child) => {
             const active = pathname === child.href || pathname.startsWith(child.href + '/');
@@ -140,7 +151,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             >
               <Menu className="h-6 w-6" />
             </Button>
-            <div className="text-2xl font-bold">BAZNAS</div>
+            <div className="flex items-center gap-2">
+              <img src="/Logo.png" alt="BAZNAS Batam" className="h-10 w-auto" />
+            </div>
             <div className="hidden text-sm md:block">
               Sistem Manajemen Dana Zakat Batam
             </div>
@@ -166,9 +179,21 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <div className={`p-4 transition-opacity duration-300 ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
             {!isCollapsed && <div className="text-sm font-semibold text-sidebar-foreground mb-4">Menu Utama</div>}
             <ul className="space-y-1">
-              {navItems.map((item) => (
-                <NavGroup key={item.href ?? item.label} item={item} pathname={pathname} isCollapsed={isCollapsed} />
-              ))}
+              {navItems
+                .filter(item => !item.roles || (user && item.roles.includes(user.role)))
+                .map((item) => {
+                  const filteredChildren = item.children?.filter(child => !child.roles || (user && child.roles.includes(user.role)));
+                  const filteredItem = { ...item, children: filteredChildren };
+                  return (
+                    <NavGroup
+                      key={item.href ?? item.label}
+                      item={filteredItem}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                  );
+                })
+              }
             </ul>
           </div>
         </nav>

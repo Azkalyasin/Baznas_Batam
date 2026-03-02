@@ -10,12 +10,13 @@ module.exports = {
         /* 1. Total by Asnaf */
         SELECT 
           a.nama AS category,
-          CAST(SUM(d.jumlah) AS DECIMAL(15,2)) AS total
-        FROM distribusi d
-        JOIN ref_asnaf a ON d.asnaf_id = a.id
-        WHERE d.status = 'diterima'
+          IFNULL(CAST(SUM(d.jumlah) AS DECIMAL(15,2)), 0) AS total
+        FROM ref_asnaf a
+        LEFT JOIN distribusi d ON d.asnaf_id = a.id 
+          AND d.status = 'diterima'
           AND d.tahun = p_tahun
           AND (p_bulan IS NULL OR p_bulan = '' OR p_bulan = 'all' OR d.bulan = p_bulan)
+        WHERE a.is_active = 1
         GROUP BY a.nama;
 
         /* 2. Total by Nama Program */

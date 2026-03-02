@@ -30,7 +30,7 @@ const User = db.define('users', {
     }
   },
   role: {
-    type: DataTypes.ENUM('superadmin', 'pelayanan', 'pendistribusian', 'keuangan'),
+    type: DataTypes.ENUM('superadmin', 'pelayanan', 'distribusi', 'keuangan', 'penerimaan'),
     allowNull: false
   }
 }, {

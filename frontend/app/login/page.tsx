@@ -51,10 +51,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-secondary px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
-            BA
+          <div className="mx-auto mb-0">
+            <img src="/Logo.png" alt="Logo BAZNAS" className="h-40 w-auto" />
           </div>
-          <CardTitle className="text-2xl">BAZNAS Batam</CardTitle>
           <CardDescription>
             Sistem Manajemen Dana Zakat Infak Sedekah
           </CardDescription>

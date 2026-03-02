@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5501';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -520,13 +520,20 @@ export const laporanApi = {
 // ─────────────────────────────────────────
 // 9. USER MANAGEMENT  (Superadmin Only)
 // ─────────────────────────────────────────
-export type UserRole = 'superadmin' | 'pelayanan' | 'keuangan';
+export type UserRole = 'superadmin' | 'pelayanan' | 'distribusi' | 'keuangan' | 'penerimaan';
 
 export interface UserListParams {
   q?: string;
   role?: UserRole;
   page?: number;
   limit?: number;
+}
+
+export interface UserListResponse {
+  users: any[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 export interface UserBody {
@@ -537,30 +544,30 @@ export interface UserBody {
 }
 
 export const userApi = {
-  /** GET /api/user */
+  /** GET /api/users */
   list: (params: UserListParams = {}) =>
-    apiFetch<any[]>(`/api/user${buildQuery(params)}`, { method: 'GET' }),
+    apiFetch<UserListResponse>(`/api/users${buildQuery(params)}`, { method: 'GET' }),
 
-  /** GET /api/user/:id */
+  /** GET /api/users/:id */
   get: (id: number) =>
-    apiFetch<any>(`/api/user/${id}`, { method: 'GET' }),
+    apiFetch<any>(`/api/users/${id}`, { method: 'GET' }),
 
-  /** POST /api/user — body: { username, password, nama, role } */
+  /** POST /api/users — body: { username, password, nama, role } */
   create: (data: UserBody) =>
-    apiFetch<any>('/api/user', { method: 'POST', body: JSON.stringify(data) }),
+    apiFetch<any>('/api/users', { method: 'POST', body: JSON.stringify(data) }),
 
-  /** PUT /api/user/:id */
+  /** PUT /api/users/:id */
   update: (id: number, data: UserBody) =>
-    apiFetch<any>(`/api/user/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    apiFetch<any>(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
-  /** DELETE /api/user/:id */
+  /** DELETE /api/users/:id */
   delete: (id: number) =>
-    apiFetch<void>(`/api/user/${id}`, { method: 'DELETE' }),
+    apiFetch<void>(`/api/users/${id}`, { method: 'DELETE' }),
 };
 
 export const migrasiApi = {
   /** GET /api/migrasi/template/:jenis */
-  templateUrl: (jenis: 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi') => 
+  templateUrl: (jenis: 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi') =>
     `${API_BASE_URL}/api/migrasi/template/${jenis}`,
 
   /** GET /api/migrasi/log */
