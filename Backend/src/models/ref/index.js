@@ -5,17 +5,17 @@ import SubProgram from './SubProgram.js';
 import ProgramKegiatan from './ProgramKegiatan.js';
 import Asnaf from './Asnaf.js';
 import { Zis, JenisZis } from './Zis.js';
-import { 
-  KategoriMustahiq, 
-  ViaDistribusi, 
-  ViaPenerimaan, 
-  MetodeBayar, 
-  JenisZisDistribusi, 
-  PersentaseAmil, 
-  JenisMuzakki, 
-  JenisUpz, 
-  FrekuensiBantuan, 
-  Infak 
+import {
+  KategoriMustahiq,
+  NamaEntitas,
+  ViaPenerimaan,
+  MetodeBayar,
+  JenisZisDistribusi,
+  PersentaseAmil,
+  JenisMuzakki,
+  JenisUpz,
+  FrekuensiBantuan,
+  Infak
 } from './CommonRef.js';
 
 export {
@@ -28,7 +28,7 @@ export {
   Zis,
   JenisZis,
   KategoriMustahiq,
-  ViaDistribusi,
+  NamaEntitas,
   ViaPenerimaan,
   MetodeBayar,
   JenisZisDistribusi,

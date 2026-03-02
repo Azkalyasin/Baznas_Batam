@@ -10,6 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface ReferenceRecord {
+  id: number;
+  nama: string;
+}
+
 interface DistribusiFormProps {
   onSuccess: () => void;
   editingId: number | null;
@@ -24,7 +29,7 @@ const emptyForm = {
   program_kegiatan_id: '',
   frekuensi_bantuan_id: '',
   jenis_zis_distribusi_id: '',
-  via_id: '',
+  nama_entitas_id: '',
   kategori_mustahiq_id: '',
   jumlah: '',
   quantity: '',
@@ -54,7 +59,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
   const [subProgramList, setSubProgramList] = useState<any[]>([]);
   const [kegiatanList, setKegiatanList] = useState<any[]>([]);
   const [frekuensiList, setFrekuensiList] = useState<any[]>([]);
-  const [viaList, setViaList] = useState<any[]>([]);
+  const [entitas, setEntitas] = useState<ReferenceRecord[]>([]);
   const [kategoriList, setKategoriList] = useState<any[]>([]);
   const [jenisZisList, setJenisZisList] = useState<any[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(true);
@@ -71,19 +76,17 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
       isInitializingRef.current = true;
       setLoadingRefs(true);
       try {
-        const [progRes, kegRes, frekRes, viaRes, kategoriRes, jenisZisRes] = await Promise.allSettled([
+        const [entitasRes, progsRes, frekRes, kategoriRes, jenisZisRes] = await Promise.all([
+          refApi.list('nama-entitas'),
           refApi.list('nama-program'),
-          refApi.list('program-kegiatan'),
           refApi.list('frekuensi-bantuan'),
-          refApi.list('via-distribusi'),
           refApi.list('kategori-mustahiq'),
           refApi.list('jenis-zis-distribusi'),
         ]);
-        const g = (r: any) => r.status === 'fulfilled' && Array.isArray(r.value?.data) ? r.value.data : [];
-        setProgramList(g(progRes));
-        setKegiatanList(g(kegRes));
+        setEntitas(entitasRes.data || []);
+        const g = (r: any) => Array.isArray(r.data) ? r.data : [];
+        setProgramList(g(progsRes));
         setFrekuensiList(g(frekRes));
-        setViaList(g(viaRes));
         setKategoriList(g(kategoriRes));
         setJenisZisList(g(jenisZisRes));
 
@@ -97,6 +100,12 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
               const subRes = await refApi.list('sub-program', { nama_program_id: progId });
               if (Array.isArray(subRes.data)) setSubProgramList(subRes.data);
             }
+            // Load activities for existing sub-program
+            const subId = String(d.sub_program_id || '');
+            if (subId) {
+              const kegRes = await refApi.list('program-kegiatan', { sub_program_id: subId });
+              if (Array.isArray(kegRes.data)) setKegiatanList(kegRes.data);
+            }
             setForm({
               tanggal: d.tanggal ? d.tanggal.split('T')[0] : new Date().toISOString().split('T')[0],
               mustahiq_id: String(d.mustahiq_id || ''),
@@ -105,7 +114,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
               program_kegiatan_id: String(d.program_kegiatan_id || ''),
               frekuensi_bantuan_id: String(d.frekuensi_bantuan_id || ''),
               jenis_zis_distribusi_id: String(d.jenis_zis_distribusi_id || ''),
-              via_id: String(d.via_id || ''),
+              nama_entitas_id: String(d.nama_entitas_id || ''),
               kategori_mustahiq_id: String(d.kategori_mustahiq_id || ''),
               jumlah: String(d.jumlah || ''),
               quantity: String(d.quantity || ''),
@@ -130,6 +139,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           setForm(emptyForm);
           setSelectedMustahiq(null);
           setSubProgramList([]);
+          setKegiatanList([]);
         }
       } catch (err) {
         if (editingId) toast.error('Gagal memuat data untuk edit');
@@ -146,7 +156,19 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
     if (isInitializingRef.current) return;
     if (form.nama_program_id) loadSubProgram(form.nama_program_id);
     else setSubProgramList([]);
+    // Clear children
+    setForm(p => ({ ...p, sub_program_id: '', program_kegiatan_id: '' }));
+    setKegiatanList([]);
   }, [form.nama_program_id]);
+
+  // Watcher for Sub Program changes
+  useEffect(() => {
+    if (isInitializingRef.current) return;
+    if (form.sub_program_id) loadProgramKegiatan(form.sub_program_id);
+    else setKegiatanList([]);
+    // Clear child
+    setForm(p => ({ ...p, program_kegiatan_id: '' }));
+  }, [form.sub_program_id]);
 
   const loadSubProgram = async (programId: string) => {
     try {
@@ -154,6 +176,14 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
       if (Array.isArray(res.data)) setSubProgramList(res.data);
       else setSubProgramList([]);
     } catch { setSubProgramList([]); }
+  };
+
+  const loadProgramKegiatan = async (subId: string) => {
+    try {
+      const res = await refApi.list('program-kegiatan', { sub_program_id: subId });
+      if (Array.isArray(res.data)) setKegiatanList(res.data);
+      else setKegiatanList([]);
+    } catch { setKegiatanList([]); }
   };
 
 
@@ -199,7 +229,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
         program_kegiatan_id: optNum(form.program_kegiatan_id),
         frekuensi_bantuan_id: optNum(form.frekuensi_bantuan_id),
         jenis_zis_distribusi_id: optNum(form.jenis_zis_distribusi_id),
-        via_id: optNum(form.via_id),
+        nama_entitas_id: optNum(form.nama_entitas_id),
         kategori_mustahiq_id: optNum(form.kategori_mustahiq_id),
         quantity: optNum(form.quantity),
         no_rekening: optStr(form.no_rekening),
@@ -320,6 +350,17 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Program & Permohonan</h3>
           </div>
           <div className="space-y-2">
+            <Label>Nama Entitas</Label>
+            <Select value={form.nama_entitas_id}
+              onValueChange={(v) => setForm((p) => ({ ...p, nama_entitas_id: v }))}
+              disabled={loadingRefs}>
+              <SelectTrigger><SelectValue placeholder="Pilih entitas" /></SelectTrigger>
+              <SelectContent>
+                {entitas.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.nama}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Program</Label>
             <Select value={form.nama_program_id}
               onValueChange={(v) => setForm((p) => ({ ...p, nama_program_id: v, sub_program_id: '' }))}
@@ -341,7 +382,9 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
               </SelectContent>
             </Select>
           </div>
-          <Sel label="Program Kegiatan" field="program_kegiatan_id" items={kegiatanList} placeholder="Pilih kegiatan" />
+          <Sel label="Program Kegiatan" field="program_kegiatan_id" items={kegiatanList}
+            disabled={!form.sub_program_id || kegiatanList.length === 0}
+            placeholder="Pilih kegiatan" />
           <Sel label="Frekuensi Bantuan" field="frekuensi_bantuan_id" items={frekuensiList} placeholder="Pilih frekuensi" />
           <div className="space-y-2">
             <Label htmlFor="tgl_masuk_permohonan">Tgl. Masuk Permohonan</Label>
@@ -378,7 +421,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <Input id="quantity" type="number" min="0" value={form.quantity} onChange={set('quantity')} />
           </div>
           <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih ZIS" />
-          <Sel label="Via Pembayaran" field="via_id" items={viaList} placeholder="Pilih via" />
+          <Sel label="Nama Entitas" field="nama_entitas_id" items={entitas} placeholder="Pilih entitas" />
           <div className="space-y-2">
             <Label htmlFor="no_rekening">No. Rekening</Label>
             <Input id="no_rekening" placeholder="Nomor rekening" value={form.no_rekening} onChange={set('no_rekening')} />

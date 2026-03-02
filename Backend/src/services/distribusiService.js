@@ -11,7 +11,7 @@ import {
   SubProgram,
   ProgramKegiatan,
   FrekuensiBantuan,
-  ViaDistribusi,
+  NamaEntitas,
   KategoriMustahiq,
   Infak,
   JenisZisDistribusi
@@ -24,7 +24,7 @@ const getAll = async (query) => {
     q, mustahiq_id, tanggal, bulan, tahun,
     startDate, endDate, dateField = 'tanggal',
     nama_program_id, sub_program_id, program_kegiatan_id,
-    asnaf_id, jenis_zis_distribusi_id, via_id, frekuensi_bantuan_id,
+    asnaf_id, jenis_zis_distribusi_id, nama_entitas_id, frekuensi_bantuan_id,
     status,
     page = 1, limit = 10
   } = query;
@@ -42,7 +42,7 @@ const getAll = async (query) => {
 
   if (mustahiq_id) where.mustahiq_id = mustahiq_id;
   if (tanggal) where.tanggal = tanggal;
-  
+
   // Date Range Filter
   if (startDate || endDate) {
     const field = (dateField === 'tgl_masuk_permohonan') ? 'tgl_masuk_permohonan' : 'tanggal';
@@ -58,7 +58,7 @@ const getAll = async (query) => {
   if (program_kegiatan_id) where.program_kegiatan_id = program_kegiatan_id;
   if (asnaf_id) where.asnaf_id = asnaf_id;
   if (jenis_zis_distribusi_id) where.jenis_zis_distribusi_id = jenis_zis_distribusi_id;
-  if (via_id) where.via_id = via_id;
+  if (nama_entitas_id) where.nama_entitas_id = nama_entitas_id;
   if (frekuensi_bantuan_id) where.frekuensi_bantuan_id = frekuensi_bantuan_id;
   // Filter by status: 'diterima' | 'ditolak' | 'pending' (null = belum ada status)
   // Note: status is ENUM — must use Sequelize.literal for IS NULL to work reliably
@@ -83,7 +83,7 @@ const getAll = async (query) => {
       { model: SubProgram, attributes: ['id', 'nama'] },
       { model: ProgramKegiatan, attributes: ['id', 'nama'] },
       { model: Asnaf, attributes: ['id', 'nama'] },
-      { model: ViaDistribusi, attributes: ['id', 'nama'] },
+      { model: NamaEntitas, attributes: ['id', 'nama'] },
       { model: KategoriMustahiq, attributes: ['id', 'nama'] }
     ]
   });
@@ -109,7 +109,7 @@ const getById = async (id) => {
       { model: SubProgram },
       { model: ProgramKegiatan },
       { model: FrekuensiBantuan },
-      { model: ViaDistribusi },
+      { model: NamaEntitas },
       { model: KategoriMustahiq },
       { model: Infak },
       { model: JenisZisDistribusi },

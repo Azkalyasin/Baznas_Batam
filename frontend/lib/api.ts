@@ -331,7 +331,7 @@ export interface DistribusiBody {
   frekuensi_bantuan_id?: number;
   jumlah?: number;
   quantity?: number;
-  via_id?: number;
+  nama_entitas_id?: number;
   kategori_mustahiq_id?: number;
   jenis_zis_distribusi_id?: number;
   no_rekening?: string;

@@ -26,7 +26,7 @@ const defineSimpleModel = (tableName) => {
 };
 
 export const KategoriMustahiq = defineSimpleModel('ref_kategori_mustahiq');
-export const ViaDistribusi = defineSimpleModel('ref_via_distribusi');
+export const NamaEntitas = defineSimpleModel('ref_nama_entitas');
 export const ViaPenerimaan = defineSimpleModel('ref_via_penerimaan');
 export const JenisZisDistribusi = defineSimpleModel('ref_jenis_zis_distribusi');
 export const JenisMuzakki = defineSimpleModel('ref_jenis_muzakki');

@@ -10,7 +10,7 @@ import {
   SubProgram,
   ProgramKegiatan,
   FrekuensiBantuan,
-  ViaDistribusi,
+  NamaEntitas,
   KategoriMustahiq,
   Infak,
   JenisZisDistribusi
@@ -102,10 +102,10 @@ const Distribusi = db.define('distribusi', {
   },
   quantity: { type: DataTypes.INTEGER },
 
-  via_id: {
+  nama_entitas_id: {
     type: DataTypes.INTEGER,
     references: {
-      model: ViaDistribusi,
+      model: NamaEntitas,
       key: 'id'
     }
   },
@@ -180,7 +180,7 @@ Distribusi.belongsTo(NamaProgram, { foreignKey: 'nama_program_id' });
 Distribusi.belongsTo(SubProgram, { foreignKey: 'sub_program_id' });
 Distribusi.belongsTo(ProgramKegiatan, { foreignKey: 'program_kegiatan_id' });
 Distribusi.belongsTo(FrekuensiBantuan, { foreignKey: 'frekuensi_bantuan_id' });
-Distribusi.belongsTo(ViaDistribusi, { foreignKey: 'via_id' });
+Distribusi.belongsTo(NamaEntitas, { foreignKey: 'nama_entitas_id' });
 Distribusi.belongsTo(KategoriMustahiq, { foreignKey: 'kategori_mustahiq_id' });
 Distribusi.belongsTo(Infak, { foreignKey: 'infak_id' });
 Distribusi.belongsTo(JenisZisDistribusi, { foreignKey: 'jenis_zis_distribusi_id' });

@@ -17,7 +17,7 @@ import {
   NamaProgram,
   SubProgram,
   ProgramKegiatan,
-  ViaDistribusi,
+  NamaEntitas,
   ViaPenerimaan,
   MetodeBayar,
   Zis,
@@ -39,9 +39,9 @@ const levenshtein = (a, b) => {
   );
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i-1] === b[j-1]
-        ? dp[i-1][j-1]
-        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
     }
   }
   return dp[m][n];
@@ -53,11 +53,11 @@ const levenshtein = (a, b) => {
 // ============================================================
 const buildLookupMap = async (model, nameField = 'nama') => {
   const rows = await model.findAll({ attributes: ['id', nameField] });
-  const map   = {};   // exact match map
-  const list  = [];   // untuk fuzzy search
+  const map = {};   // exact match map
+  const list = [];   // untuk fuzzy search
   for (const row of rows) {
     const key = (row[nameField] || '').toString().toLowerCase().trim();
-    map[key]  = row.id;
+    map[key] = row.id;
     list.push({ key, id: row.id, original: row[nameField] });
   }
   return { map, list };
@@ -106,60 +106,60 @@ const fuzzyFind = ({ map, list }, inputRaw) => {
 const COLUMN_CONFIG = {
   mustahiq: {
     columns: [
-      { header: 'NRM',       key: 'nrm',       width: 20 },
-      { header: 'Nama',      key: 'nama',       width: 30 },
-      { header: 'NIK',       key: 'nik',        width: 20 },
-      { header: 'Alamat',    key: 'alamat',     width: 40 },
-      { header: 'Kelurahan', key: 'kelurahan',  width: 20, note: 'Nama kelurahan' },
-      { header: 'Kecamatan', key: 'kecamatan',  width: 20, note: 'Nama kecamatan' },
-      { header: 'No HP',     key: 'no_hp',      width: 15 },
-      { header: 'Asnaf',     key: 'asnaf',      width: 15, note: 'Nama asnaf (Fakir, Miskin, dst)' }
+      { header: 'NRM', key: 'nrm', width: 20 },
+      { header: 'Nama', key: 'nama', width: 30 },
+      { header: 'NIK', key: 'nik', width: 20 },
+      { header: 'Alamat', key: 'alamat', width: 40 },
+      { header: 'Kelurahan', key: 'kelurahan', width: 20, note: 'Nama kelurahan' },
+      { header: 'Kecamatan', key: 'kecamatan', width: 20, note: 'Nama kecamatan' },
+      { header: 'No HP', key: 'no_hp', width: 15 },
+      { header: 'Asnaf', key: 'asnaf', width: 15, note: 'Nama asnaf (Fakir, Miskin, dst)' }
     ],
     schema: createMustahiqSchema,
     model: Mustahiq
   },
   muzakki: {
     columns: [
-      { header: 'NPWZ',          key: 'npwz',        width: 20 },
-      { header: 'Nama',          key: 'nama',         width: 30 },
-      { header: 'NIK',           key: 'nik',          width: 20 },
-      { header: 'No HP',         key: 'no_hp',        width: 15 },
-      { header: 'Alamat',        key: 'alamat',       width: 40 },
-      { header: 'Kelurahan',     key: 'kelurahan',    width: 20, note: 'Nama kelurahan' },
-      { header: 'Kecamatan',     key: 'kecamatan',    width: 20, note: 'Nama kecamatan' },
+      { header: 'NPWZ', key: 'npwz', width: 20 },
+      { header: 'Nama', key: 'nama', width: 30 },
+      { header: 'NIK', key: 'nik', width: 20 },
+      { header: 'No HP', key: 'no_hp', width: 15 },
+      { header: 'Alamat', key: 'alamat', width: 40 },
+      { header: 'Kelurahan', key: 'kelurahan', width: 20, note: 'Nama kelurahan' },
+      { header: 'Kecamatan', key: 'kecamatan', width: 20, note: 'Nama kecamatan' },
       { header: 'Jenis Muzakki', key: 'jenis_muzakki', width: 20, note: 'Nama jenis muzakki' },
-      { header: 'Jenis UPZ',     key: 'jenis_upz',    width: 20, note: 'Nama jenis UPZ' }
+      { header: 'Jenis UPZ', key: 'jenis_upz', width: 20, note: 'Nama jenis UPZ' }
     ],
     schema: createMuzakkiSchema,
     model: Muzakki
   },
   penerimaan: {
     columns: [
-      { header: 'Muzakki ID / NIK',   key: 'muzakki_identifier', width: 25, note: 'ID atau NIK Muzakki' },
-      { header: 'Tanggal (YYYY-MM-DD)', key: 'tanggal',           width: 20 },
-      { header: 'Via',                key: 'via',                 width: 20, note: 'Contoh: Transfer, Tunai, Online' },
-      { header: 'Metode Bayar',       key: 'metode_bayar',        width: 20, note: 'Contoh: BNI, BRI, Mandiri' },
-      { header: 'ZIS',                key: 'zis',                 width: 15, note: 'Contoh: Zakat, Infaq, Sedekah' },
-      { header: 'Jenis ZIS',          key: 'jenis_zis',           width: 20, note: 'Contoh: Zakat Fitrah, Zakat Maal' },
-      { header: 'Jumlah',             key: 'jumlah',              width: 15 },
-      { header: 'Keterangan',         key: 'keterangan',          width: 30 }
+      { header: 'Muzakki ID / NIK', key: 'muzakki_identifier', width: 25, note: 'ID atau NIK Muzakki' },
+      { header: 'Tanggal (YYYY-MM-DD)', key: 'tanggal', width: 20 },
+      { header: 'Via', key: 'via', width: 20, note: 'Contoh: Transfer, Tunai, Online' },
+      { header: 'Metode Bayar', key: 'metode_bayar', width: 20, note: 'Contoh: BNI, BRI, Mandiri' },
+      { header: 'ZIS', key: 'zis', width: 15, note: 'Contoh: Zakat, Infaq, Sedekah' },
+      { header: 'Jenis ZIS', key: 'jenis_zis', width: 20, note: 'Contoh: Zakat Fitrah, Zakat Maal' },
+      { header: 'Jumlah', key: 'jumlah', width: 15 },
+      { header: 'Keterangan', key: 'keterangan', width: 30 }
     ],
     schema: createPenerimaanSchema,
     model: Penerimaan
   },
   distribusi: {
     columns: [
-      { header: 'Mustahiq ID / NIK',   key: 'mustahiq_identifier', width: 25, note: 'ID atau NIK Mustahiq' },
-      { header: 'Tanggal (YYYY-MM-DD)', key: 'tanggal',             width: 20 },
-      { header: 'Jumlah',              key: 'jumlah',               width: 15 },
-      { header: 'Program',             key: 'nama_program',         width: 25, note: 'Nama program (ref_nama_program)' },
-      { header: 'Sub Program',         key: 'sub_program',          width: 25, note: 'Nama sub program' },
-      { header: 'Program Kegiatan',    key: 'program_kegiatan',     width: 25, note: 'Nama kegiatan' },
-      { header: 'Via',                 key: 'via',                  width: 20, note: 'Contoh: Transfer Bank, Tunai' },
-      { header: 'Kategori Mustahiq',   key: 'kategori_mustahiq',    width: 20, note: 'Nama kategori mustahiq' },
-      { header: 'Jenis ZIS Distribusi',key: 'jenis_zis_distribusi', width: 20, note: 'Nama jenis ZIS distribusi' },
-      { header: 'Frekuensi Bantuan',   key: 'frekuensi_bantuan',    width: 20, note: 'Contoh: Bulanan, Tahunan' },
-      { header: 'Keterangan',          key: 'keterangan',           width: 30 }
+      { header: 'Mustahiq ID / NIK', key: 'mustahiq_identifier', width: 25, note: 'ID atau NIK Mustahiq' },
+      { header: 'Tanggal (YYYY-MM-DD)', key: 'tanggal', width: 20 },
+      { header: 'Jumlah', key: 'jumlah', width: 15 },
+      { header: 'Program', key: 'nama_program', width: 25, note: 'Nama program (ref_nama_program)' },
+      { header: 'Sub Program', key: 'sub_program', width: 25, note: 'Nama sub program' },
+      { header: 'Program Kegiatan', key: 'program_kegiatan', width: 25, note: 'Nama kegiatan' },
+      { header: 'Nama Entitas', key: 'nama_entitas', width: 25, note: 'Contoh: Individu, BAZNAS KOTA BATAM' },
+      { header: 'Kategori Mustahiq', key: 'kategori_mustahiq', width: 20, note: 'Nama kategori mustahiq' },
+      { header: 'Jenis ZIS Distribusi', key: 'jenis_zis_distribusi', width: 20, note: 'Nama jenis ZIS distribusi' },
+      { header: 'Frekuensi Bantuan', key: 'frekuensi_bantuan', width: 20, note: 'Contoh: Bulanan, Tahunan' },
+      { header: 'Keterangan', key: 'keterangan', width: 30 }
     ],
     schema: createDistribusiSchema,
     model: Distribusi
@@ -296,13 +296,13 @@ const buildResolvers = async (jenis) => {
 
   if (jenis === 'distribusi') {
     const [
-      npLookup, spLookup, pkLookup, viaLookup,
+      npLookup, spLookup, pkLookup, neLookup,
       kmLookup, jzdLookup, fbLookup
     ] = await Promise.all([
       buildLookupMap(NamaProgram),
       buildLookupMap(SubProgram),
       buildLookupMap(ProgramKegiatan),
-      buildLookupMap(ViaDistribusi),
+      buildLookupMap(NamaEntitas),
       buildLookupMap(KategoriMustahiq),
       buildLookupMap(JenisZisDistribusi),
       buildLookupMap(FrekuensiBantuan)
@@ -319,13 +319,13 @@ const buildResolvers = async (jenis) => {
           delete resolved[field];
         }
       };
-      resolve(npLookup,  'nama_program',        'nama_program_id',        'Program');
-      resolve(spLookup,  'sub_program',          'sub_program_id',         'Sub Program');
-      resolve(pkLookup,  'program_kegiatan',     'program_kegiatan_id',    'Program Kegiatan');
-      resolve(viaLookup, 'via',                  'via_id',                 'Via');
-      resolve(kmLookup,  'kategori_mustahiq',    'kategori_mustahiq_id',   'Kategori Mustahiq');
-      resolve(jzdLookup, 'jenis_zis_distribusi', 'jenis_zis_distribusi_id','Jenis ZIS');
-      resolve(fbLookup,  'frekuensi_bantuan',    'frekuensi_bantuan_id',   'Frekuensi Bantuan');
+      resolve(npLookup, 'nama_program', 'nama_program_id', 'Program');
+      resolve(spLookup, 'sub_program', 'sub_program_id', 'Sub Program');
+      resolve(pkLookup, 'program_kegiatan', 'program_kegiatan_id', 'Program Kegiatan');
+      resolve(neLookup, 'nama_entitas', 'nama_entitas_id', 'Nama Entitas');
+      resolve(kmLookup, 'kategori_mustahiq', 'kategori_mustahiq_id', 'Kategori Mustahiq');
+      resolve(jzdLookup, 'jenis_zis_distribusi', 'jenis_zis_distribusi_id', 'Jenis ZIS');
+      resolve(fbLookup, 'frekuensi_bantuan', 'frekuensi_bantuan_id', 'Frekuensi Bantuan');
       if (warnings.length) resolved._fuzzyWarnings = warnings;
       return resolved;
     };
@@ -359,7 +359,7 @@ const generateTemplate = async (res, jenis) => {
     }, {})
   );
   guideRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2CC' } };
-  guideRow.font  = { italic: true, color: { argb: 'FF7F6000' } };
+  guideRow.font = { italic: true, color: { argb: 'FF7F6000' } };
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="Template_Migrasi_${jenis}.xlsx"`);
@@ -472,7 +472,7 @@ const importExcel = async (fileBuffer, jenis, userId) => {
 
       // Konversi nama → ID
       const resolved = resolver(rowData);
-      
+
       const validation = config.schema.safeParse(resolved);
       if (validation.success) {
         const dataToInsert = validation.data;
@@ -512,16 +512,16 @@ const importExcel = async (fileBuffer, jenis, userId) => {
 // ============================================================
 const getLogs = async (query) => {
   const where = {};
-  if (query.jenis)   where.jenis   = query.jenis;
+  if (query.jenis) where.jenis = query.jenis;
   if (query.user_id) where.user_id = query.user_id;
   if (query.tanggal) {
     where.created_at = {
       [Op.gte]: new Date(query.tanggal),
-      [Op.lt]:  new Date(new Date(query.tanggal).getTime() + 24 * 60 * 60 * 1000)
+      [Op.lt]: new Date(new Date(query.tanggal).getTime() + 24 * 60 * 60 * 1000)
     };
   }
 
-  const limit  = parseInt(query.limit) || 10;
+  const limit = parseInt(query.limit) || 10;
   const offset = (parseInt(query.page) - 1) * limit || 0;
 
   return await MigrationLog.findAndCountAll({

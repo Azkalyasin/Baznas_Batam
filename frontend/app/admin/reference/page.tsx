@@ -23,7 +23,7 @@ const RESOURCES: { val: RefResource; label: string }[] = [
     { val: 'nama-program', label: 'Nama Program' },
     { val: 'sub-program', label: 'Sub Program' },
     { val: 'program-kegiatan', label: 'Program Kegiatan' },
-    { val: 'frekuensi-bantuan', label: 'Frekuensi Bantuan' },
+    { val: 'nama-entitas', label: 'Nama Entitas' },
     { val: 'persentase-amil', label: 'Persentase Amil' },
 ];
 

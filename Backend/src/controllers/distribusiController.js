@@ -162,7 +162,7 @@ const cetakBuktiPenyaluran = async (req, res, next) => {
 
     addRow('Jumlah', formatCurrency(distribusi.jumlah));
     addRow('Quantity', distribusi.quantity);
-    addRow('Via', distribusi.ref_via_distribusi?.nama);
+    addRow('Nama Entitas', distribusi.ref_nama_entitas?.nama);
     addRow('No Rekening', distribusi.no_rekening);
     addRow('Jenis ZIS', distribusi.ref_jenis_zis_distribusi?.nama);
 

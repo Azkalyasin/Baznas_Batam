@@ -2,9 +2,9 @@ import { z } from 'zod';
 import * as models from '../models/ref/index.js';
 
 // ─── Reusable schema building blocks ────────────────────────────────────────
-const nama      = z.string({ required_error: 'Nama wajib diisi.' }).min(1, 'Nama tidak boleh kosong.').max(100, 'Nama terlalu panjang.').trim();
-const fkId      = (label) => z.number({ required_error: `${label} wajib diisi.`, invalid_type_error: `${label} harus berupa angka.` }).int().positive(`${label} tidak valid.`);
-const namaOnly  = { create: z.object({ nama }), update: z.object({ nama: nama.optional() }) };
+const nama = z.string({ required_error: 'Nama wajib diisi.' }).min(1, 'Nama tidak boleh kosong.').max(100, 'Nama terlalu panjang.').trim();
+const fkId = (label) => z.number({ required_error: `${label} wajib diisi.`, invalid_type_error: `${label} harus berupa angka.` }).int().positive(`${label} tidak valid.`);
+const namaOnly = { create: z.object({ nama }), update: z.object({ nama: nama.optional() }) };
 
 export const refRegistry = {
   // ─── Wilayah ────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ export const refRegistry = {
   'persentase-amil': {
     model: models.PersentaseAmil,
     label: 'Persentase Amil',
-    readOnly: true,  
+    readOnly: true,
   },
 
   // ─── Mustahiq ───────────────────────────────────────────────────────────
@@ -122,9 +122,9 @@ export const refRegistry = {
     createSchema: z.object({ nama, sub_program_id: fkId('Sub Program ID') }),
     updateSchema: z.object({ nama: nama.optional(), sub_program_id: fkId('Sub Program ID').optional() }),
   },
-  'via-distribusi': {
-    model: models.ViaDistribusi,
-    label: 'Via Distribusi',
+  'nama-entitas': {
+    model: models.NamaEntitas,
+    label: 'Nama Entitas',
     readOnly: false,
     createSchema: namaOnly.create,
     updateSchema: namaOnly.update,
