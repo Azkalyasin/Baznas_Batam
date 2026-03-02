@@ -151,24 +151,18 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
     init();
   }, [editingId]);
 
-  // Watcher for USER-DRIVEN program changes only (not during initial load)
-  useEffect(() => {
-    if (isInitializingRef.current) return;
-    if (form.nama_program_id) loadSubProgram(form.nama_program_id);
-    else setSubProgramList([]);
-    // Clear children
-    setForm(p => ({ ...p, sub_program_id: '', program_kegiatan_id: '' }));
+  const handleProgramChange = async (v: string) => {
+    setForm(p => ({ ...p, nama_program_id: v, sub_program_id: '', program_kegiatan_id: '' }));
     setKegiatanList([]);
-  }, [form.nama_program_id]);
+    if (v) loadSubProgram(v);
+    else setSubProgramList([]);
+  };
 
-  // Watcher for Sub Program changes
-  useEffect(() => {
-    if (isInitializingRef.current) return;
-    if (form.sub_program_id) loadProgramKegiatan(form.sub_program_id);
+  const handleSubProgramChange = async (v: string) => {
+    setForm(p => ({ ...p, sub_program_id: v, program_kegiatan_id: '' }));
+    if (v) loadProgramKegiatan(v);
     else setKegiatanList([]);
-    // Clear child
-    setForm(p => ({ ...p, program_kegiatan_id: '' }));
-  }, [form.sub_program_id]);
+  };
 
   const loadSubProgram = async (programId: string) => {
     try {
@@ -213,7 +207,15 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
     e.preventDefault();
     setIsLoading(true);
     if (!form.mustahiq_id) { toast.error('Field "Mustahiq" wajib dipilih'); setIsLoading(false); return; }
-    if (!form.jumlah || parseFloat(form.jumlah) <= 0) { toast.error('Field "Jumlah" harus lebih dari 0'); setIsLoading(false); return; }
+    if (!form.nama_entitas_id) { toast.error('Field "Nama Entitas" wajib dipilih'); setIsLoading(false); return; }
+    if (!form.kategori_mustahiq_id) { toast.error('Field "Kategori Mustahiq" wajib dipilih'); setIsLoading(false); return; }
+    if (!form.nama_program_id) { toast.error('Field "Program" wajib dipilih'); setIsLoading(false); return; }
+    if (!form.sub_program_id) { toast.error('Field "Sub Program" wajib dipilih'); setIsLoading(false); return; }
+    if (!form.frekuensi_bantuan_id) { toast.error('Field "Frekuensi Bantuan" wajib dipilih'); setIsLoading(false); return; }
+    if (!form.jumlah_permohonan || parseFloat(form.jumlah_permohonan) <= 0) { toast.error('Field "Jumlah Permohonan" harus lebih dari 0'); setIsLoading(false); return; }
+    if (!form.quantity || parseInt(form.quantity) <= 0) { toast.error('Field "Kuantitas" harus lebih dari 0'); setIsLoading(false); return; }
+    if (!form.jenis_zis_distribusi_id) { toast.error('Field "Jenis ZIS Distribusi" wajib dipilih'); setIsLoading(false); return; }
+    if (!form.jumlah || parseFloat(form.jumlah) <= 0) { toast.error('Field "Jumlah Penyaluran" harus lebih dari 0'); setIsLoading(false); return; }
 
     const optNum = (v: string) => v ? parseInt(v) : undefined;
     const optFloat = (v: string) => v ? parseFloat(v) : undefined;
@@ -258,12 +260,12 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
     </div>
   );
 
-  const Sel = ({ label, field, items, disabled, placeholder }: {
+  const Sel = ({ label, field, items, disabled, placeholder, required }: {
     label: string; field: keyof typeof emptyForm;
-    items: any[]; disabled?: boolean; placeholder: string;
+    items: any[]; disabled?: boolean; placeholder: string; required?: boolean;
   }) => (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label>{label}{required && <span className="text-destructive ml-1">*</span>}</Label>
       <Select value={form[field] as string}
         onValueChange={(v) => setForm((p) => ({ ...p, [field]: v }))}
         disabled={disabled || loadingRefs}>
@@ -326,7 +328,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
               </div>
             )}
           </div>
-          <Sel label="Kategori Mustahiq" field="kategori_mustahiq_id" items={kategoriList} placeholder="Pilih kategori" />
+          <Sel label="Kategori Mustahiq" field="kategori_mustahiq_id" items={kategoriList} placeholder="Pilih kategori" required />
           <div className="space-y-2">
             <Label>Status Permohonan</Label>
             <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
@@ -350,7 +352,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Program & Permohonan</h3>
           </div>
           <div className="space-y-2">
-            <Label>Nama Entitas</Label>
+            <Label>Nama Entitas <span className="text-destructive">*</span></Label>
             <Select value={form.nama_entitas_id}
               onValueChange={(v) => setForm((p) => ({ ...p, nama_entitas_id: v }))}
               disabled={loadingRefs}>
@@ -361,9 +363,9 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Program</Label>
+            <Label>Program <span className="text-destructive">*</span></Label>
             <Select value={form.nama_program_id}
-              onValueChange={(v) => setForm((p) => ({ ...p, nama_program_id: v, sub_program_id: '' }))}
+              onValueChange={handleProgramChange}
               disabled={loadingRefs}>
               <SelectTrigger><SelectValue placeholder="Pilih program" /></SelectTrigger>
               <SelectContent>
@@ -372,9 +374,9 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Sub Program</Label>
+            <Label>Sub Program <span className="text-destructive">*</span></Label>
             <Select value={form.sub_program_id}
-              onValueChange={(v) => setForm((p) => ({ ...p, sub_program_id: v }))}
+              onValueChange={handleSubProgramChange}
               disabled={!form.nama_program_id || subProgramList.length === 0}>
               <SelectTrigger><SelectValue placeholder="Pilih sub-program" /></SelectTrigger>
               <SelectContent>
@@ -385,14 +387,14 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           <Sel label="Program Kegiatan" field="program_kegiatan_id" items={kegiatanList}
             disabled={!form.sub_program_id || kegiatanList.length === 0}
             placeholder="Pilih kegiatan" />
-          <Sel label="Frekuensi Bantuan" field="frekuensi_bantuan_id" items={frekuensiList} placeholder="Pilih frekuensi" />
+          <Sel label="Frekuensi Bantuan" field="frekuensi_bantuan_id" items={frekuensiList} placeholder="Pilih frekuensi" required />
           <div className="space-y-2">
             <Label htmlFor="tgl_masuk_permohonan">Tgl. Masuk Permohonan</Label>
             <Input id="tgl_masuk_permohonan" type="date"
               value={form.tgl_masuk_permohonan} onChange={set('tgl_masuk_permohonan')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="jumlah_permohonan">Jumlah Permohonan (Rp)</Label>
+            <Label htmlFor="jumlah_permohonan">Jumlah Permohonan (Rp) <span className="text-destructive">*</span></Label>
             <Input id="jumlah_permohonan" type="number" min="0" step="0.01"
               value={form.jumlah_permohonan} onChange={set('jumlah_permohonan')} />
           </div>
@@ -417,11 +419,10 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <Input id="jumlah" type="number" min="0" step="0.01" value={form.jumlah} onChange={set('jumlah')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="quantity">Kuantitas</Label>
+            <Label htmlFor="quantity">Kuantitas <span className="text-destructive">*</span></Label>
             <Input id="quantity" type="number" min="0" value={form.quantity} onChange={set('quantity')} />
           </div>
-          <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih ZIS" />
-          <Sel label="Nama Entitas" field="nama_entitas_id" items={entitas} placeholder="Pilih entitas" />
+          <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih ZIS" required />
           <div className="space-y-2">
             <Label htmlFor="no_rekening">No. Rekening</Label>
             <Input id="no_rekening" placeholder="Nomor rekening" value={form.no_rekening} onChange={set('no_rekening')} />

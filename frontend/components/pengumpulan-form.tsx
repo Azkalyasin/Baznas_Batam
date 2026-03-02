@@ -111,7 +111,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
       const data = Array.isArray(res.data) ? res.data : [];
       setMetodeBayarList(data);
       return data;
-    } catch { 
+    } catch {
       setMetodeBayarList([]);
       return [];
     }
@@ -190,6 +190,8 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
     if (!formData.jenis_zis_id) { toast.error('Field "Jenis ZIS" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.jumlah || parseFloat(formData.jumlah) <= 0) { toast.error('Field "Jumlah" harus lebih dari 0'); setIsLoading(false); return; }
     if (!formData.persentase_amil_id) { toast.error('Field "Persentase Amil" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.jenis_muzakki_id) { toast.error('Field "Jenis Muzakki" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.metode_bayar_id) { toast.error('Field "Metode Bayar" wajib dipilih'); setIsLoading(false); return; }
 
     try {
       const payload: any = {
@@ -295,7 +297,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
               </div>
             )}
           </div>
-          <Sel label="Jenis Muzakki" field="jenis_muzakki_id" items={jenisMuzakkiList} placeholder="Pilih jenis" />
+          <Sel label="Jenis Muzakki" field="jenis_muzakki_id" items={jenisMuzakkiList} placeholder="Pilih jenis" required />
           <Sel label="Jenis UPZ" field="jenis_upz_id" items={jenisUpzList} placeholder="Pilih jenis" />
         </div>
 
@@ -305,7 +307,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detail ZIS</h3>
           </div>
           <div className="space-y-2">
-            <Label>ZIS (Zakat/Infaq/Sedekah)<Req /></Label>
+            <Label>ZIS<Req /></Label>
             <Select value={formData.zis_id}
               onValueChange={async (v) => {
                 setFormData((p) => {
@@ -375,7 +377,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Metode Bayar</Label>
+            <Label>Metode Bayar<Req /></Label>
             <Select value={formData.metode_bayar_id}
               onValueChange={(v) => setFormData((p) => ({ ...p, metode_bayar_id: v }))}
               disabled={!formData.via_id || metodeBayarList.length === 0}>

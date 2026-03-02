@@ -65,10 +65,12 @@ const getAll = async (query) => {
   if (status === 'diterima' || status === 'ditolak') {
     where.status = status;
   } else if (status === 'pending' || status === 'null') {
-    where[Op.and] = [
-      ...(where[Op.and] || []),
-      Sequelize.literal('`distribusi`.`status` IS NULL')
-    ];
+    where.status = {
+      [Op.or]: [
+        { [Op.eq]: 'menunggu' },
+        { [Op.eq]: null }
+      ]
+    };
   }
 
 

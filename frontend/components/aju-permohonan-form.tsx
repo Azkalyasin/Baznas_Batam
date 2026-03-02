@@ -24,6 +24,9 @@ interface AjuPermohonanFormProps {
  * program_kegiatan, tgl_masuk_permohonan (default today),
  * jumlah_permohonan, rekomendasi_upz, keterangan.
  */
+
+const Req = () => <span className="text-destructive ml-1">*</span>;
+
 export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLabel }: AjuPermohonanFormProps) {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -36,6 +39,7 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
 
     const [form, setForm] = useState({
         no_reg_bpp: '',
+        nama_entitas_id: '',
         nama_program_id: '',
         sub_program_id: '',
         program_kegiatan_id: '',
@@ -45,16 +49,18 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
         keterangan: '',
     });
 
+    const [entitas, setEntitas] = useState<any[]>([]);
+
     useEffect(() => {
         const load = async () => {
             setLoadingRefs(true);
             try {
-                const [progRes, kegRes] = await Promise.all([
+                const [entitasRes, progRes] = await Promise.all([
+                    refApi.list('nama-entitas'),
                     refApi.list('nama-program'),
-                    refApi.list('program-kegiatan'),
                 ]);
+                if (Array.isArray(entitasRes.data)) setEntitas(entitasRes.data);
                 if (Array.isArray(progRes.data)) setProgramList(progRes.data);
-                if (Array.isArray(kegRes.data)) setKegiatanList(kegRes.data);
             } catch (e) {
                 console.error('ref load error:', e);
             } finally {
@@ -65,8 +71,9 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
     }, []);
 
     const handleProgramChange = useCallback(async (v: string) => {
-        setForm((p) => ({ ...p, nama_program_id: v, sub_program_id: '' }));
+        setForm((p) => ({ ...p, nama_program_id: v, sub_program_id: '', program_kegiatan_id: '' }));
         setSubProgramList([]);
+        setKegiatanList([]);
         if (!v) return;
         try {
             const res = await refApi.list('sub-program', { nama_program_id: v });
@@ -76,12 +83,44 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
         }
     }, []);
 
+    const handleSubProgramChange = useCallback(async (v: string) => {
+        setForm((p) => ({ ...p, sub_program_id: v, program_kegiatan_id: '' }));
+        setKegiatanList([]);
+        if (!v) return;
+        try {
+            const res = await refApi.list('program-kegiatan', { sub_program_id: v });
+            if (Array.isArray(res.data)) setKegiatanList(res.data);
+        } catch {
+            setKegiatanList([]);
+        }
+    }, []);
+
     const set = (f: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
         setForm((p) => ({ ...p, [f]: e.target.value }));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        if (!form.nama_entitas_id) {
+            toast.error('Field "Nama Entitas" wajib dipilih');
+            setIsLoading(false);
+            return;
+        }
+        if (!form.no_reg_bpp.trim()) {
+            toast.error('Field "No. Reg BPP" wajib diisi');
+            setIsLoading(false);
+            return;
+        }
+        if (!form.nama_program_id) {
+            toast.error('Field "Program" wajib dipilih');
+            setIsLoading(false);
+            return;
+        }
+        if (!form.sub_program_id) {
+            toast.error('Field "Sub Program" wajib dipilih');
+            setIsLoading(false);
+            return;
+        }
         if (!form.jumlah_permohonan || parseFloat(form.jumlah_permohonan) <= 0) {
             toast.error('Field "Jumlah Permohonan" harus lebih dari 0');
             setIsLoading(false);
@@ -95,6 +134,7 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
                 tgl_masuk_permohonan: form.tgl_masuk_permohonan || undefined,
                 jumlah_permohonan: parseFloat(form.jumlah_permohonan),
                 jumlah: parseFloat(form.jumlah_permohonan), // required by backend
+                nama_entitas_id: form.nama_entitas_id ? parseInt(form.nama_entitas_id) : undefined,
                 nama_program_id: form.nama_program_id ? parseInt(form.nama_program_id) : undefined,
                 sub_program_id: form.sub_program_id ? parseInt(form.sub_program_id) : undefined,
                 program_kegiatan_id: form.program_kegiatan_id ? parseInt(form.program_kegiatan_id) : undefined,
@@ -121,7 +161,7 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
 
                 {/* No Reg BPP */}
                 <div className="space-y-2">
-                    <Label htmlFor="no_reg_bpp">No. Reg BPP</Label>
+                    <Label htmlFor="no_reg_bpp">No. Reg BPP<Req /></Label>
                     <Input id="no_reg_bpp" placeholder="No. Reg BPP" maxLength={12}
                         value={form.no_reg_bpp} onChange={set('no_reg_bpp')} />
                 </div>
@@ -141,9 +181,26 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
                         value={form.jumlah_permohonan} onChange={set('jumlah_permohonan')} />
                 </div>
 
+                {/* Nama Entitas */}
+                <div className="space-y-2 md:col-span-2">
+                    <Label>Nama Entitas <span className="text-destructive">*</span></Label>
+                    <Select value={form.nama_entitas_id}
+                        onValueChange={(v) => setForm((p) => ({ ...p, nama_entitas_id: v }))}
+                        disabled={loadingRefs}>
+                        <SelectTrigger>
+                            <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih entitas'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {entitas.map((p) => (
+                                <SelectItem key={p.id} value={String(p.id)}>{p.nama}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
                 {/* Nama Program */}
                 <div className="space-y-2">
-                    <Label>Program</Label>
+                    <Label>Program<Req /></Label>
                     <Select value={form.nama_program_id} onValueChange={handleProgramChange} disabled={loadingRefs}>
                         <SelectTrigger>
                             <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih program'} />
@@ -158,9 +215,9 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
 
                 {/* Sub Program */}
                 <div className="space-y-2">
-                    <Label>Sub Program</Label>
+                    <Label>Sub Program<Req /></Label>
                     <Select value={form.sub_program_id}
-                        onValueChange={(v) => setForm((p) => ({ ...p, sub_program_id: v }))}
+                        onValueChange={handleSubProgramChange}
                         disabled={!form.nama_program_id || subProgramList.length === 0}>
                         <SelectTrigger>
                             <SelectValue placeholder={!form.nama_program_id ? 'Pilih program dulu' : subProgramList.length === 0 ? 'Tidak ada sub-program' : 'Pilih sub-program'} />
@@ -178,9 +235,9 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
                     <Label>Program Kegiatan</Label>
                     <Select value={form.program_kegiatan_id}
                         onValueChange={(v) => setForm((p) => ({ ...p, program_kegiatan_id: v }))}
-                        disabled={loadingRefs}>
+                        disabled={!form.sub_program_id || kegiatanList.length === 0}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Pilih kegiatan" />
+                            <SelectValue placeholder={!form.sub_program_id ? 'Pilih sub-program dulu' : kegiatanList.length === 0 ? 'Tidak ada kegiatan' : 'Pilih kegiatan'} />
                         </SelectTrigger>
                         <SelectContent>
                             {kegiatanList.map((k) => (

@@ -124,6 +124,9 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
     setIsLoading(true);
 
     if (!formData.nama.trim()) { toast.error('Field "Nama" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.nrm.trim()) { toast.error('Field "NRM" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.asnaf_id) { toast.error('Field "Asnaf" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.kategori_mustahiq_id) { toast.error('Field "Kategori Mustahiq" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kecamatan_id) { toast.error('Field "Kecamatan" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kelurahan_id) { toast.error('Field "Kelurahan" wajib dipilih'); setIsLoading(false); return; }
 
@@ -164,7 +167,7 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identitas</h3>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="nrm">NRM</Label>
+            <Label htmlFor="nrm">NRM<Req /></Label>
             <Input id="nrm" placeholder="Nomor Registrasi Mustahiq" maxLength={24}
               value={formData.nrm} onChange={set('nrm')} />
           </div>
@@ -198,7 +201,7 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
             <Input id="registered_date" type="date" value={formData.registered_date} onChange={set('registered_date')} />
           </div>
           <div className="space-y-2">
-            <Label>Asnaf</Label>
+            <Label>Asnaf<Req /></Label>
             <Select value={formData.asnaf_id} onValueChange={(v) => setFormData((p) => ({ ...p, asnaf_id: v }))} disabled={loadingRefs}>
               <SelectTrigger><SelectValue placeholder="Pilih Asnaf" /></SelectTrigger>
               <SelectContent>
@@ -207,7 +210,7 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Kategori Mustahiq</Label>
+            <Label>Kategori Mustahiq<Req /></Label>
             <Select value={formData.kategori_mustahiq_id} onValueChange={(v) => setFormData((p) => ({ ...p, kategori_mustahiq_id: v }))} disabled={loadingRefs}>
               <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
               <SelectContent>

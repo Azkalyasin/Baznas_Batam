@@ -87,7 +87,7 @@ const getById = async (id) => {
 
   // Calculate statistics (only sum amounts with status = diterima)
   const stats = await Distribusi.findOne({
-    where: { 
+    where: {
       mustahiq_id: id,
       status: 'diterima'
     },
@@ -144,6 +144,10 @@ const create = async (body, userId) => {
     isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE
   });
   try {
+    if (!body.nrm) {
+      throw new AppError('NRM wajib diisi.', 400);
+    }
+
     const existingNrm = await Mustahiq.findOne({ where: { nrm: body.nrm }, transaction: t });
     if (existingNrm) throw new AppError('NRM sudah digunakan.', 409);
 
@@ -152,11 +156,8 @@ const create = async (body, userId) => {
       if (existingNik) throw new AppError('NIK sudah digunakan.', 409);
     }
 
-    const nrm = await generateNrm(t);
-
     const mustahiq = await Mustahiq.create({
       ...body,
-      nrm,
       registered_by: userId
     }, { transaction: t, userId });
 

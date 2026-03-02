@@ -126,6 +126,8 @@ export function MuzakkiForm({ onSuccess, editingId, onCancelEdit }: MuzakkiFormP
     setIsLoading(true);
 
     if (!formData.nama.trim()) { toast.error('Field "Nama" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.npwz.trim()) { toast.error('Field "NPWZ" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.jenis_muzakki_id) { toast.error('Field "Jenis Muzakki" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kecamatan_id) { toast.error('Field "Kecamatan" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kelurahan_id) { toast.error('Field "Kelurahan" wajib dipilih'); setIsLoading(false); return; }
 
@@ -165,7 +167,7 @@ export function MuzakkiForm({ onSuccess, editingId, onCancelEdit }: MuzakkiFormP
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identitas</h3>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="npwz">NPWZ</Label>
+            <Label htmlFor="npwz">NPWZ<Req /></Label>
             <Input id="npwz" placeholder="Nomor Pokok Wajib Zakat" maxLength={15}
               value={formData.npwz} onChange={set('npwz')} />
           </div>
@@ -200,7 +202,7 @@ export function MuzakkiForm({ onSuccess, editingId, onCancelEdit }: MuzakkiFormP
             <Input id="registered_date" type="date" value={formData.registered_date} onChange={set('registered_date')} />
           </div>
           <div className="space-y-2">
-            <Label>Jenis Muzakki</Label>
+            <Label>Jenis Muzakki<Req /></Label>
             <Select value={formData.jenis_muzakki_id} onValueChange={(v) => setFormData((p) => ({ ...p, jenis_muzakki_id: v }))}>
               <SelectTrigger disabled={loadingRefs}>
                 <SelectValue placeholder={loadingRefs ? 'Memuat...' : 'Pilih jenis muzakki'} />

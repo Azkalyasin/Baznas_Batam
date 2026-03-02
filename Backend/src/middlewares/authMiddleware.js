@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 import tokenBlacklist from '../utils/tokenBlacklist.js';
+import User from '../models/userModel.js';
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
@@ -20,6 +21,15 @@ const authMiddleware = (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Token sudah tidak valid, silakan login ulang.'
+      });
+    }
+
+    // Pastikan user masih ada di database (menghindari stale token setelah db:fresh)
+    const userExists = await User.findByPk(decoded.id, { attributes: ['id'] });
+    if (!userExists) {
+      return res.status(401).json({
+        success: false,
+        message: 'Pengguna tidak ditemukan. Silakan login ulang.'
       });
     }
 
