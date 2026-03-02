@@ -256,14 +256,14 @@ module.exports = {
         // 5. Seed ref_program_kegiatan
         const kegiatanData = [
             // Sembako
-            { k: 'B. Sembako FK', s: 'Bantuan Makanan Asnaf Fakir' },
-            { k: 'B. Sembako FK', s: 'Bantuan Makanan Asnaf Miskin' },
+            { k: 'B. Sembako', s: 'Bantuan Makanan Asnaf Fakir' },
+            { k: 'B. Sembako', s: 'Bantuan Makanan Asnaf Miskin' },
 
             // Daging Qurban
-            { k: 'B. Daging Qurban FK', s: 'Bantuan Makanan | DSKL' },
+            { k: 'B. Daging Qurban', s: 'Bantuan Makanan | DSKL' },
 
             // Biaya Hidup
-            { k: 'Biaya Hidup Sehari-hari FK', s: 'Bantuan Biaya Hidup Asnaf Fakir' },
+            { k: 'Biaya Hidup Sehari-hari', s: 'Bantuan Biaya Hidup Asnaf Fakir' },
 
             { k: 'B. Nafkah Rutin', s: 'Bantuan Biaya Hidup Asnaf Miskin' },
             { k: 'B. Biaya Hidup Sehari-hari', s: 'Bantuan Biaya Hidup Asnaf Miskin' },
