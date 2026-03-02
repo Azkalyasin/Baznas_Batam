@@ -32,7 +32,7 @@ export default function MuzakkiPage() {
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [penerimaanOpen, setPenerimaanOpen] = useState(false);
-  const [penerimaanMuzakki, setPenerimaanMuzakki] = useState<{ id: number; label: string } | null>(null);
+  const [penerimaanMuzakki, setPenerimaanMuzakki] = useState<{ id: number; label: string; jenis_muzakki_id?: number } | null>(null);
 
   // Ref data untuk resolusi ID → nama
   const [kecamatanList, setKecamatanList] = useState<any[]>([]);
@@ -215,7 +215,7 @@ export default function MuzakkiPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => {
-                              setPenerimaanMuzakki({ id: m.id, label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}` });
+                              setPenerimaanMuzakki({ id: m.id, label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}`, jenis_muzakki_id: m.jenis_muzakki_id });
                               setPenerimaanOpen(true);
                             }} title="Tambah Penerimaan">
                               <Banknote className="h-4 w-4" />
@@ -315,7 +315,7 @@ export default function MuzakkiPage() {
                 <span>{detailData.Kelurahan?.nama || detailData.kelurahan?.nama || detailData.nama_kelurahan || refName(kelurahanAll, detailData.kelurahan_id)}</span>
                 <span className="text-muted-foreground">Tanggal Registrasi</span>
                 <span>{detailData.created_at ? new Date(detailData.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
-                
+
                 <span className="text-muted-foreground border-t pt-2 mt-2">Jumlah Setoran</span>
                 <span className="font-medium border-t pt-2 mt-2">{detailData.total_setor_count || 0} kali</span>
                 <span className="text-muted-foreground">Total Nominal Setoran</span>

@@ -283,17 +283,25 @@ const getStats = async (query) => {
 
     const stats = Array.isArray(results) ? results : [];
 
-    const ensureArray = (val) => {
-      if (!val) return [];
-      if (Array.isArray(val)) return val;
-      return [val];
+    // Helper to format result sets (ensure total is a number)
+    const mapStats = (rs) => {
+      if (!Array.isArray(rs)) return [];
+      return rs.map(row => ({
+        ...row,
+        total: parseFloat(row.total) || 0,
+        jumlah_mustahiq: row.jumlah_mustahiq ? parseInt(row.jumlah_mustahiq, 10) : undefined
+      }));
     };
 
     return {
-      by_asnaf: ensureArray(stats[0]),
-      by_program: ensureArray(stats[1]),
-      by_kecamatan: ensureArray(stats[2]),
-      summary: (stats[3] && stats[3][0]) ? stats[3][0] : {
+      by_asnaf: mapStats(stats[0]),
+      by_program: mapStats(stats[1]),
+      by_kecamatan: mapStats(stats[2]),
+      summary: (stats[3] && stats[3][0]) ? {
+        total_distribusi_zis: parseFloat(stats[3][0].total_distribusi_zis) || 0,
+        total_distribusi_zakat: parseFloat(stats[3][0].total_distribusi_zakat) || 0,
+        total_distribusi_infaq: parseFloat(stats[3][0].total_distribusi_infaq) || 0
+      } : {
         total_distribusi_zis: 0,
         total_distribusi_zakat: 0,
         total_distribusi_infaq: 0

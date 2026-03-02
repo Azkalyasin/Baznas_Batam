@@ -8,7 +8,7 @@ export const createDistribusiSchema = z.object({
   sub_program_id: z.number().int().positive().optional(),
   nama_program_id: z.number().int().positive().optional(),
   frekuensi_bantuan_id: z.number().int().positive().optional(),
-  jumlah: z.number().positive(),
+  jumlah: z.number().nonnegative().optional(),
   quantity: z.number().int().nonnegative().optional(),
   nama_entitas_id: z.number().int().positive().optional(),
   kategori_mustahiq_id: z.number().int().positive().optional(),

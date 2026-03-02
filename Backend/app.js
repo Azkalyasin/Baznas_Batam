@@ -136,9 +136,10 @@ app.use((err, req, res, next) => {
     return res.status(403).json({ success: false, message: err.message });
   }
 
-  res.status(err.status || 500).json({
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
     success: false,
-    message: err.status ? err.message : 'Terjadi kesalahan pada server.',
+    message: statusCode < 500 ? err.message : 'Terjadi kesalahan pada server.',
     // Hanya tampilkan detail error di development
     ...(isProduction ? {} : { error: err.message })
   });

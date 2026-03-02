@@ -15,7 +15,8 @@ interface PengumpulanFormProps {
   editingId: number | null;
   onCancelEdit: () => void;
   /** Pre-fill with muzakki data (e.g. from "Tambah Penerimaan" button on muzakki page) */
-  prefillMuzakki?: { id: number; label: string };
+  prefillMuzakki?: { id: number; label: string; jenis_muzakki_id?: number };
+  isReadOnly?: boolean;
 }
 
 const today = new Date().toISOString().split('T')[0];
@@ -36,7 +37,7 @@ const emptyForm = {
   rekomendasi_upz: '',
 };
 
-export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuzakki }: PengumpulanFormProps) {
+export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuzakki, isReadOnly = false }: PengumpulanFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
 
@@ -69,7 +70,11 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
       setMetodeBayarList([]);
       if (prefillMuzakki) {
         setSelectedMuzakki(prefillMuzakki);
-        setFormData((p) => ({ ...p, muzakki_id: String(prefillMuzakki.id) }));
+        setFormData((p) => ({
+          ...p,
+          muzakki_id: String(prefillMuzakki.id),
+          jenis_muzakki_id: prefillMuzakki.jenis_muzakki_id ? String(prefillMuzakki.jenis_muzakki_id) : p.jenis_muzakki_id
+        }));
       } else {
         setSelectedMuzakki(null);
       }
@@ -170,7 +175,11 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
 
   const selectMuzakki = (m: any) => {
     setSelectedMuzakki({ id: m.id, label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}${m.nik ? ` / NIK: ${m.nik}` : ''}` });
-    setFormData((p) => ({ ...p, muzakki_id: String(m.id) }));
+    setFormData((p) => ({
+      ...p,
+      muzakki_id: String(m.id),
+      jenis_muzakki_id: m.jenis_muzakki_id ? String(m.jenis_muzakki_id) : p.jenis_muzakki_id
+    }));
     setMuzakkiSearch('');
     setMuzakkiResults([]);
   };
@@ -237,7 +246,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
       <Label>{label}{required && <Req />}</Label>
       <Select value={formData[field] as string}
         onValueChange={(v) => setFormData((p) => ({ ...p, [field]: v }))}
-        disabled={disabled || loadingRefs}>
+        disabled={disabled || loadingRefs || isReadOnly}>
         <SelectTrigger>
           <SelectValue placeholder={loadingRefs ? 'Memuat...' : placeholder} />
         </SelectTrigger>
@@ -258,7 +267,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
           </div>
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal<Req /></Label>
-            <Input id="tanggal" type="date" required value={formData.tanggal} onChange={set('tanggal')} />
+            <Input id="tanggal" type="date" required value={formData.tanggal} onChange={set('tanggal')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label>Muzakki<Req /></Label>
@@ -266,7 +275,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
               <div className="flex items-center gap-2">
                 <Input value={selectedMuzakki.label} readOnly className="bg-muted flex-1" />
                 <Button type="button" size="sm" variant="ghost"
-                  onClick={() => { setSelectedMuzakki(null); setFormData((p) => ({ ...p, muzakki_id: '' })); }}>
+                  onClick={() => { setSelectedMuzakki(null); setFormData((p) => ({ ...p, muzakki_id: '' })); }} disabled={isReadOnly}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -278,8 +287,9 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
                     value={muzakkiSearch}
                     onChange={(e) => setMuzakkiSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMuzakkiSearch())}
+                    readOnly={isReadOnly}
                   />
-                  <Button type="button" variant="outline" onClick={handleMuzakkiSearch} disabled={muzakkiSearching}>
+                  <Button type="button" variant="outline" onClick={handleMuzakkiSearch} disabled={muzakkiSearching || isReadOnly}>
                     {muzakkiSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -327,7 +337,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
                 });
                 setJenisZisList([]);
                 if (v) await loadJenisZis(v);
-              }} disabled={loadingRefs}>
+              }} disabled={loadingRefs || isReadOnly}>
               <SelectTrigger><SelectValue placeholder="Pilih Zakat / Infaq / Sedekah" /></SelectTrigger>
               <SelectContent>{zisList.map((z) => <SelectItem key={z.id} value={String(z.id)}>{z.nama}</SelectItem>)}</SelectContent>
             </Select>
@@ -336,7 +346,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
             <Label>Jenis {zisList.find(z => z.id.toString() === formData.zis_id)?.nama || 'ZIS'}<Req /></Label>
             <Select value={formData.jenis_zis_id}
               onValueChange={(v) => setFormData((p) => ({ ...p, jenis_zis_id: v }))}
-              disabled={!formData.zis_id || jenisZisList.length === 0}>
+              disabled={!formData.zis_id || jenisZisList.length === 0 || isReadOnly}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih jenis detail" />
               </SelectTrigger>
@@ -346,7 +356,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
           <div className="space-y-2">
             <Label htmlFor="jumlah">Jumlah (Rp)<Req /></Label>
             <Input id="jumlah" type="number" min="1" step="0.01" placeholder="Nominal"
-              value={formData.jumlah} onChange={set('jumlah')} />
+              value={formData.jumlah} onChange={set('jumlah')} readOnly={isReadOnly} />
           </div>
           <Sel label="Persentase Amil" field="persentase_amil_id" items={persentaseAmilList}
             placeholder="Pilih amil" required />
@@ -371,7 +381,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
                     if (tunai) setFormData(p => ({ ...p, metode_bayar_id: String(tunai.id) }));
                   }
                 }
-              }} disabled={loadingRefs}>
+              }} disabled={loadingRefs || isReadOnly}>
               <SelectTrigger><SelectValue placeholder="Pilih via" /></SelectTrigger>
               <SelectContent>{viaList.map((v) => <SelectItem key={v.id} value={String(v.id)}>{v.nama}</SelectItem>)}</SelectContent>
             </Select>
@@ -380,7 +390,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
             <Label>Metode Bayar<Req /></Label>
             <Select value={formData.metode_bayar_id}
               onValueChange={(v) => setFormData((p) => ({ ...p, metode_bayar_id: v }))}
-              disabled={!formData.via_id || metodeBayarList.length === 0}>
+              disabled={!formData.via_id || metodeBayarList.length === 0 || isReadOnly}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih metode" />
               </SelectTrigger>
@@ -390,26 +400,28 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
           <div className="space-y-2">
             <Label htmlFor="no_rekening">No. Rekening</Label>
             <Input id="no_rekening" placeholder="Nomor rekening" maxLength={50}
-              value={formData.no_rekening} onChange={set('no_rekening')} />
+              value={formData.no_rekening} onChange={set('no_rekening')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
             <Textarea id="rekomendasi_upz" placeholder="Nama UPZ" rows={2}
-              value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
+              value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="keterangan">Keterangan</Label>
             <Textarea id="keterangan" placeholder="Catatan" rows={2}
-              value={formData.keterangan} onChange={set('keterangan')} />
+              value={formData.keterangan} onChange={set('keterangan')} readOnly={isReadOnly} />
           </div>
         </div>
       </div>
 
       <div className="flex gap-2 justify-end pt-2">
-        <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isLoading}>Batal</Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : editingId ? 'Simpan Perubahan' : 'Simpan'}
-        </Button>
+        <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isLoading}>{isReadOnly ? 'Tutup' : 'Batal'}</Button>
+        {!isReadOnly && (
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : editingId ? 'Simpan Perubahan' : 'Simpan'}
+          </Button>
+        )}
       </div>
     </form>
   );

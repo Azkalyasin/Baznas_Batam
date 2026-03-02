@@ -19,6 +19,7 @@ interface DistribusiFormProps {
   onSuccess: () => void;
   editingId: number | null;
   onCancelEdit: () => void;
+  isReadOnly?: boolean;
 }
 
 const emptyForm = {
@@ -49,7 +50,7 @@ const emptyForm = {
  * Mencakup SEMUA kolom tabel distribusi.
  * Mustahiq dipilih via search nama/NRM/NIK.
  */
-export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: DistribusiFormProps) {
+export function DistribusiForm({ onSuccess, editingId, onCancelEdit, isReadOnly = false }: DistribusiFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const isInitializingRef = useRef(false);
@@ -268,7 +269,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
       <Label>{label}{required && <span className="text-destructive ml-1">*</span>}</Label>
       <Select value={form[field] as string}
         onValueChange={(v) => setForm((p) => ({ ...p, [field]: v }))}
-        disabled={disabled || loadingRefs}>
+        disabled={disabled || loadingRefs || isReadOnly}>
         <SelectTrigger>
           <SelectValue placeholder={loadingRefs ? 'Memuat...' : placeholder} />
         </SelectTrigger>
@@ -289,7 +290,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           </div>
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal Distribusi <span className="text-destructive">*</span></Label>
-            <Input id="tanggal" type="date" required value={form.tanggal} onChange={set('tanggal')} />
+            <Input id="tanggal" type="date" required value={form.tanggal} onChange={set('tanggal')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label>Mustahiq <span className="text-destructive">*</span></Label>
@@ -297,7 +298,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
               <div className="flex items-center gap-2">
                 <Input value={selectedMustahiq.label} readOnly className="bg-muted flex-1 text-xs" />
                 <Button type="button" size="sm" variant="ghost"
-                  onClick={() => { setSelectedMustahiq(null); setForm((p) => ({ ...p, mustahiq_id: '' })); }}>
+                  onClick={() => { setSelectedMustahiq(null); setForm((p) => ({ ...p, mustahiq_id: '' })); }} disabled={isReadOnly}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -309,8 +310,9 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
                     value={mustahiqSearch}
                     onChange={(e) => setMustahiqSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleMustahiqSearch())}
+                    readOnly={isReadOnly}
                   />
-                  <Button type="button" variant="outline" onClick={handleMustahiqSearch} disabled={mustahiqSearching}>
+                  <Button type="button" variant="outline" onClick={handleMustahiqSearch} disabled={mustahiqSearching || isReadOnly}>
                     {mustahiqSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -331,7 +333,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           <Sel label="Kategori Mustahiq" field="kategori_mustahiq_id" items={kategoriList} placeholder="Pilih kategori" required />
           <div className="space-y-2">
             <Label>Status Permohonan</Label>
-            <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))}>
+            <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v }))} disabled={isReadOnly}>
               <SelectTrigger><SelectValue placeholder="Menunggu Persetujuan" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="diterima">Diterima</SelectItem>
@@ -342,7 +344,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           <div className="space-y-2">
             <Label htmlFor="no_reg_bpp">No. Reg BPP</Label>
             <Input id="no_reg_bpp" placeholder="No. Reg BPP" maxLength={12}
-              value={form.no_reg_bpp} onChange={set('no_reg_bpp')} />
+              value={form.no_reg_bpp} onChange={set('no_reg_bpp')} readOnly={isReadOnly} />
           </div>
         </div>
 
@@ -355,7 +357,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <Label>Nama Entitas <span className="text-destructive">*</span></Label>
             <Select value={form.nama_entitas_id}
               onValueChange={(v) => setForm((p) => ({ ...p, nama_entitas_id: v }))}
-              disabled={loadingRefs}>
+              disabled={loadingRefs || isReadOnly}>
               <SelectTrigger><SelectValue placeholder="Pilih entitas" /></SelectTrigger>
               <SelectContent>
                 {entitas.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.nama}</SelectItem>)}
@@ -366,7 +368,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <Label>Program <span className="text-destructive">*</span></Label>
             <Select value={form.nama_program_id}
               onValueChange={handleProgramChange}
-              disabled={loadingRefs}>
+              disabled={loadingRefs || isReadOnly}>
               <SelectTrigger><SelectValue placeholder="Pilih program" /></SelectTrigger>
               <SelectContent>
                 {programList.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.nama}</SelectItem>)}
@@ -377,7 +379,7 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
             <Label>Sub Program <span className="text-destructive">*</span></Label>
             <Select value={form.sub_program_id}
               onValueChange={handleSubProgramChange}
-              disabled={!form.nama_program_id || subProgramList.length === 0}>
+              disabled={!form.nama_program_id || subProgramList.length === 0 || isReadOnly}>
               <SelectTrigger><SelectValue placeholder="Pilih sub-program" /></SelectTrigger>
               <SelectContent>
                 {subProgramList.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.nama}</SelectItem>)}
@@ -391,21 +393,21 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           <div className="space-y-2">
             <Label htmlFor="tgl_masuk_permohonan">Tgl. Masuk Permohonan</Label>
             <Input id="tgl_masuk_permohonan" type="date"
-              value={form.tgl_masuk_permohonan} onChange={set('tgl_masuk_permohonan')} />
+              value={form.tgl_masuk_permohonan} onChange={set('tgl_masuk_permohonan')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="jumlah_permohonan">Jumlah Permohonan (Rp) <span className="text-destructive">*</span></Label>
             <Input id="jumlah_permohonan" type="number" min="0" step="0.01"
-              value={form.jumlah_permohonan} onChange={set('jumlah_permohonan')} />
+              value={form.jumlah_permohonan} onChange={set('jumlah_permohonan')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="tgl_survei">Tgl. Survei</Label>
-            <Input id="tgl_survei" type="date" value={form.tgl_survei} onChange={set('tgl_survei')} />
+            <Input id="tgl_survei" type="date" value={form.tgl_survei} onChange={set('tgl_survei')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="surveyor">Nama Surveyor</Label>
             <Input id="surveyor" placeholder="Nama surveyor" maxLength={100}
-              value={form.surveyor} onChange={set('surveyor')} />
+              value={form.surveyor} onChange={set('surveyor')} readOnly={isReadOnly} />
           </div>
         </div>
 
@@ -416,35 +418,37 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit }: Distribus
           </div>
           <div className="space-y-2">
             <Label htmlFor="jumlah">Jumlah Penyaluran (Rp) <span className="text-destructive">*</span></Label>
-            <Input id="jumlah" type="number" min="0" step="0.01" value={form.jumlah} onChange={set('jumlah')} />
+            <Input id="jumlah" type="number" min="0" step="0.01" value={form.jumlah} onChange={set('jumlah')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="quantity">Kuantitas <span className="text-destructive">*</span></Label>
-            <Input id="quantity" type="number" min="0" value={form.quantity} onChange={set('quantity')} />
+            <Input id="quantity" type="number" min="0" value={form.quantity} onChange={set('quantity')} readOnly={isReadOnly} />
           </div>
           <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih ZIS" required />
           <div className="space-y-2">
             <Label htmlFor="no_rekening">No. Rekening</Label>
-            <Input id="no_rekening" placeholder="Nomor rekening" value={form.no_rekening} onChange={set('no_rekening')} />
+            <Input id="no_rekening" placeholder="Nomor rekening" value={form.no_rekening} onChange={set('no_rekening')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
             <Textarea id="rekomendasi_upz" placeholder="Nama UPZ" rows={2}
-              value={form.rekomendasi_upz} onChange={set('rekomendasi_upz')} />
+              value={form.rekomendasi_upz} onChange={set('rekomendasi_upz')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="keterangan">Keterangan</Label>
             <Textarea id="keterangan" placeholder="Catatan tambahan" rows={2}
-              value={form.keterangan} onChange={set('keterangan')} />
+              value={form.keterangan} onChange={set('keterangan')} readOnly={isReadOnly} />
           </div>
         </div>
       </div>
 
       <div className="flex gap-2 justify-end pt-2">
-        <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isLoading}>Batal</Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : editingId ? 'Simpan Perubahan' : 'Simpan'}
-        </Button>
+        <Button type="button" variant="outline" onClick={onCancelEdit} disabled={isLoading}>{isReadOnly ? 'Tutup' : 'Batal'}</Button>
+        {!isReadOnly && (
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : editingId ? 'Simpan Perubahan' : 'Simpan'}
+          </Button>
+        )}
       </div>
     </form>
   );

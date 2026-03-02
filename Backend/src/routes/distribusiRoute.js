@@ -1,10 +1,10 @@
 import express from 'express';
 import distribusiController from '../controllers/distribusiController.js';
 import validate from '../middlewares/validateMiddleware.js';
-import { 
-  createDistribusiSchema, 
-  updateDistribusiSchema, 
-  queryDistribusiSchema 
+import {
+  createDistribusiSchema,
+  updateDistribusiSchema,
+  queryDistribusiSchema
 } from '../validations/distribusiValidation.js';
 import { idParamSchema } from '../validations/shared.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
@@ -15,60 +15,60 @@ const router = express.Router();
 // Semua route butuh login
 router.use(authMiddleware);
 
-router.get('/', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
-  validate(queryDistribusiSchema, 'query'), 
+router.get('/',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  validate(queryDistribusiSchema, 'query'),
   distribusiController.getAll
 );
 
-router.get('/stats', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+router.get('/stats',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
   distribusiController.getStats
 );
 
-router.get('/rekap/harian', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+router.get('/rekap/harian',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
   distribusiController.rekapHarian
 );
 
-router.get('/rekap/bulanan', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+router.get('/rekap/bulanan',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
   distribusiController.rekapBulanan
 );
 
-router.get('/rekap/tahunan', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+router.get('/rekap/tahunan',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
   distribusiController.rekapTahunan
 );
 
-router.get('/:id', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
-  validate(idParamSchema, 'params'), 
+router.get('/:id',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  validate(idParamSchema, 'params'),
   distribusiController.getById
 );
 
-router.get('/:id/cetak', 
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
-  validate(idParamSchema, 'params'), 
+router.get('/:id/cetak',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  validate(idParamSchema, 'params'),
   distribusiController.cetakBuktiPenyaluran
 );
 
-router.post('/', 
-  roleMiddleware(['superadmin']), 
-  validate(createDistribusiSchema), 
+router.post('/',
+  roleMiddleware(['superadmin', 'pendistribusian', 'pelayanan']),
+  validate(createDistribusiSchema),
   distribusiController.create
 );
 
-router.put('/:id', 
-  roleMiddleware(['superadmin']), 
-  validate(idParamSchema, 'params'), 
-  validate(updateDistribusiSchema), 
+router.put('/:id',
+  roleMiddleware(['superadmin']),
+  validate(idParamSchema, 'params'),
+  validate(updateDistribusiSchema),
   distribusiController.update
 );
 
-router.delete('/:id', 
-  roleMiddleware(['superadmin']), 
-  validate(idParamSchema, 'params'), 
+router.delete('/:id',
+  roleMiddleware(['superadmin']),
+  validate(idParamSchema, 'params'),
   distribusiController.destroy
 );
 

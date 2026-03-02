@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
-  AlertCircle, Loader2, Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight,
+  AlertCircle, Loader2, Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, Eye,
 } from 'lucide-react';
 import { DistribusiForm } from '@/components/distribusi-form';
 
@@ -26,14 +26,20 @@ const STATUS_BADGE: Record<string, { label: string; variant: 'default' | 'second
 };
 
 export default function DistribusiPage() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  // Role check: pelayanan is read-only for distribusi
+  const isPelayanan = user?.role === 'pelayanan';
 
   const [list, setList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailData, setDetailData] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -54,8 +60,8 @@ export default function DistribusiPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const params: any = { 
-        page, 
+      const params: any = {
+        page,
         limit,
         dateField
       };
@@ -102,6 +108,20 @@ export default function DistribusiPage() {
     fetchData();
   };
 
+  const handleViewDetail = async (id: number) => {
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const res = await distribusiApi.get(id);
+      if (res.data) setDetailData(res.data);
+    } catch {
+      setDetailData(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const filterButtons: { key: StatusFilter; label: string }[] = [
     { key: 'all', label: 'Semua' },
     { key: 'pending', label: 'Menunggu Persetujuan' },
@@ -118,16 +138,18 @@ export default function DistribusiPage() {
             <h1 className="text-3xl font-bold">Distribusi Dana</h1>
             <p className="text-muted-foreground text-sm">Kelola penyaluran dana kepada Mustahiq</p>
           </div>
-          <Button onClick={() => { setEditingId(null); setFormOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Tambah Distribusi
-          </Button>
+          {!isPelayanan && (
+            <Button onClick={() => { setEditingId(null); setFormOpen(true); }}>
+              <Plus className="mr-2 h-4 w-4" /> Tambah Distribusi
+            </Button>
+          )}
         </div>
 
-        {/* Filters Area - 2x2 Grid Structure */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+        {/* Filters Area */}
+        <div className="flex flex-col lg:flex-row gap-4 items-start w-full">
           {/* Left Column (Search & Status) */}
-          <div className="space-y-3 flex flex-col justify-between">
-            {/* Top-Left: Search */}
+          <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[400px]">
+            {/* Search */}
             <form onSubmit={handleSearch} className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -147,9 +169,9 @@ export default function DistribusiPage() {
               )}
             </form>
 
-            {/* Bottom-Left: Status Filters */}
-            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-muted/20 border rounded-md">
-              <span className="text-[10px] font-bold uppercase text-muted-foreground mr-2 border-r pr-2 border-muted-foreground/30">Status</span>
+            {/* Status Filters */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-muted/20 border rounded-md">
+              <span className="text-[10px] font-bold uppercase text-muted-foreground mr-1.5 border-r pr-1.5 border-muted-foreground/30">Status</span>
               <div className="flex gap-1 flex-wrap">
                 {filterButtons.map((f) => (
                   <Button key={f.key} size="sm"
@@ -163,18 +185,18 @@ export default function DistribusiPage() {
             </div>
           </div>
 
-          {/* Right Column (Date Filter - Spanning height of left column) */}
-          <div className="flex flex-col justify-center p-3 border rounded-md bg-muted/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase text-muted-foreground">Filter Tanggal</span>
+          {/* Right Column (Date Filter) */}
+          <div className="flex flex-col gap-2 p-3 border rounded-md bg-muted/30 w-full lg:w-auto lg:ml-auto">
+            <div className="flex items-center gap-4 mb-1">
+              <span className="text-xs font-semibold uppercase text-muted-foreground">Filter Tanggal:</span>
               <div className="flex bg-muted p-0.5 rounded-sm">
-                <button 
+                <button
                   className={`px-3 py-0.5 text-[9px] font-medium rounded-sm transition-all ${dateField === 'tgl_masuk_permohonan' ? 'bg-background shadow-xs text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   onClick={() => { setDateField('tgl_masuk_permohonan'); setPage(1); }}
                 >
                   Permohonan
                 </button>
-                <button 
+                <button
                   className={`px-3 py-0.5 text-[9px] font-medium rounded-sm transition-all ${dateField === 'tanggal' ? 'bg-background shadow-xs text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   onClick={() => { setDateField('tanggal'); setPage(1); }}
                 >
@@ -182,26 +204,24 @@ export default function DistribusiPage() {
                 </button>
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-3 items-end">
+
+            <div className="flex flex-wrap items-center gap-2">
               <div className="space-y-1">
-                <span className="text-[9px] text-muted-foreground uppercase ml-1">Dari</span>
-                <Input type="date" className="h-8 text-xs font-mono" 
+                <span className="text-[10px] text-muted-foreground uppercase ml-1">Dari</span>
+                <Input type="date" className="h-8 text-xs w-36"
                   value={startDate} onChange={(e) => { setStartDate(e.target.value); setPage(1); }} />
               </div>
-              <div className="space-y-1 relative">
-                <span className="text-[9px] text-muted-foreground uppercase ml-1">Sampai</span>
-                <div className="flex items-center gap-1">
-                  <Input type="date" className="h-8 text-xs font-mono flex-1" 
-                    value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
-                  {(startDate || endDate) && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" 
-                      onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+              <div className="space-y-1">
+                <span className="text-[10px] text-muted-foreground uppercase ml-1">Sampai</span>
+                <Input type="date" className="h-8 text-xs w-36"
+                  value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
               </div>
+              {(startDate || endDate) && (
+                <Button variant="ghost" size="sm" className="h-8 mt-4 whitespace-nowrap"
+                  onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}>
+                  Bersihkan
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -259,7 +279,7 @@ export default function DistribusiPage() {
                             <TableCell className="font-mono text-[10px]">{mstq?.nrm || d.nrm || '-'}</TableCell>
                             <TableCell className="font-medium text-xs">{d.nama_mustahik || mstq?.nama || '-'}</TableCell>
                             <TableCell className="text-xs">
-                              {dateField === 'tgl_masuk_permohonan' 
+                              {dateField === 'tgl_masuk_permohonan'
                                 ? (d.tgl_masuk_permohonan ? new Date(d.tgl_masuk_permohonan).toLocaleDateString('id-ID') : '-')
                                 : (d.tanggal ? new Date(d.tanggal).toLocaleDateString('id-ID') : '-')
                               }
@@ -277,12 +297,20 @@ export default function DistribusiPage() {
                             </TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button size="icon" variant="outline" className="h-7 w-7"
-                                onClick={() => { setEditingId(d.id); setFormOpen(true); }}>
-                                <Edit className="h-3.5 w-3.5" />
+                                onClick={() => handleViewDetail(d.id)} title="Detail">
+                                <Eye className="h-3.5 w-3.5" />
                               </Button>
-                              <Button size="icon" variant="destructive" className="h-7 w-7" onClick={() => handleDelete(d.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              {!isPelayanan && (
+                                <>
+                                  <Button size="icon" variant="outline" className="h-7 w-7"
+                                    onClick={() => { setEditingId(d.id); setFormOpen(true); }} title="Edit">
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button size="icon" variant="destructive" className="h-7 w-7" onClick={() => handleDelete(d.id)} title="Hapus">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
@@ -329,18 +357,102 @@ export default function DistribusiPage() {
       </div>
 
       {/* Form Dialog — 3/4 layar */}
-      <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingId(null); }}>
+      <Dialog open={formOpen} onOpenChange={(open) => {
+        setFormOpen(open);
+        if (!open) { setEditingId(null); }
+      }}>
         <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-none h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
-            <DialogTitle>{editingId ? 'Edit Distribusi' : 'Tambah Distribusi Baru'}</DialogTitle>
+            <DialogTitle>
+              {editingId ? 'Edit Distribusi' : 'Tambah Distribusi Baru'}
+            </DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 px-6 pb-6">
             <DistribusiForm
               onSuccess={handleFormSuccess}
               editingId={editingId}
               onCancelEdit={() => { setFormOpen(false); setEditingId(null); }}
+              isReadOnly={isPelayanan}
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-7xl sm:max-w-none w-[90vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detail Distribusi</DialogTitle>
+          </DialogHeader>
+          {detailLoading ? (
+            <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : detailData ? (
+            <div className="space-y-4 text-sm mt-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                <span className="text-muted-foreground font-medium">Tanggal Distribusi</span>
+                <span>{detailData.tanggal ? new Date(detailData.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Status</span>
+                <span>
+                  {detailData.status ? (
+                    <Badge variant={STATUS_BADGE[detailData.status]?.variant || 'outline'}>
+                      {STATUS_BADGE[detailData.status]?.label || detailData.status}
+                    </Badge>
+                  ) : <span className="text-muted-foreground">Menunggu</span>}
+                </span>
+
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Mustahiq</span>
+                <span className="font-semibold border-t pt-3 mt-1 text-primary">{detailData.Mustahiq?.nama || detailData.nama_mustahik || '-'} {detailData.Mustahiq?.nrm || detailData.nrm ? `(${detailData.Mustahiq?.nrm || detailData.nrm})` : ''}</span>
+
+                <span className="text-muted-foreground font-medium">Kategori Mustahiq</span>
+                <span>{detailData.ref_kategori_mustahiq?.nama || detailData.KategoriMustahiq?.nama || detailData.kategori_mustahiq?.nama || '-'}</span>
+
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Program</span>
+                <span className="border-t pt-3 mt-1">{detailData.NamaProgram?.nama || detailData.ref_nama_program?.nama || detailData.nama_program?.nama || '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Sub Program</span>
+                <span>{detailData.SubProgram?.nama || detailData.ref_sub_program?.nama || detailData.sub_program?.nama || '-'}</span>
+
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Jumlah Penyaluran</span>
+                <span className="font-bold border-t pt-3 mt-1 text-base">Rp {Number(detailData.jumlah || 0).toLocaleString('id-ID')}</span>
+
+                <span className="text-muted-foreground font-medium">Kuantitas</span>
+                <span>{detailData.quantity || 0}</span>
+
+                <span className="text-muted-foreground font-medium">No. Reg BPP</span>
+                <span className="font-mono text-xs">{detailData.no_reg_bpp || '-'}</span>
+
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Tgl. Masuk Permohonan</span>
+                <span className="border-t pt-3 mt-1">{detailData.tgl_masuk_permohonan ? new Date(detailData.tgl_masuk_permohonan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Jumlah Permohonan</span>
+                <span>Rp {Number(detailData.jumlah_permohonan || 0).toLocaleString('id-ID')}</span>
+
+                <span className="text-muted-foreground font-medium">Tgl. Survei</span>
+                <span>{detailData.tgl_survei ? new Date(detailData.tgl_survei).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Surveyor</span>
+                <span>{detailData.surveyor || '-'}</span>
+
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Metode Penyaluran</span>
+                <span className="border-t pt-3 mt-1">{detailData.JenisZisDistribusi?.nama || detailData.jenis_zis_distribusi?.nama || '-'}</span>
+
+                <span className="text-muted-foreground font-medium">No Rekening</span>
+                <span className="font-mono text-xs">{detailData.no_rekening || '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Nama Entitas</span>
+                <span>{detailData.RefNamaEntitas?.nama || detailData.ref_nama_entitas?.nama || detailData.nama_entitas?.nama || '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Rekomendasi UPZ</span>
+                <span>{detailData.rekomendasi_upz || '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Keterangan</span>
+                <span className="italic">{detailData.keterangan || '-'}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">Data tidak ditemukan</p>
+          )}
         </DialogContent>
       </Dialog>
     </DashboardLayout>

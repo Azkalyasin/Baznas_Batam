@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { refApi } from '@/lib/api';
+import { refApi, mustahiqApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface AjuPermohonanFormProps {
@@ -37,6 +37,8 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
 
     const today = new Date().toISOString().split('T')[0];
 
+    const [kategoriMustahiqId, setKategoriMustahiqId] = useState<number | undefined>();
+
     const [form, setForm] = useState({
         no_reg_bpp: '',
         nama_entitas_id: '',
@@ -55,12 +57,16 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
         const load = async () => {
             setLoadingRefs(true);
             try {
-                const [entitasRes, progRes] = await Promise.all([
+                const [entitasRes, progRes, mustahiqRes] = await Promise.all([
                     refApi.list('nama-entitas'),
                     refApi.list('nama-program'),
+                    mustahiqApi.get(mustahiqId)
                 ]);
                 if (Array.isArray(entitasRes.data)) setEntitas(entitasRes.data);
                 if (Array.isArray(progRes.data)) setProgramList(progRes.data);
+                if (mustahiqRes.data?.kategori_mustahiq_id) {
+                    setKategoriMustahiqId(mustahiqRes.data.kategori_mustahiq_id);
+                }
             } catch (e) {
                 console.error('ref load error:', e);
             } finally {
@@ -133,11 +139,12 @@ export function AjuPermohonanForm({ onSuccess, onCancel, mustahiqId, mustahiqLab
                 no_reg_bpp: form.no_reg_bpp || undefined,
                 tgl_masuk_permohonan: form.tgl_masuk_permohonan || undefined,
                 jumlah_permohonan: parseFloat(form.jumlah_permohonan),
-                jumlah: parseFloat(form.jumlah_permohonan), // required by backend
+                jumlah: 0,
                 nama_entitas_id: form.nama_entitas_id ? parseInt(form.nama_entitas_id) : undefined,
                 nama_program_id: form.nama_program_id ? parseInt(form.nama_program_id) : undefined,
                 sub_program_id: form.sub_program_id ? parseInt(form.sub_program_id) : undefined,
                 program_kegiatan_id: form.program_kegiatan_id ? parseInt(form.program_kegiatan_id) : undefined,
+                kategori_mustahiq_id: kategoriMustahiqId,
                 rekomendasi_upz: form.rekomendasi_upz || undefined,
                 keterangan: form.keterangan || undefined,
             };
