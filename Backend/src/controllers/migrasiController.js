@@ -1,15 +1,15 @@
 import migrasiService from '../services/migrasiService.js';
 
-const STANDARD_TYPES   = ['mustahiq', 'muzakki', 'penerimaan', 'distribusi'];
-const CUSTOM_TYPES     = ['penerimaan_excel', 'distribusi_excel'];
-const ALL_TYPES        = [...STANDARD_TYPES, ...CUSTOM_TYPES];
+const STANDARD_TYPES = ['mustahiq', 'muzakki', 'penerimaan', 'distribusi'];
+const CUSTOM_TYPES = ['penerimaan_excel', 'distribusi_excel'];
+const ALL_TYPES = [...STANDARD_TYPES, ...CUSTOM_TYPES];
 
 const getTemplate = async (req, res, next) => {
   try {
     const { jenis } = req.params;
-    
-    if (!STANDARD_TYPES.includes(jenis)) {
-      return res.status(400).json({ success: false, message: 'Template hanya tersedia untuk tipe standar (mustahiq, muzakki, penerimaan, distribusi).' });
+
+    if (!ALL_TYPES.includes(jenis)) {
+      return res.status(400).json({ success: false, message: 'Template hanya tersedia untuk tipe standar (mustahiq, muzakki) dan excel lama (penerimaan_excel, distribusi_excel).' });
     }
 
     // Role-based check (Logic can also be moved to middleware)
@@ -17,7 +17,7 @@ const getTemplate = async (req, res, next) => {
     if (jenis === 'mustahiq' && !['pelayanan', 'superadmin'].includes(role)) {
       return res.status(403).json({ success: false, message: 'Akses ditolak untuk jenis migrasi ini.' });
     }
-    if (['muzakki', 'penerimaan', 'distribusi'].includes(jenis) && !['keuangan', 'pendistribusian', 'superadmin'].includes(role)) {
+    if (['muzakki', 'penerimaan', 'distribusi', 'penerimaan_excel', 'distribusi_excel'].includes(jenis) && !['keuangan', 'pendistribusian', 'superadmin'].includes(role)) {
       return res.status(403).json({ success: false, message: 'Akses ditolak untuk jenis migrasi ini.' });
     }
 

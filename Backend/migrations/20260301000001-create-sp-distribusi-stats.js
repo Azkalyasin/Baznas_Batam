@@ -46,7 +46,7 @@ module.exports = {
         SELECT 
           CAST(SUM(d.jumlah) AS DECIMAL(15,2)) AS total_distribusi_zis,
           CAST(SUM(CASE WHEN rjz.nama = 'Zakat' THEN d.jumlah ELSE 0 END) AS DECIMAL(15,2)) AS total_distribusi_zakat,
-          CAST(SUM(CASE WHEN rjz.nama = 'Infak' THEN d.jumlah ELSE 0 END) AS DECIMAL(15,2)) AS total_distribusi_infaq
+          CAST(SUM(CASE WHEN rjz.nama LIKE 'Infak%' THEN d.jumlah ELSE 0 END) AS DECIMAL(15,2)) AS total_distribusi_infaq
         FROM distribusi d
         LEFT JOIN ref_jenis_zis_distribusi rjz ON d.jenis_zis_distribusi_id = rjz.id
         WHERE d.status = 'diterima'

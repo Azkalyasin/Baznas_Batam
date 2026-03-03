@@ -19,25 +19,25 @@ const TYPE_LABELS: Record<DataType, string> = {
   muzakki: 'Muzakki',
   penerimaan: 'Penerimaan',
   distribusi: 'Distribusi',
-  penerimaan_excel: 'Penerimaan (Excel Lama)',
-  distribusi_excel: 'Distribusi (Excel Lama)',
+  penerimaan_excel: 'Penerimaan',
+  distribusi_excel: 'Distribusi',
 };
 
-const STANDARD_TYPES: DataType[] = ['mustahiq', 'muzakki', 'penerimaan', 'distribusi'];
-const CUSTOM_TYPES:   DataType[] = ['penerimaan_excel', 'distribusi_excel'];
+const STANDARD_TYPES: DataType[] = ['mustahiq', 'muzakki'];
+const CUSTOM_TYPES: DataType[] = ['penerimaan_excel', 'distribusi_excel'];
 
 export default function MigrasiExcelPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
-  
+
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   const [file, setFile] = useState<File | null>(null);
   const [dataType, setDataType] = useState<DataType>('mustahiq');
-  
+
   const [previewResult, setPreviewResult] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,7 +77,7 @@ export default function MigrasiExcelPage() {
     try {
       setIsLoading(true);
       const res = await migrasiApi.preview(selectedFile, selectedType);
-      
+
       if (res.success) {
         setFile(selectedFile);
         setPreviewResult(res.data);
@@ -127,8 +127,23 @@ export default function MigrasiExcelPage() {
     }
   };
 
-  const handleDownloadTemplate = (jenis: DataType) => {
-    window.location.href = migrasiApi.templateUrl(jenis);
+  const handleDownloadTemplate = async (jenis: DataType) => {
+    try {
+      setIsLoading(true);
+      const blob = await migrasiApi.downloadTemplate(jenis);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Template_Migrasi_${jenis}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err) {
+      setError('Gagal mendownload template excel.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -165,9 +180,9 @@ export default function MigrasiExcelPage() {
                 <div className="flex gap-2">
                   {/* ── Tipe standar ── */}
                   {STANDARD_TYPES.map((t) => (
-                    <Button 
+                    <Button
                       key={t}
-                      size="sm" 
+                      size="sm"
                       variant={dataType === t ? 'default' : 'outline'}
                       onClick={() => {
                         setDataType(t);
@@ -179,9 +194,9 @@ export default function MigrasiExcelPage() {
                   ))}
                   {/* ── Format Excel lama ── */}
                   {CUSTOM_TYPES.map((t) => (
-                    <Button 
+                    <Button
                       key={t}
-                      size="sm" 
+                      size="sm"
                       variant={dataType === t ? 'secondary' : 'outline'}
                       className={dataType === t ? 'ring-2 ring-orange-400' : 'border-orange-300 text-orange-700 hover:bg-orange-50'}
                       onClick={() => {
@@ -195,8 +210,8 @@ export default function MigrasiExcelPage() {
                 </div>
               </div>
               <CardDescription>
-                Pilih tipe data di atas, lalu upload file Excel yang sesuai.<br/>
-                <span className="text-orange-600 font-medium">🗂 Format Excel Lama</span>: langsung pakai file Excel Anda yang sudah ada.
+                Pilih tipe data di atas, lalu upload file Excel yang sesuai.<br />
+                <span className="text-orange-600 font-medium">🗂 Format Excel</span>: langsung pakai file Excel Anda yang sudah ada.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -204,11 +219,10 @@ export default function MigrasiExcelPage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                  isDragging
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-background hover:border-primary/50'
-                }`}
+                className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${isDragging
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-background hover:border-primary/50'
+                  }`}
               >
                 <input
                   type="file"
@@ -246,18 +260,19 @@ export default function MigrasiExcelPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {STANDARD_TYPES.map((t) => (
-                <Button 
-                  key={t} 
-                  variant="outline" 
+              {[...STANDARD_TYPES, ...CUSTOM_TYPES].map((t) => (
+                <Button
+                  key={t}
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={() => handleDownloadTemplate(t)}
+                  disabled={isLoading}
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Template {TYPE_LABELS[t]}
                 </Button>
               ))}
-              
+
               <Alert className="mt-4 bg-blue-50 border-blue-200">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-xs text-blue-800">
@@ -285,8 +300,8 @@ export default function MigrasiExcelPage() {
                   <Button variant="outline" onClick={resetState} disabled={isLoading}>
                     Batal
                   </Button>
-                  <Button 
-                    onClick={handleImport} 
+                  <Button
+                    onClick={handleImport}
                     disabled={isLoading || previewResult.siap_import === 0}
                     className="gap-2"
                   >
@@ -295,7 +310,7 @@ export default function MigrasiExcelPage() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex gap-4 mt-4">
                 <div className="bg-green-100 text-green-800 px-3 py-1.5 rounded-md text-sm font-medium">
                   {previewResult.siap_import} Siap Import

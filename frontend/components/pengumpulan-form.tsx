@@ -15,7 +15,7 @@ interface PengumpulanFormProps {
   editingId: number | null;
   onCancelEdit: () => void;
   /** Pre-fill with muzakki data (e.g. from "Tambah Penerimaan" button on muzakki page) */
-  prefillMuzakki?: { id: number; label: string; jenis_muzakki_id?: number };
+  prefillMuzakki?: { id: number; label: string; jenis_muzakki_id?: number; jenis_upz_id?: number };
   isReadOnly?: boolean;
 }
 
@@ -73,7 +73,8 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
         setFormData((p) => ({
           ...p,
           muzakki_id: String(prefillMuzakki.id),
-          jenis_muzakki_id: prefillMuzakki.jenis_muzakki_id ? String(prefillMuzakki.jenis_muzakki_id) : p.jenis_muzakki_id
+          jenis_muzakki_id: prefillMuzakki.jenis_muzakki_id ? String(prefillMuzakki.jenis_muzakki_id) : p.jenis_muzakki_id,
+          jenis_upz_id: prefillMuzakki.jenis_upz_id ? String(prefillMuzakki.jenis_upz_id) : p.jenis_upz_id
         }));
       } else {
         setSelectedMuzakki(null);
@@ -178,7 +179,8 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
     setFormData((p) => ({
       ...p,
       muzakki_id: String(m.id),
-      jenis_muzakki_id: m.jenis_muzakki_id ? String(m.jenis_muzakki_id) : p.jenis_muzakki_id
+      jenis_muzakki_id: m.jenis_muzakki_id ? String(m.jenis_muzakki_id) : p.jenis_muzakki_id,
+      jenis_upz_id: m.jenis_upz_id ? String(m.jenis_upz_id) : p.jenis_upz_id
     }));
     setMuzakkiSearch('');
     setMuzakkiResults([]);
@@ -325,10 +327,10 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
                   const selectedZis = zisList.find(z => String(z.id) === v);
                   if (selectedZis) {
                     const label = selectedZis.nama.toLowerCase();
-                    if (label === 'zakat') {
+                    if (label.includes('zakat')) {
                       const amil = persentaseAmilList.find(a => a.label === '12.5%');
                       if (amil) newData.persentase_amil_id = String(amil.id);
-                    } else if (label === 'infaq' || label === 'infak' || label === 'sedekah') {
+                    } else if (label.includes('infaq') || label.includes('infak') || label.includes('sedekah')) {
                       const amil = persentaseAmilList.find(a => a.label === '20%');
                       if (amil) newData.persentase_amil_id = String(amil.id);
                     }

@@ -32,7 +32,7 @@ export default function MuzakkiPage() {
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [penerimaanOpen, setPenerimaanOpen] = useState(false);
-  const [penerimaanMuzakki, setPenerimaanMuzakki] = useState<{ id: number; label: string; jenis_muzakki_id?: number } | null>(null);
+  const [penerimaanMuzakki, setPenerimaanMuzakki] = useState<{ id: number; label: string; jenis_muzakki_id?: number; jenis_upz_id?: number } | null>(null);
 
   // Ref data untuk resolusi ID → nama
   const [kecamatanList, setKecamatanList] = useState<any[]>([]);
@@ -212,20 +212,25 @@ export default function MuzakkiPage() {
                           <TableCell className="font-mono text-xs">{m.npwz || '-'}</TableCell>
                           <TableCell className="font-medium">{m.nama}</TableCell>
                           <TableCell className="font-mono text-xs">{m.nik || '-'}</TableCell>
-                          <TableCell className="text-right space-x-1">
-                            <Button size="sm" variant="ghost" onClick={() => handleViewDetail(m.id)} title="Detail">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => {
-                              setPenerimaanMuzakki({ id: m.id, label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}`, jenis_muzakki_id: m.jenis_muzakki_id });
+                          <TableCell className="text-right space-x-2">
+                            <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50" onClick={() => {
+                              setPenerimaanMuzakki({
+                                id: m.id,
+                                label: `${m.nama}${m.npwz ? ` (${m.npwz})` : ''}`,
+                                jenis_muzakki_id: m.jenis_muzakki_id,
+                                jenis_upz_id: m.jenis_upz_id
+                              });
                               setPenerimaanOpen(true);
                             }} title="Tambah Penerimaan">
-                              <Banknote className="h-4 w-4" />
+                              <Banknote className="h-4 w-4 mr-1.5" /> Tambah Penerimaan
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => { setEditingId(m.id); setFormOpen(true); }} title="Edit">
+                            <Button size="icon" variant="ghost" onClick={() => handleViewDetail(m.id)} title="Detail">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="outline" onClick={() => { setEditingId(m.id); setFormOpen(true); }} title="Edit">
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDelete(m.id, m.nama)} title="Hapus">
+                            <Button size="icon" variant="destructive" onClick={() => handleDelete(m.id, m.nama)} title="Hapus">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>

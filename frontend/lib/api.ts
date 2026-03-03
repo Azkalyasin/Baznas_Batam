@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5501';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -569,6 +569,21 @@ export const migrasiApi = {
   /** GET /api/migrasi/template/:jenis */
   templateUrl: (jenis: string) =>
     `${API_BASE_URL}/api/migrasi/template/${jenis}`,
+
+  /** GET /api/migrasi/template/:jenis (Authenticated Download) */
+  downloadTemplate: async (jenis: string) => {
+    const token = getAuthToken();
+    const res = await fetch(`${API_BASE_URL}/api/migrasi/template/${jenis}`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    if (!res.ok) {
+      throw new Error(`API Error: ${res.status}`);
+    }
+    return res.blob();
+  },
 
   /** GET /api/migrasi/log */
   getLog: (params: { page?: number; limit?: number; jenis?: string } = {}) =>

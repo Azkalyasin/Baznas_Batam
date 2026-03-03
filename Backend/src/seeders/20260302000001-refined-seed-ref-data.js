@@ -50,7 +50,6 @@ module.exports = {
 
         // 2.3 ref_jenis_zis (Detailed types)
         const jenisZis = [
-            { nama: 'Zakat', parent: 'Zakat' },
             { nama: 'Infak Terikat', parent: 'Infak/Sedekah' },
             { nama: 'Infak Tidak Terikat', parent: 'Infak/Sedekah' },
             { nama: 'Zakat Fitrah', parent: 'Zakat' },
@@ -95,7 +94,7 @@ module.exports = {
 
         // 2.4 ref_jenis_zis_distribusi
         const zisDistribusi = [
-            'Zakat', 'Zakat Fitrah', 'Infak Terikat', 'Infak Tidak Terikat', 'Hibah'
+            'Zakat', 'Infak Terikat', 'Infak Tidak Terikat'
         ];
         await queryInterface.bulkInsert('ref_jenis_zis_distribusi',
             zisDistribusi.map(nama => ({ nama, created_at: new Date(), updated_at: new Date() })),
