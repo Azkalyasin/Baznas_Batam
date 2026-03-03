@@ -60,12 +60,11 @@ export default function PengumpulanPage() {
       if (endDate) params.endDate = endDate;
       if (searchQ) params.q = searchQ;
 
-      const res = await penerimaanApi.list(params);
-      const resData: any = res.data;
-      if (resData) {
-        const arr = Array.isArray(resData) ? resData : resData.data ?? [];
+      const res: any = await penerimaanApi.list(params);
+      if (res) {
+        const arr = res.data ?? [];
         setList(arr);
-        setTotal(resData.total ?? arr.length);
+        setTotal(res.total ?? arr.length);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat data Pengumpulan');
@@ -184,6 +183,7 @@ export default function PengumpulanPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[50px]">No.</TableHead>
                         <TableHead>Tanggal</TableHead>
                         <TableHead>Muzakki</TableHead>
                         <TableHead>ZIS</TableHead>
@@ -193,8 +193,9 @@ export default function PengumpulanPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {list.map((p) => (
+                      {list.map((p, index) => (
                         <TableRow key={p.id}>
+                          <TableCell className="text-muted-foreground">{(page - 1) * limit + index + 1}</TableCell>
                           <TableCell>{new Date(p.tanggal).toLocaleDateString('id-ID')}</TableCell>
                           <TableCell>{p.Muzakki?.nama || p.muzakki?.nama || p.nama_muzakki || '-'}</TableCell>
                           <TableCell>{p.zis?.nama || '-'}{p.jenis_zis?.nama ? ` / ${p.jenis_zis.nama}` : ''}</TableCell>

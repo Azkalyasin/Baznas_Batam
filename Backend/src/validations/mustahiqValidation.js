@@ -12,7 +12,7 @@ const emptyToNull = (v) => v === '' ? null : v;
 // --- Create Mustahiq ---
 export const createMustahiqSchema = z.object({
   nrm: z.string().min(1, 'NRM wajib diisi.').max(24, 'NRM terlalu panjang.').trim(),
-  nik: z.preprocess(emptyToNull, z.string().max(16, 'NIK maksimal 16 karakter.').trim().nullable().optional()),
+  nik: z.preprocess(emptyToNull, z.string().trim().max(16, 'NIK maksimal 16 karakter.').nullable().optional()),
   nama: z.string().min(1, 'Nama wajib diisi.').max(100, 'Nama terlalu panjang.').trim(),
   no_hp: z.preprocess(emptyToNull, z.string().max(14, 'Nomor HP terlalu panjang.').trim().nullable().optional()),
   alamat: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
@@ -29,7 +29,7 @@ export const createMustahiqSchema = z.object({
 // --- Update Mustahiq ---
 export const updateMustahiqSchema = z.object({
   nrm: z.string().min(1).max(24).trim().optional(),
-  nik: z.string().max(16).trim().optional(),
+  nik: z.string().trim().max(16, 'NIK maksimal 16 karakter.').optional(),
   nama: z.string().min(1).max(100).trim().optional(),
   no_hp: z.string().max(14).trim().optional(),
   alamat: z.string().optional(),

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5501';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -567,7 +567,7 @@ export const userApi = {
 
 export const migrasiApi = {
   /** GET /api/migrasi/template/:jenis */
-  templateUrl: (jenis: 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi') =>
+  templateUrl: (jenis: string) =>
     `${API_BASE_URL}/api/migrasi/template/${jenis}`,
 
   /** GET /api/migrasi/log */

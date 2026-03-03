@@ -12,7 +12,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, Upload, Loader2, CheckCircle2, FileUp, Download, Info } from 'lucide-react';
 import { migrasiApi } from '@/lib/api';
 
-type DataType = 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi';
+type DataType = 'mustahiq' | 'muzakki' | 'penerimaan' | 'distribusi' | 'penerimaan_excel' | 'distribusi_excel';
+
+const TYPE_LABELS: Record<DataType, string> = {
+  mustahiq: 'Mustahiq',
+  muzakki: 'Muzakki',
+  penerimaan: 'Penerimaan',
+  distribusi: 'Distribusi',
+  penerimaan_excel: 'Penerimaan (Excel Lama)',
+  distribusi_excel: 'Distribusi (Excel Lama)',
+};
+
+const STANDARD_TYPES: DataType[] = ['mustahiq', 'muzakki', 'penerimaan', 'distribusi'];
+const CUSTOM_TYPES:   DataType[] = ['penerimaan_excel', 'distribusi_excel'];
 
 export default function MigrasiExcelPage() {
   const { isAuthenticated } = useAuth();
@@ -151,7 +163,8 @@ export default function MigrasiExcelPage() {
               <div className="flex justify-between items-center mb-4">
                 <CardTitle>Upload File</CardTitle>
                 <div className="flex gap-2">
-                  {(['mustahiq', 'muzakki', 'penerimaan', 'distribusi'] as DataType[]).map((t) => (
+                  {/* ── Tipe standar ── */}
+                  {STANDARD_TYPES.map((t) => (
                     <Button 
                       key={t}
                       size="sm" 
@@ -161,13 +174,29 @@ export default function MigrasiExcelPage() {
                         resetState();
                       }}
                     >
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                      {TYPE_LABELS[t]}
+                    </Button>
+                  ))}
+                  {/* ── Format Excel lama ── */}
+                  {CUSTOM_TYPES.map((t) => (
+                    <Button 
+                      key={t}
+                      size="sm" 
+                      variant={dataType === t ? 'secondary' : 'outline'}
+                      className={dataType === t ? 'ring-2 ring-orange-400' : 'border-orange-300 text-orange-700 hover:bg-orange-50'}
+                      onClick={() => {
+                        setDataType(t);
+                        resetState();
+                      }}
+                    >
+                      🗂 {TYPE_LABELS[t]}
                     </Button>
                   ))}
                 </div>
               </div>
               <CardDescription>
-                Pilih tab tipe data di atas, lalu upload file Excel yang sesuai
+                Pilih tipe data di atas, lalu upload file Excel yang sesuai.<br/>
+                <span className="text-orange-600 font-medium">🗂 Format Excel Lama</span>: langsung pakai file Excel Anda yang sudah ada.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -194,10 +223,13 @@ export default function MigrasiExcelPage() {
                   <div className="flex flex-col items-center gap-3">
                     <Upload className="h-10 w-10 text-muted-foreground" />
                     <div>
-                      <p className="font-medium text-lg">Pilih file atau drag & drop</p>
+                      <p className="font-medium text-lg">Pilih file atau drag &amp; drop</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Format .xlsx untuk <strong>{dataType.toUpperCase()}</strong>
+                        Format .xlsx untuk <strong>{TYPE_LABELS[dataType]}</strong>
                       </p>
+                      {CUSTOM_TYPES.includes(dataType) && (
+                        <p className="text-xs text-orange-600 mt-1">✓ Format Excel lama dikenali — tidak perlu ubah kolom</p>
+                      )}
                     </div>
                     {isLoading && <Loader2 className="h-5 w-5 animate-spin text-primary mt-2" />}
                   </div>
@@ -214,7 +246,7 @@ export default function MigrasiExcelPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {(['mustahiq', 'muzakki', 'penerimaan', 'distribusi'] as DataType[]).map((t) => (
+              {STANDARD_TYPES.map((t) => (
                 <Button 
                   key={t} 
                   variant="outline" 
@@ -222,7 +254,7 @@ export default function MigrasiExcelPage() {
                   onClick={() => handleDownloadTemplate(t)}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Template {t.charAt(0).toUpperCase() + t.slice(1)}
+                  Template {TYPE_LABELS[t]}
                 </Button>
               ))}
               

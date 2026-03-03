@@ -157,6 +157,7 @@ export default function PelayananPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[50px]">No.</TableHead>
                       <TableHead>NRM</TableHead>
                       <TableHead>Nama</TableHead>
                       <TableHead>NIK</TableHead>
@@ -164,8 +165,9 @@ export default function PelayananPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mustahiqList.map((m) => (
+                    {mustahiqList.map((m, index) => (
                       <TableRow key={m.id}>
+                        <TableCell className="text-muted-foreground">{(page - 1) * limit + index + 1}</TableCell>
                         <TableCell className="font-medium">{m.nrm || '-'}</TableCell>
                         <TableCell>{m.nama}</TableCell>
                         <TableCell>{m.nik || '-'}</TableCell>

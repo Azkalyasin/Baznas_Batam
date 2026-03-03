@@ -14,7 +14,7 @@ const emptyToNull = (v) => v === '' ? null : v;
 export const createMuzakkiSchema = z.object({
   npwz: z.string().min(1, 'NPWZ wajib diisi.').max(15, 'NPWZ terlalu panjang.').trim(),
   nama: z.string().min(1, 'Nama wajib diisi.').max(50, 'Nama terlalu panjang.').trim(),
-  nik: z.preprocess(emptyToNull, z.string().max(16, 'NIK maksimal 16 karakter.').trim().nullable().optional()),
+  nik: z.preprocess(emptyToNull, z.string().trim().max(16, 'NIK maksimal 16 karakter.').nullable().optional()),
   no_hp: z.preprocess(emptyToNull, z.string().max(14, 'Nomor HP terlalu panjang.').trim().nullable().optional()),
   jenis_muzakki_id: z.number().int().positive().optional().default(1),
   jenis_upz_id: z.number().int().positive().nullable().optional(),
@@ -30,7 +30,7 @@ export const createMuzakkiSchema = z.object({
 export const updateMuzakkiSchema = z.object({
   npwz: z.string().min(1).max(15).trim().optional(),
   nama: z.string().min(1).max(50).trim().optional(),
-  nik: z.string().max(16).trim().optional(),
+  nik: z.string().trim().max(16, 'NIK maksimal 16 karakter.').optional(),
   no_hp: z.string().max(14).trim().optional(),
   jenis_muzakki_id: z.number().int().positive().optional(),
   jenis_upz_id: z.number().int().positive().optional(),

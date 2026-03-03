@@ -260,6 +260,7 @@ export default function DistribusiPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[50px] text-xs">No.</TableHead>
                         <TableHead className="text-xs">NRM</TableHead>
                         <TableHead className="text-xs">Nama Mustahiq</TableHead>
                         <TableHead className="text-xs">{dateField === 'tgl_masuk_permohonan' ? 'Tgl. Permohonan' : 'Tgl. Distribusi'}</TableHead>
@@ -270,12 +271,13 @@ export default function DistribusiPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {list.map((d) => {
+                      {list.map((d, index) => {
                         const mstq = d.Mustahiq || d.mustahiq;
                         const prog = d.NamaProgram || d.ref_nama_program || d.nama_program;
                         const statusInfo = d.status ? STATUS_BADGE[d.status] : null;
                         return (
                           <TableRow key={d.id}>
+                            <TableCell className="text-muted-foreground text-[10px]">{(page - 1) * limit + index + 1}</TableCell>
                             <TableCell className="font-mono text-[10px]">{mstq?.nrm || d.nrm || '-'}</TableCell>
                             <TableCell className="font-medium text-xs">{d.nama_mustahik || mstq?.nama || '-'}</TableCell>
                             <TableCell className="text-xs">

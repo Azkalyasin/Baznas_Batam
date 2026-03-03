@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { z } from 'zod';
 import { createMustahiqSchema } from '../validations/mustahiqValidation.js';
 import { createMuzakkiSchema } from '../validations/muzakkiValidation.js';
 import { createPenerimaanSchema } from '../validations/penerimaanValidation.js';
@@ -26,7 +27,9 @@ import {
   KategoriMustahiq,
   FrekuensiBantuan,
   JenisMuzakki,
-  JenisUpz
+  JenisUpz,
+  PersentaseAmil,
+  Infak
 } from '../models/ref/index.js';
 
 // ============================================================
@@ -59,6 +62,12 @@ const buildLookupMap = async (model, nameField = 'nama') => {
     const key = (row[nameField] || '').toString().toLowerCase().trim();
     map[key] = row.id;
     list.push({ key, id: row.id, original: row[nameField] });
+
+    // Alias: Infaq -> Infak/Sedekah
+    if (key === 'infak/sedekah') {
+      map['infaq'] = row.id;
+      list.push({ key: 'infaq', id: row.id, original: row[nameField] });
+    }
   }
   return { map, list };
 };
@@ -113,7 +122,8 @@ const COLUMN_CONFIG = {
       { header: 'Kelurahan', key: 'kelurahan', width: 20, note: 'Nama kelurahan' },
       { header: 'Kecamatan', key: 'kecamatan', width: 20, note: 'Nama kecamatan' },
       { header: 'No HP', key: 'no_hp', width: 15 },
-      { header: 'Asnaf', key: 'asnaf', width: 15, note: 'Nama asnaf (Fakir, Miskin, dst)' }
+      { header: 'Asnaf', key: 'asnaf', width: 15, note: 'Nama asnaf (Fakir, Miskin, dst)' },
+      { header: 'Kategori Mustahiq', key: 'kategori_mustahiq', width: 20, note: 'Default: Individu' }
     ],
     schema: createMustahiqSchema,
     model: Mustahiq
@@ -163,6 +173,62 @@ const COLUMN_CONFIG = {
     ],
     schema: createDistribusiSchema,
     model: Distribusi
+  },
+
+  // ── Format Excel lama user (PENERIMAAN ZIS 2026) ──────────────────────────
+  // Kolom: TANGGAL | BULAN | NAMA MUZAKKI | MUZAKI | CASH/BANK | JENIS ZIS
+  //        | JENIS MUZAKKI | JENIS UPZ | JUMLAH | TUNAI | AMIL % | DANA | ZIS
+  penerimaan_excel: {
+    columns: [
+      { header: 'TANGGAL',       key: 'tanggal_raw',   width: 20 },
+      { header: 'BULAN',         key: 'bulan_raw',     width: 10 },
+      { header: 'NAMA MUZAKKI',  key: 'nama_muzakki',  width: 35 },
+      { header: 'MUZAKI',        key: 'via_raw',       width: 20 },  // Bank / Cash / Kantor Digital
+      { header: 'CASH/BANK',     key: 'metode_bayar',  width: 25 },  // nama bank
+      { header: 'JENIS ZIS',     key: 'jenis_zis',     width: 25 },
+      { header: 'JENIS MUZAKKI', key: 'jenis_muzakki', width: 20 },
+      { header: 'JENIS UPZ',     key: 'jenis_upz',     width: 20 },
+      { header: 'JUMLAH',        key: 'jumlah',        width: 18 },
+      { header: 'TUNAI',         key: 'tunai',         width: 15 },
+      { header: 'AMIL %',        key: 'amil_pct',      width: 10 },
+      { header: 'DANA',          key: 'dana',          width: 15 },
+      { header: 'ZIS',           key: 'zis',           width: 10 }   // ZAKAT / INFAQ
+    ],
+    schema: null,   // validasi manual di resolver
+    model: Penerimaan
+  },
+
+  // ── Format Excel distribusi lama user ────────────────────────────────────
+  // Kolom: Tanggal | Kode Asnaf | Nama Sub Program | Kegiatan Program
+  //        | Frekuensi Bantuan | NRM | Nama Mustahik | NIK | Alamat
+  //        | Kelurahan | Kecamatan | Jumlah | VIA | Kategori Mustahiq
+  //        | Nama Program | Asnaf | Infak | ZIS% | Keterangan | No HP | Rekomendasi UPZ
+  distribusi_excel: {
+    columns: [
+      { header: 'Tanggal',           key: 'tanggal_raw',        width: 20 },
+      { header: 'Kode Asnaf',        key: 'asnaf_kode',         width: 15 },
+      { header: 'Nama Sub Program',  key: 'sub_program',        width: 30 },
+      { header: 'Kegiatan Program',  key: 'program_kegiatan',   width: 30 },
+      { header: 'Frekuensi Bantuan', key: 'frekuensi_bantuan',  width: 20 },
+      { header: 'NRM',               key: 'nrm',               width: 20 },
+      { header: 'Nama Mustahik',     key: 'nama_mustahik',      width: 35 },
+      { header: 'NIK',               key: 'nik',               width: 20 },
+      { header: 'Alamat',            key: 'alamat',             width: 40 },
+      { header: 'Kelurahan',         key: 'kelurahan',          width: 20 },
+      { header: 'Kecamatan',         key: 'kecamatan',          width: 20 },
+      { header: 'Jumlah',            key: 'jumlah',             width: 18 },
+      { header: 'VIA',               key: 'via_raw',            width: 15 },
+      { header: 'Kategori Mustahiq', key: 'kategori_mustahiq',  width: 20 },
+      { header: 'Nama Program',      key: 'nama_program',       width: 30 },
+      { header: 'Asnaf',             key: 'asnaf',              width: 15 },
+      { header: 'Infak',             key: 'infak',              width: 15 },
+      { header: 'ZIS%',              key: 'zis_pct',            width: 10 },
+      { header: 'Keterangan',        key: 'keterangan',         width: 40 },
+      { header: 'No HP',             key: 'no_hp',              width: 15 },
+      { header: 'Rekomendasi UPZ',   key: 'rekomendasi_upz',   width: 30 }
+    ],
+    schema: null,   // validasi manual di resolver
+    model: Distribusi
   }
 };
 
@@ -174,35 +240,29 @@ const COLUMN_CONFIG = {
 // ============================================================
 const buildResolvers = async (jenis) => {
   if (jenis === 'mustahiq') {
-    const [kelLookup, kecLookup, asnafLookup] = await Promise.all([
+    const [kelLookup, kecLookup, asnafLookup, kmLookup] = await Promise.all([
       buildLookupMap(Kelurahan),
       buildLookupMap(Kecamatan),
-      buildLookupMap(Asnaf)
+      buildLookupMap(Asnaf),
+      buildLookupMap(KategoriMustahiq)
     ]);
     return (rowData) => {
       const resolved = { ...rowData };
       const warnings = [];
-      if (resolved.kelurahan !== undefined) {
-        const r = fuzzyFind(kelLookup, resolved.kelurahan);
-        resolved.kelurahan_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Kelurahan: "${resolved.kelurahan}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Kelurahan: "${resolved.kelurahan}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.kelurahan;
-      }
-      if (resolved.kecamatan !== undefined) {
-        const r = fuzzyFind(kecLookup, resolved.kecamatan);
-        resolved.kecamatan_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Kecamatan: "${resolved.kecamatan}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Kecamatan: "${resolved.kecamatan}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.kecamatan;
-      }
-      if (resolved.asnaf !== undefined) {
-        const r = fuzzyFind(asnafLookup, resolved.asnaf);
-        resolved.asnaf_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Asnaf: "${resolved.asnaf}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Asnaf: "${resolved.asnaf}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.asnaf;
-      }
+      const resolve = (lookup, field, idField, label) => {
+        if (resolved[field] !== undefined) {
+          const r = fuzzyFind(lookup, resolved[field]);
+          resolved[idField] = r.id;
+          if (r.matched && r.suggestion) warnings.push(`${label}: "${resolved[field]}" → dikoreksi ke "${r.suggestion}"`);
+          if (!r.matched && resolved[field]) warnings.push(`${label}: "${resolved[field]}" tidak ditemukan. ${r.suggestion}`);
+          delete resolved[field];
+        }
+      };
+      resolve(kelLookup, 'kelurahan', 'kelurahan_id', 'Kelurahan');
+      resolve(kecLookup, 'kecamatan', 'kecamatan_id', 'Kecamatan');
+      resolve(asnafLookup, 'asnaf', 'asnaf_id', 'Asnaf');
+      resolve(kmLookup, 'kategori_mustahiq', 'kategori_mustahiq_id', 'Kategori Mustahiq');
+
       if (warnings.length) resolved._fuzzyWarnings = warnings;
       return resolved;
     };
@@ -218,34 +278,20 @@ const buildResolvers = async (jenis) => {
     return (rowData) => {
       const resolved = { ...rowData };
       const warnings = [];
-      if (resolved.jenis_muzakki !== undefined) {
-        const r = fuzzyFind(jmLookup, resolved.jenis_muzakki);
-        resolved.jenis_muzakki_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Jenis Muzakki: "${resolved.jenis_muzakki}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Jenis Muzakki: "${resolved.jenis_muzakki}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.jenis_muzakki;
-      }
-      if (resolved.jenis_upz !== undefined) {
-        const r = fuzzyFind(upzLookup, resolved.jenis_upz);
-        resolved.jenis_upz_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Jenis UPZ: "${resolved.jenis_upz}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Jenis UPZ: "${resolved.jenis_upz}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.jenis_upz;
-      }
-      if (resolved.kelurahan !== undefined) {
-        const r = fuzzyFind(kelLookup, resolved.kelurahan);
-        resolved.kelurahan_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Kelurahan: "${resolved.kelurahan}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Kelurahan: "${resolved.kelurahan}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.kelurahan;
-      }
-      if (resolved.kecamatan !== undefined) {
-        const r = fuzzyFind(kecLookup, resolved.kecamatan);
-        resolved.kecamatan_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Kecamatan: "${resolved.kecamatan}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Kecamatan: "${resolved.kecamatan}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.kecamatan;
-      }
+      const resolve = (lookup, field, idField, label) => {
+        if (resolved[field] !== undefined) {
+          const r = fuzzyFind(lookup, resolved[field]);
+          resolved[idField] = r.id;
+          if (r.matched && r.suggestion) warnings.push(`${label}: "${resolved[field]}" → dikoreksi ke "${r.suggestion}"`);
+          if (!r.matched && resolved[field]) warnings.push(`${label}: "${resolved[field]}" tidak ditemukan. ${r.suggestion}`);
+          delete resolved[field];
+        }
+      };
+      resolve(jmLookup, 'jenis_muzakki', 'jenis_muzakki_id', 'Jenis Muzakki');
+      resolve(upzLookup, 'jenis_upz', 'jenis_upz_id', 'Jenis UPZ');
+      resolve(kelLookup, 'kelurahan', 'kelurahan_id', 'Kelurahan');
+      resolve(kecLookup, 'kecamatan', 'kecamatan_id', 'Kecamatan');
+
       if (warnings.length) resolved._fuzzyWarnings = warnings;
       return resolved;
     };
@@ -261,34 +307,20 @@ const buildResolvers = async (jenis) => {
     return (rowData) => {
       const resolved = { ...rowData };
       const warnings = [];
-      if (resolved.via !== undefined) {
-        const r = fuzzyFind(viaLookup, resolved.via);
-        resolved.via_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Via: "${resolved.via}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Via: "${resolved.via}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.via;
-      }
-      if (resolved.metode_bayar !== undefined) {
-        const r = fuzzyFind(metodeLookup, resolved.metode_bayar);
-        resolved.metode_bayar_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Metode Bayar: "${resolved.metode_bayar}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Metode Bayar: "${resolved.metode_bayar}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.metode_bayar;
-      }
-      if (resolved.zis !== undefined) {
-        const r = fuzzyFind(zisLookup, resolved.zis);
-        resolved.zis_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`ZIS: "${resolved.zis}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`ZIS: "${resolved.zis}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.zis;
-      }
-      if (resolved.jenis_zis !== undefined) {
-        const r = fuzzyFind(jenisZisLookup, resolved.jenis_zis);
-        resolved.jenis_zis_id = r.id;
-        if (r.matched && r.suggestion) warnings.push(`Jenis ZIS: "${resolved.jenis_zis}" → dikoreksi ke "${r.suggestion}"`);
-        if (!r.matched) warnings.push(`Jenis ZIS: "${resolved.jenis_zis}" tidak ditemukan. ${r.suggestion}`);
-        delete resolved.jenis_zis;
-      }
+      const resolve = (lookup, field, idField, label) => {
+        if (resolved[field] !== undefined) {
+          const r = fuzzyFind(lookup, resolved[field]);
+          resolved[idField] = r.id;
+          if (r.matched && r.suggestion) warnings.push(`${label}: "${resolved[field]}" → dikoreksi ke "${r.suggestion}"`);
+          if (!r.matched && resolved[field]) warnings.push(`${label}: "${resolved[field]}" tidak ditemukan. ${r.suggestion}`);
+          delete resolved[field];
+        }
+      };
+      resolve(viaLookup, 'via', 'via_id', 'Via');
+      resolve(metodeLookup, 'metode_bayar', 'metode_bayar_id', 'Metode Bayar');
+      resolve(zisLookup, 'zis', 'zis_id', 'ZIS');
+      resolve(jenisZisLookup, 'jenis_zis', 'jenis_zis_id', 'Jenis ZIS');
+
       if (warnings.length) resolved._fuzzyWarnings = warnings;
       return resolved;
     };
@@ -315,7 +347,7 @@ const buildResolvers = async (jenis) => {
           const r = fuzzyFind(lookup, resolved[field]);
           resolved[idField] = r.id;
           if (r.matched && r.suggestion) warnings.push(`${label}: "${resolved[field]}" → dikoreksi ke "${r.suggestion}"`);
-          if (!r.matched) warnings.push(`${label}: "${resolved[field]}" tidak ditemukan. ${r.suggestion}`);
+          if (!r.matched && resolved[field]) warnings.push(`${label}: "${resolved[field]}" tidak ditemukan. ${r.suggestion}`);
           delete resolved[field];
         }
       };
@@ -332,6 +364,545 @@ const buildResolvers = async (jenis) => {
   }
 
   return (rowData) => rowData;
+};
+
+// ============================================================
+// HELPERS KHUSUS FORMAT EXCEL LAMA
+// ============================================================
+
+/**
+ * Konversi tanggal Indonesia "1 Januari 2026" → "2026-01-01"
+ * Juga handle format Date object dari ExcelJS dan "YYYY-MM-DD" langsung.
+ */
+const BULAN_ID = {
+  januari: '01', februari: '02', maret: '03', april: '04',
+  mei: '05', juni: '06', juli: '07', agustus: '08',
+  september: '09', oktober: '10', november: '11', desember: '12'
+};
+
+const parseIndonesianDate = (val) => {
+  if (!val) return null;
+  // Jika sudah object Date (ExcelJS serialize)
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const str = String(val).trim();
+  // Sudah YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // "1 Januari 2026" atau "01 Januari 2026"
+  const parts = str.toLowerCase().split(/\s+/);
+  if (parts.length === 3) {
+    const [day, monthStr, year] = parts;
+    const month = BULAN_ID[monthStr];
+    if (month) {
+      return `${year}-${month}-${String(day).padStart(2, '0')}`;
+    }
+  }
+  return null;
+};
+
+/**
+ * Cari muzakki_id berdasarkan identifier (NPWZ, NIK, atau Nama).
+ */
+const findMuzakkiByIdentifier = async (npwzRaw, nikRaw, namaRaw) => {
+  const npwz = npwzRaw ? String(npwzRaw).trim() : null;
+  const nik = nikRaw ? String(nikRaw).trim() : null;
+  const nama = namaRaw ? String(namaRaw).trim() : null;
+
+  if (!npwz && !nik && !nama) return { id: null, matched: false, suggestion: 'Semua identifier muzakki kosong.' };
+
+  // 1. Cek NPWZ (Exact)
+  if (npwz) {
+    const found = await Muzakki.findOne({ where: { npwz } });
+    if (found) return { id: found.id, matched: true, suggestion: null };
+  }
+
+  // 2. Cek NIK (Exact)
+  if (nik) {
+    const found = await Muzakki.findOne({ where: { nik } });
+    if (found) return { id: found.id, matched: true, suggestion: null };
+  }
+
+  // 3. Cek Nama (Exact atau Fuzzy)
+  if (nama) {
+    let found = await Muzakki.findOne({ where: db.literal(`LOWER(nama) = LOWER(${db.escape(nama)})`) });
+    if (found) return { id: found.id, matched: true, suggestion: null };
+
+    // Fuzzy
+    const all = await Muzakki.findAll({ attributes: ['id', 'nama'] });
+    const list = all.map(r => ({ id: r.id, key: (r.nama || '').toLowerCase().trim(), original: r.nama }));
+    let bestDist = Infinity, bestEntry = null;
+    for (const entry of list) {
+      const dist = levenshtein(nama.toLowerCase(), entry.key);
+      if (dist < bestDist) { bestDist = dist; bestEntry = entry; }
+    }
+    if (bestEntry && bestDist <= 3) {
+      return { id: bestEntry.id, matched: true, suggestion: `"${nama}" → dikoreksi ke "${bestEntry.original}"` };
+    }
+  }
+
+  return { id: null, matched: false, suggestion: `Muzakki tidak ditemukan di database.` };
+};
+
+/**
+ * Cari mustahiq_id berdasarkan identifier (NRM, NIK, atau Nama).
+ */
+const findMustahiqByIdentifier = async (nrmRaw, nikRaw, namaRaw) => {
+  const nrm = nrmRaw ? String(nrmRaw).trim() : null;
+  const nik = nikRaw ? String(nikRaw).trim() : null;
+  const nama = namaRaw ? String(namaRaw).trim() : null;
+
+  if (!nrm && !nik && !nama) return { id: null, matched: false, suggestion: 'Semua identifier mustahiq kosong.' };
+
+  // 1. Cek NRM (Exact)
+  if (nrm) {
+    const found = await Mustahiq.findOne({ where: { nrm } });
+    if (found) return { id: found.id, matched: true, suggestion: null };
+  }
+
+  // 2. Cek NIK (Exact)
+  if (nik) {
+    const found = await Mustahiq.findOne({ where: { nik } });
+    if (found) return { id: found.id, matched: true, suggestion: null };
+  }
+
+  // 3. Cek Nama (Exact atau Fuzzy)
+  if (nama) {
+    let found = await Mustahiq.findOne({ where: db.literal(`LOWER(nama) = LOWER(${db.escape(nama)})`) });
+    if (found) return { id: found.id, matched: true, suggestion: null };
+
+    // Fuzzy
+    const all = await Mustahiq.findAll({ attributes: ['id', 'nama'] });
+    const list = all.map(r => ({ id: r.id, key: (r.nama || '').toLowerCase().trim(), original: r.nama }));
+    let bestDist = Infinity, bestEntry = null;
+    for (const entry of list) {
+      const dist = levenshtein(nama.toLowerCase(), entry.key);
+      if (dist < bestDist) { bestDist = dist; bestEntry = entry; }
+    }
+    if (bestEntry && bestDist <= 3) {
+      return { id: bestEntry.id, matched: true, suggestion: `"${nama}" → dikoreksi ke "${bestEntry.original}"` };
+    }
+  }
+
+  return { id: null, matched: false, suggestion: `Mustahiq tidak ditemukan di database.` };
+};
+
+/**
+ * Cari persentase_amil_id berdasarkan nilai persentase dari Excel (misal 12,5 atau 20).
+ * PersentaseAmil.nilai disimpan sebagai DECIMAL(5,4) = 0.1250 untuk 12.5%
+ */
+const buildPersentaseAmilLookup = async () => {
+  const rows = await PersentaseAmil.findAll({ attributes: ['id', 'label', 'nilai'] });
+  // Buat map: "12.5" → id, "12,5" → id, "20" → id, dll.
+  const map = {};
+    for (const row of rows) {
+      const val = parseFloat(row.nilai);
+      const pct = val * 100; // 0.1250 → 12.5
+      const keys = [
+        String(pct),                          // "12.5"
+        String(pct).replace('.', ','),        // "12,5"
+        String(val),                          // "0.125"
+        String(val).replace('.', ','),        // "0,125"
+        String(Math.round(pct)),              // "13" jika bulat
+        (row.label || '').toLowerCase().trim(),
+        (row.label || '').toLowerCase().replace('%', '').trim()
+      ];
+      for (const k of keys) { if (k) map[k] = row.id; }
+    }
+  return map;
+};
+
+const findPersentaseAmilId = (lookupMap, amilPctRaw) => {
+  if (!amilPctRaw) return null;
+  const key = String(amilPctRaw).replace(/\s/g, '').replace(',', '.');
+  // coba exact key bertanda koma
+  const keyKoma = String(amilPctRaw).replace(/\s/g, '');
+  return lookupMap[key] || lookupMap[keyKoma] || null;
+};
+
+// ============================================================
+// RESOLVER untuk penerimaan_excel (format Excel lama user)
+// ============================================================
+const buildResolverPenerimaanExcel = async () => {
+  const [viaLookup, metodeLookup, zisLookup, jenisZisLookup, jmLookup, upzLookup, amil_map] = await Promise.all([
+    buildLookupMap(ViaPenerimaan),
+    buildLookupMap(MetodeBayar),
+    buildLookupMap(Zis),
+    buildLookupMap(JenisZis),
+    buildLookupMap(JenisMuzakki),
+    buildLookupMap(JenisUpz),
+    buildPersentaseAmilLookup()
+  ]);
+
+  return async (rowData) => {
+    const resolved = {};
+    const warnings = [];
+
+    // 1. Tanggal
+    resolved.tanggal = parseIndonesianDate(rowData.tanggal_raw);
+    if (!resolved.tanggal) warnings.push(`Tanggal "${rowData.tanggal_raw}" tidak valid.`);
+
+    // 2. Muzakki (cari by nama/identitas)
+    const muzRes = await findMuzakkiByIdentifier(null, null, rowData.nama_muzakki);
+    resolved.muzakki_id = muzRes.id;
+
+    // 3. Via (kolom MUZAKI: Bank/Cash/Kantor Digital)
+    const viaR = fuzzyFind(viaLookup, rowData.via_raw);
+    resolved.via_id = viaR.id;
+    if (viaR.matched && viaR.suggestion) warnings.push(`Via: "${rowData.via_raw}" → "${viaR.suggestion}"`);
+    if (!viaR.matched) warnings.push(`Via: "${rowData.via_raw}" tidak ditemukan. ${viaR.suggestion}`);
+
+    // 4. Metode Bayar (kolom CASH/BANK)
+    const mbR = fuzzyFind(metodeLookup, rowData.metode_bayar);
+    resolved.metode_bayar_id = mbR.id;  // opsional, tidak error jika null
+    if (mbR.matched && mbR.suggestion) warnings.push(`Metode Bayar: "${rowData.metode_bayar}" → "${mbR.suggestion}"`);
+
+    // 5. ZIS (kolom ZIS: ZAKAT/INFAQ)
+    const zisR = fuzzyFind(zisLookup, rowData.zis);
+    resolved.zis_id = zisR.id;
+    if (zisR.matched && zisR.suggestion) warnings.push(`ZIS: "${rowData.zis}" → "${zisR.suggestion}"`);
+    if (!zisR.matched) warnings.push(`ZIS: "${rowData.zis}" tidak ditemukan. ${zisR.suggestion}`);
+
+    // 6. Jenis ZIS
+    const jzR = fuzzyFind(jenisZisLookup, rowData.jenis_zis);
+    resolved.jenis_zis_id = jzR.id;
+    if (jzR.matched && jzR.suggestion) warnings.push(`Jenis ZIS: "${rowData.jenis_zis}" → "${jzR.suggestion}"`);
+    if (!jzR.matched) warnings.push(`Jenis ZIS: "${rowData.jenis_zis}" tidak ditemukan. ${jzR.suggestion}`);
+
+    // 7. Jumlah
+    resolved.jumlah = parseFloat(String(rowData.jumlah || '').replace(/,/g, '')) || null;
+
+    // 8. Persentase Amil
+    resolved.persentase_amil_id = findPersentaseAmilId(amil_map, rowData.amil_pct);
+    if (!resolved.persentase_amil_id) warnings.push(`Amil %: "${rowData.amil_pct}" tidak cocok dengan data persentase amil.`);
+
+    // 9. Jenis Muzakki (snapshot, opsional)
+    const jmR = fuzzyFind(jmLookup, rowData.jenis_muzakki);
+    resolved.jenis_muzakki_id = jmR.id || null;
+
+    // 10. Jenis UPZ (snapshot, opsional)
+    const upzR = fuzzyFind(upzLookup, rowData.jenis_upz);
+    resolved.jenis_upz_id = upzR.id || null;
+
+    // 11. Snapshot nama muzakki
+    resolved.nama_muzakki = rowData.nama_muzakki || null;
+
+    if (warnings.length) resolved._fuzzyWarnings = warnings;
+    return resolved;
+  };
+};
+
+// Schema Zod khusus penerimaan_excel (lebih longgar: metode_bayar opsional)
+const penerimaanExcelSchema = z.object({
+  muzakki_id: z.number().int().positive('Muzakki tidak ditemukan.'),
+  tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal tidak valid.'),
+  via_id: z.number().int().positive('Via tidak ditemukan.'),
+  metode_bayar_id: z.number().int().positive().nullable().optional(),
+  zis_id: z.number().int().positive('ZIS tidak ditemukan.'),
+  jenis_zis_id: z.number().int().positive('Jenis ZIS tidak ditemukan.'),
+  jumlah: z.number().positive('Jumlah harus > 0.'),
+  persentase_amil_id: z.number().int().positive('Persentase amil tidak ditemukan.'),
+  jenis_muzakki_id: z.number().int().positive().nullable().optional(),
+  jenis_upz_id: z.number().int().positive().nullable().optional(),
+  nama_muzakki: z.string().nullable().optional(),
+  keterangan: z.string().nullable().optional()
+});
+
+// ============================================================
+// RESOLVER untuk distribusi_excel (format Excel distribusi lama)
+// ============================================================
+const buildResolverDistribusiExcel = async () => {
+  const [npLookup, spLookup, pkLookup, kmLookup, fbLookup, asnafLookup, infakLookup] = await Promise.all([
+    buildLookupMap(NamaProgram),
+    buildLookupMap(SubProgram),
+    buildLookupMap(ProgramKegiatan),
+    buildLookupMap(KategoriMustahiq),
+    buildLookupMap(FrekuensiBantuan),
+    buildLookupMap(Asnaf),
+    buildLookupMap(Infak)
+  ]);
+
+  return async (rowData) => {
+    const resolved = {};
+    const warnings = [];
+
+    // 1. Tanggal
+    resolved.tanggal = parseIndonesianDate(rowData.tanggal_raw);
+    if (!resolved.tanggal) warnings.push(`Tanggal "${rowData.tanggal_raw}" tidak valid.`);
+
+    // 2. Mustahiq by NRM/NIK
+    const mRes = await findMustahiqByIdentifier(rowData.nrm, rowData.nik, rowData.nama_mustahik);
+    resolved.mustahiq_id = mRes.id;
+    if (mRes.suggestion) warnings.push(mRes.matched ? mRes.suggestion : `ERROR: ${mRes.suggestion}`);
+
+    // 3. Jumlah
+    resolved.jumlah = parseFloat(String(rowData.jumlah || '').replace(/,/g, '')) || null;
+
+    // 4. Nama Program
+    const npR = fuzzyFind(npLookup, rowData.nama_program);
+    resolved.nama_program_id = npR.id || null;
+    if (npR.matched && npR.suggestion) warnings.push(`Program: "${rowData.nama_program}" → "${npR.suggestion}"`);
+    if (!npR.matched && rowData.nama_program) warnings.push(`Program: "${rowData.nama_program}" tidak ditemukan. ${npR.suggestion}`);
+
+    // 5. Sub Program
+    const spR = fuzzyFind(spLookup, rowData.sub_program);
+    resolved.sub_program_id = spR.id || null;
+    if (spR.matched && spR.suggestion) warnings.push(`Sub Program: "${rowData.sub_program}" → "${spR.suggestion}"`);
+    if (!spR.matched && rowData.sub_program) warnings.push(`Sub Program: "${rowData.sub_program}" tidak ditemukan. ${spR.suggestion}`);
+
+    // 6. Program Kegiatan
+    const pkR = fuzzyFind(pkLookup, rowData.program_kegiatan);
+    resolved.program_kegiatan_id = pkR.id || null;
+    if (pkR.matched && pkR.suggestion) warnings.push(`Kegiatan: "${rowData.program_kegiatan}" → "${pkR.suggestion}"`);
+    if (!pkR.matched && rowData.program_kegiatan) warnings.push(`Kegiatan: "${rowData.program_kegiatan}" tidak ditemukan. ${pkR.suggestion}`);
+
+    // 7. Frekuensi Bantuan
+    const fbR = fuzzyFind(fbLookup, rowData.frekuensi_bantuan);
+    resolved.frekuensi_bantuan_id = fbR.id || null;
+    if (fbR.matched && fbR.suggestion) warnings.push(`Frekuensi: "${rowData.frekuensi_bantuan}" → "${fbR.suggestion}"`);
+
+    // 8. Kategori Mustahiq
+    const kmR = fuzzyFind(kmLookup, rowData.kategori_mustahiq);
+    resolved.kategori_mustahiq_id = kmR.id || null;
+    if (kmR.matched && kmR.suggestion) warnings.push(`Kategori: "${rowData.kategori_mustahiq}" → "${kmR.suggestion}"`);
+
+    // 9. Asnaf (dari kolom 'Asnaf' atau fallback 'asnaf_kode')
+    const asnafVal = rowData.asnaf || rowData.asnaf_kode;
+    const asnafR = fuzzyFind(asnafLookup, asnafVal);
+    resolved.asnaf_id = asnafR.id || null;
+    if (asnafR.matched && asnafR.suggestion) warnings.push(`Asnaf: "${asnafVal}" → "${asnafR.suggestion}"`);
+
+    // 10. Infak
+    const infakR = fuzzyFind(infakLookup, rowData.infak);
+    resolved.infak_id = infakR.id || null;
+
+    // 11. Snapshot fields
+    resolved.nrm            = rowData.nrm ? String(rowData.nrm).trim() : null;
+    resolved.nama_mustahik  = rowData.nama_mustahik || null;
+    resolved.nik            = rowData.nik ? String(rowData.nik).trim() : null;
+    resolved.alamat         = rowData.alamat || null;
+    resolved.no_hp          = rowData.no_hp ? String(rowData.no_hp).trim() : null;
+    resolved.keterangan     = rowData.keterangan || null;
+    resolved.rekomendasi_upz = rowData.rekomendasi_upz || null;
+
+    if (warnings.length) resolved._fuzzyWarnings = warnings;
+    return resolved;
+  };
+};
+
+// Schema Zod untuk distribusi_excel
+const distribusiExcelSchema = z.object({
+  mustahiq_id: z.number().int().positive('NRM mustahiq tidak ditemukan.'),
+  tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal tidak valid.').nullable().optional(),
+  jumlah: z.number().nonnegative().nullable().optional(),
+  nama_program_id: z.number().int().positive().nullable().optional(),
+  sub_program_id: z.number().int().positive().nullable().optional(),
+  program_kegiatan_id: z.number().int().positive().nullable().optional(),
+  frekuensi_bantuan_id: z.number().int().positive().nullable().optional(),
+  kategori_mustahiq_id: z.number().int().positive().nullable().optional(),
+  asnaf_id: z.number().int().positive().nullable().optional(),
+  infak_id: z.number().int().positive().nullable().optional(),
+  nrm: z.string().nullable().optional(),
+  nama_mustahik: z.string().nullable().optional(),
+  nik: z.string().nullable().optional(),
+  alamat: z.string().nullable().optional(),
+  no_hp: z.string().nullable().optional(),
+  keterangan: z.string().nullable().optional(),
+  rekomendasi_upz: z.string().nullable().optional()
+});
+
+// ============================================================
+// HELPER: Cari sheet yang tepat berdasarkan nama (case-insensitive)
+// Priority: untuk penerimaan_excel → "DATA ZIS", distribusi_excel → "DATA DISTRIBUSI"
+// Fallback: sheet pertama
+// ============================================================
+const SHEET_PRIORITY = {
+  mustahiq: ['DATA MUSTAHIQ', 'MUSTAHIQ', 'SHEET1'],
+  muzakki: ['DATA MUZAKKI', 'MUZAKKI', 'SHEET1'],
+  penerimaan: ['DATA PENERIMAAN', 'PENERIMAAN', 'DATA ZIS', 'ZIS', 'SHEET1'],
+  distribusi: ['DATA DISTRIBUSI', 'DISTRIBUSI', 'DATA PENYALURAN', 'PENYALURAN', 'SHEET1'],
+  penerimaan_excel: ['DATA ZIS', 'ZIS', 'PENERIMAAN', 'DATA PENERIMAAN', 'SHEET1'],
+  distribusi_excel: ['DATA DISTRIBUSI', 'DISTRIBUSI', 'DATA PENYALURAN', 'PENYALURAN', 'SHEET1'],
+};
+
+const getTargetSheet = (workbook, jenis) => {
+  const priorities = SHEET_PRIORITY[jenis] || [];
+  // Cari berdasarkan nama (case-insensitive)
+  for (const priority of priorities) {
+    const found = workbook.worksheets.find(
+      (ws) => ws.name.trim().toUpperCase() === priority.toUpperCase()
+    );
+    if (found) return found;
+  }
+  // Fallback: sheet pertama yang ada
+  return workbook.worksheets[0];
+};
+
+// ============================================================
+// PREVIEW & IMPORT untuk format custom (async resolver)
+// ============================================================
+const previewExcelCustom = async (fileBuffer, jenis) => {
+  const config = COLUMN_CONFIG[jenis];
+  // Pilih resolver
+  const resolver = jenis === 'penerimaan_excel'
+    ? await buildResolverPenerimaanExcel()
+    : await buildResolverDistribusiExcel();
+  const schema = jenis === 'penerimaan_excel' ? penerimaanExcelSchema : distribusiExcelSchema;
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(fileBuffer);
+  const sheet = getTargetSheet(workbook, jenis);
+  if (!sheet) throw new Error('File Excel tidak memiliki sheet yang dapat dibaca.');
+
+  const results = { total: 0, siap_import: 0, bermasalah: 0, preview_valid: [], preview_invalid: [] };
+
+  // Baca header baris 1 untuk auto-mapping posisi kolom
+  const headerRow = sheet.getRow(1);
+  const headerMap = {};
+  headerRow.eachCell((cell, colNum) => {
+    const h = (cell.value || '').toString().trim().toUpperCase();
+    headerMap[h] = colNum;
+  });
+
+  const getColIdx = (headerRaw) => headerMap[headerRaw.toUpperCase()] || null;
+
+  for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+    const row = sheet.getRow(rowNumber);
+    // Skip baris kosong
+    const firstVal = row.getCell(1).value;
+    if (!firstVal) continue;
+    // Skip baris petunjuk kuning
+    if (typeof firstVal === 'string' && firstVal.startsWith('(')) continue;
+
+    const rowData = {};
+    config.columns.forEach((col) => {
+      const colIdx = getColIdx(col.header);
+      if (colIdx) {
+        const cellVal = row.getCell(colIdx).value;
+        rowData[col.key] = cellVal !== null && cellVal !== undefined ? cellVal : null;
+      } else {
+        rowData[col.key] = null;
+      }
+    });
+
+    const resolved = await resolver(rowData);
+    const fuzzyWarnings = resolved._fuzzyWarnings || [];
+    delete resolved._fuzzyWarnings;
+
+    const validation = schema.safeParse(resolved);
+    results.total++;
+
+    if (validation.success) {
+      results.siap_import++;
+      if (results.preview_valid.length < 1000) {
+        results.preview_valid.push({
+          row: rowNumber,
+          data: validation.data,
+          ...(fuzzyWarnings.length && { koreksi_otomatis: fuzzyWarnings })
+        });
+      }
+    } else {
+      results.bermasalah++;
+      results.preview_invalid.push({
+        row: rowNumber,
+        data: rowData,
+        errors: validation.error.format(),
+        ...(fuzzyWarnings.length && { koreksi_otomatis: fuzzyWarnings })
+      });
+    }
+  }
+
+  return results;
+};
+
+const importExcelCustom = async (fileBuffer, jenis, userId) => {
+  const config = COLUMN_CONFIG[jenis];
+  const resolver = jenis === 'penerimaan_excel'
+    ? await buildResolverPenerimaanExcel()
+    : await buildResolverDistribusiExcel();
+  const schema = jenis === 'penerimaan_excel' ? penerimaanExcelSchema : distribusiExcelSchema;
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(fileBuffer);
+  const sheet = getTargetSheet(workbook, jenis);
+  if (!sheet) throw new Error('File Excel tidak memiliki sheet yang dapat dibaca.');
+
+  const t = await db.transaction();
+  const logData = {
+    jenis,
+    filename: 'imported_file.xlsx',
+    total_rows: 0,
+    success_rows: 0,
+    failed_rows: 0,
+    user_id: userId
+  };
+
+  // Auto-detect header positions
+  const headerRow = sheet.getRow(1);
+  const headerMap = {};
+  headerRow.eachCell((cell, colNum) => {
+    const h = (cell.value || '').toString().trim().toUpperCase();
+    headerMap[h] = colNum;
+  });
+  const getColIdx = (headerRaw) => headerMap[headerRaw.toUpperCase()] || null;
+
+  try {
+    const rowsToInsert = [];
+    const errors = [];
+
+    for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+      const row = sheet.getRow(rowNumber);
+      const firstVal = row.getCell(1).value;
+      if (!firstVal) continue;
+      if (typeof firstVal === 'string' && firstVal.startsWith('(')) continue;
+
+      logData.total_rows++;
+
+      const rowData = {};
+      config.columns.forEach((col) => {
+        const colIdx = getColIdx(col.header);
+        if (colIdx) {
+          const cellVal = row.getCell(colIdx).value;
+          rowData[col.key] = cellVal !== null && cellVal !== undefined ? cellVal : null;
+        } else {
+          rowData[col.key] = null;
+        }
+      });
+
+      const resolved = await resolver(rowData);
+      delete resolved._fuzzyWarnings;
+
+      const validation = schema.safeParse(resolved);
+      if (validation.success) {
+        const dataToInsert = { ...validation.data, created_by: userId };
+        rowsToInsert.push(dataToInsert);
+      } else {
+        errors.push({ row: rowNumber, data: rowData, errors: validation.error.format() });
+      }
+    }
+
+    if (rowsToInsert.length > 0) {
+      await config.model.bulkCreate(rowsToInsert, { transaction: t, ignoreDuplicates: true });
+      logData.success_rows = rowsToInsert.length;
+    }
+
+    logData.failed_rows = errors.length;
+    await MigrationLog.create(logData, { transaction: t });
+    await t.commit();
+
+    return {
+      success: true,
+      berhasil: logData.success_rows,
+      gagal: logData.failed_rows,
+      detail_gagal: errors
+    };
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 };
 
 
@@ -377,7 +948,8 @@ const previewExcel = async (fileBuffer, jenis) => {
 
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(fileBuffer);
-  const sheet = workbook.worksheets[0];
+  const sheet = getTargetSheet(workbook, jenis);
+  if (!sheet) throw new Error('File Excel tidak memiliki sheet yang dapat dibaca.');
 
   const results = {
     total: 0,
@@ -439,7 +1011,8 @@ const importExcel = async (fileBuffer, jenis, userId) => {
 
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(fileBuffer);
-  const sheet = workbook.worksheets[0];
+  const sheet = getTargetSheet(workbook, jenis);
+  if (!sheet) throw new Error('File Excel tidak memiliki sheet yang dapat dibaca.');
 
   const t = await db.transaction();
   const logData = {
@@ -487,8 +1060,22 @@ const importExcel = async (fileBuffer, jenis, userId) => {
     });
 
     if (rowsToInsert.length > 0) {
-      await config.model.bulkCreate(rowsToInsert, { transaction: t });
-      logData.success_rows = rowsToInsert.length;
+      // Hilangkan duplikat internal dalam array berdasarkan NIK/NRM/NPWZ agar tidak bentrok di Sequelize
+      const uniqueRows = [];
+      const keys = new Set();
+      for (const row of rowsToInsert) {
+        const key = row.nik || row.nrm || row.npwz || Math.random();
+        if (!keys.has(key)) {
+          uniqueRows.push(row);
+          keys.add(key);
+        }
+      }
+      
+      await config.model.bulkCreate(uniqueRows, { 
+        transaction: t, 
+        ignoreDuplicates: true 
+      });
+      logData.success_rows = uniqueRows.length;
     }
 
     logData.failed_rows = errors.length;
@@ -532,4 +1119,11 @@ const getLogs = async (query) => {
   });
 };
 
-export default { generateTemplate, previewExcel, importExcel, getLogs };
+export default {
+  generateTemplate,
+  previewExcel,
+  importExcel,
+  getLogs,
+  previewExcelCustom,
+  importExcelCustom
+};

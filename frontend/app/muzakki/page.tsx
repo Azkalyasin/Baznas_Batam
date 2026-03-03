@@ -198,6 +198,7 @@ export default function MuzakkiPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[50px]">No.</TableHead>
                         <TableHead>NPWZ</TableHead>
                         <TableHead>Nama</TableHead>
                         <TableHead>NIK</TableHead>
@@ -205,8 +206,9 @@ export default function MuzakkiPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {list.map((m) => (
+                      {list.map((m, index) => (
                         <TableRow key={m.id}>
+                          <TableCell className="text-muted-foreground">{(page - 1) * limit + index + 1}</TableCell>
                           <TableCell className="font-mono text-xs">{m.npwz || '-'}</TableCell>
                           <TableCell className="font-medium">{m.nama}</TableCell>
                           <TableCell className="font-mono text-xs">{m.nik || '-'}</TableCell>

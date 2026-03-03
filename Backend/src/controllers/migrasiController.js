@@ -1,12 +1,15 @@
 import migrasiService from '../services/migrasiService.js';
 
+const STANDARD_TYPES   = ['mustahiq', 'muzakki', 'penerimaan', 'distribusi'];
+const CUSTOM_TYPES     = ['penerimaan_excel', 'distribusi_excel'];
+const ALL_TYPES        = [...STANDARD_TYPES, ...CUSTOM_TYPES];
+
 const getTemplate = async (req, res, next) => {
   try {
     const { jenis } = req.params;
-    const allowedTypes = ['mustahiq', 'muzakki', 'penerimaan', 'distribusi'];
     
-    if (!allowedTypes.includes(jenis)) {
-      return res.status(400).json({ success: false, message: 'Jenis migrasi tidak valid.' });
+    if (!STANDARD_TYPES.includes(jenis)) {
+      return res.status(400).json({ success: false, message: 'Template hanya tersedia untuk tipe standar (mustahiq, muzakki, penerimaan, distribusi).' });
     }
 
     // Role-based check (Logic can also be moved to middleware)
@@ -30,6 +33,14 @@ const preview = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'File Excel harus diunggah.' });
     }
     const { jenis } = req.body;
+    if (!ALL_TYPES.includes(jenis)) {
+      return res.status(400).json({ success: false, message: 'Jenis migrasi tidak valid.' });
+    }
+    // Gunakan handler khusus untuk format Excel lama
+    if (CUSTOM_TYPES.includes(jenis)) {
+      const results = await migrasiService.previewExcelCustom(req.file.buffer, jenis);
+      return res.status(200).json({ success: true, data: results });
+    }
     const results = await migrasiService.previewExcel(req.file.buffer, jenis);
     res.status(200).json({ success: true, data: results });
   } catch (error) {
@@ -43,6 +54,14 @@ const doImport = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'File Excel harus diunggah.' });
     }
     const { jenis } = req.body;
+    if (!ALL_TYPES.includes(jenis)) {
+      return res.status(400).json({ success: false, message: 'Jenis migrasi tidak valid.' });
+    }
+    // Gunakan handler khusus untuk format Excel lama
+    if (CUSTOM_TYPES.includes(jenis)) {
+      const result = await migrasiService.importExcelCustom(req.file.buffer, jenis, req.user.id);
+      return res.status(201).json(result);
+    }
     const result = await migrasiService.importExcel(req.file.buffer, jenis, req.user.id);
     res.status(201).json(result);
   } catch (error) {
