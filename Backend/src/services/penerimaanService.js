@@ -20,6 +20,7 @@ const getAll = async (query) => {
     q, muzakki_id, tanggal, bulan, tahun,
     startDate, endDate,
     via_id, metode_bayar_id, zis_id, jenis_zis_id,
+    jenis_muzakki_id, jenis_muzakki_ids,
     page = 1, limit = 10
   } = query;
   const offset = (page - 1) * limit;
@@ -27,19 +28,26 @@ const getAll = async (query) => {
   const where = {};
   if (muzakki_id) where.muzakki_id = muzakki_id;
   if (tanggal) where.tanggal = tanggal;
-  
+
   if (startDate || endDate) {
     where.tanggal = { ...(where.tanggal || {}) };
     if (startDate) where.tanggal[Op.gte] = startDate;
     if (endDate) where.tanggal[Op.lte] = endDate;
   }
-  
+
   if (bulan) where.bulan = bulan;
   if (tahun) where.tahun = tahun;
   if (via_id) where.via_id = via_id;
   if (metode_bayar_id) where.metode_bayar_id = metode_bayar_id;
   if (zis_id) where.zis_id = zis_id;
   if (jenis_zis_id) where.jenis_zis_id = jenis_zis_id;
+  // Filter by jenis muzakki - group filter (Individu vs Entitas+UPZ)
+  if (jenis_muzakki_ids) {
+    const ids = String(jenis_muzakki_ids).split(',').map(Number).filter(Boolean);
+    if (ids.length > 0) where.jenis_muzakki_id = { [Op.in]: ids };
+  } else if (jenis_muzakki_id) {
+    where.jenis_muzakki_id = jenis_muzakki_id;
+  }
 
   if (q) {
     where[Op.or] = [
@@ -64,11 +72,19 @@ const getAll = async (query) => {
     ]
   });
 
+  // Aggregate totals across all matching rows (not just current page)
+  const total_jumlah = await Penerimaan.sum('jumlah', { where }) || 0;
+  const total_dana_bersih = await Penerimaan.sum('dana_bersih', { where }) || 0;
+  const total_dana_amil = await Penerimaan.sum('dana_amil', { where }) || 0;
+
   return {
     data: rows,
     total: count,
     page: Number(page),
-    totalPages: Math.ceil(count / limit)
+    totalPages: Math.ceil(count / limit),
+    total_jumlah,
+    total_dana_bersih,
+    total_dana_amil
   };
 };
 

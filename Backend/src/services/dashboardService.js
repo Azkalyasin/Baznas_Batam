@@ -54,6 +54,12 @@ const getDashboardInfo = async (query) => {
       finalOverview.total_penerimaan = parseFloat(statsDetail[5][0].filtered_total) || 0;
     }
 
+    // 7th result set (index 6) contains { total_dana_bersih, total_dana_amil }
+    const amil_summary = (statsDetail[6] && statsDetail[6][0]) ? {
+      total_dana_bersih: parseFloat(statsDetail[6][0].total_dana_bersih) || 0,
+      total_dana_amil: parseFloat(statsDetail[6][0].total_dana_amil) || 0,
+    } : { total_dana_bersih: 0, total_dana_amil: 0 };
+
     return {
       overview: finalOverview,
       details: {
@@ -61,7 +67,8 @@ const getDashboardInfo = async (query) => {
         by_jenis_zakat: mapStats(statsDetail[1]),
         by_jenis_infak: mapStats(statsDetail[2]),
         by_via: mapStats(statsDetail[3]),
-        by_jenis_upz: mapStats(statsDetail[4])
+        by_jenis_upz: mapStats(statsDetail[4]),
+        ...amil_summary
       },
       tahun,
       bulan

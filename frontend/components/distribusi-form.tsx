@@ -196,7 +196,11 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit, isReadOnly 
 
   const selectMustahiq = (m: any) => {
     setSelectedMustahiq({ id: m.id, label: `${m.nama}${m.nrm ? ` – ${m.nrm}` : ''}${m.nik ? ` / ${m.nik}` : ''}` });
-    setForm((p) => ({ ...p, mustahiq_id: String(m.id) }));
+    setForm((p) => ({
+      ...p,
+      mustahiq_id: String(m.id),
+      kategori_mustahiq_id: m.kategori_mustahiq_id ? String(m.kategori_mustahiq_id) : p.kategori_mustahiq_id,
+    }));
     setMustahiqSearch('');
     setMustahiqResults([]);
   };

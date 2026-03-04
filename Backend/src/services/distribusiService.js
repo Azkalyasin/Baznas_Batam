@@ -25,7 +25,7 @@ const getAll = async (query) => {
     startDate, endDate, dateField = 'tanggal',
     nama_program_id, sub_program_id, program_kegiatan_id,
     asnaf_id, jenis_zis_distribusi_id, nama_entitas_id, frekuensi_bantuan_id,
-    status,
+    status, kategori_mustahiq_id, kategori_mustahiq_ids,
     page = 1, limit = 10
   } = query;
 
@@ -60,6 +60,13 @@ const getAll = async (query) => {
   if (jenis_zis_distribusi_id) where.jenis_zis_distribusi_id = jenis_zis_distribusi_id;
   if (nama_entitas_id) where.nama_entitas_id = nama_entitas_id;
   if (frekuensi_bantuan_id) where.frekuensi_bantuan_id = frekuensi_bantuan_id;
+  // Filter by single kategori_mustahiq_id or by list of ids (group filter, e.g. Lembaga+Masjid)
+  if (kategori_mustahiq_ids) {
+    const ids = String(kategori_mustahiq_ids).split(',').map(Number).filter(Boolean);
+    if (ids.length > 0) where.kategori_mustahiq_id = { [Op.in]: ids };
+  } else if (kategori_mustahiq_id) {
+    where.kategori_mustahiq_id = kategori_mustahiq_id;
+  }
   // Filter by status: 'diterima' | 'ditolak' | 'pending' (null = belum ada status)
   // Note: status is ENUM — must use Sequelize.literal for IS NULL to work reliably
   if (status === 'diterima' || status === 'ditolak') {
@@ -90,12 +97,19 @@ const getAll = async (query) => {
     ]
   });
 
+  // Calculate total jumlah for current filter (only diterima)
+  const whereForTotal = { ...where, status: 'diterima' };
+  const total_jumlah = await Distribusi.sum('jumlah', { where: whereForTotal }) || 0;
+  const total_permohonan = await Distribusi.sum('jumlah_permohonan', { where }) || 0;
+
   return {
     rows,
     total: count,
     page: parseInt(page),
     limit: parseInt(limit),
-    totalPages: Math.ceil(count / limit)
+    totalPages: Math.ceil(count / limit),
+    total_jumlah,
+    total_permohonan
   };
 };
 
@@ -126,14 +140,14 @@ const getById = async (id) => {
   const data = distribusi.toJSON();
   if (data.tgl_masuk_permohonan) {
     const start = new Date(data.tgl_masuk_permohonan);
-    const end = data.status === 'diterima' && data.tgl_disetujui 
-      ? new Date(data.tgl_disetujui) 
+    const end = data.status === 'diterima' && data.tgl_disetujui
+      ? new Date(data.tgl_disetujui)
       : new Date();
-    
+
     // Reset hours to compare dates only
     start.setHours(0, 0, 0, 0);
     end.setHours(0, 0, 0, 0);
-    
+
     const diffTime = Math.max(0, end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     data.durasi_proses = diffDays;
@@ -324,6 +338,7 @@ const getStats = async (query) => {
       by_asnaf: mapStats(stats[0]),
       by_program: mapStats(stats[1]),
       by_kecamatan: mapStats(stats[2]),
+      by_kelurahan: mapStats(stats[4]),
       summary: (stats[3] && stats[3][0]) ? {
         total_distribusi_zis: parseFloat(stats[3][0].total_distribusi_zis) || 0,
         total_distribusi_zakat: parseFloat(stats[3][0].total_distribusi_zakat) || 0,

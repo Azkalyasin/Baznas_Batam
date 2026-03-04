@@ -38,12 +38,26 @@ export default function PengumpulanPage() {
 
   const [searchInput, setSearchInput] = useState('');
   const [searchQ, setSearchQ] = useState('');
+  const [jenisMuzakkiFilter, setJenisMuzakkiFilter] = useState<'all' | 'individu' | 'entitas'>('all');
+  const [jenisMuzakkiList, setJenisMuzakkiList] = useState<any[]>([]);
+  const [totalJumlah, setTotalJumlah] = useState(0);
+  const [totalDanaBersih, setTotalDanaBersih] = useState(0);
+  const [totalDanaAmil, setTotalDanaAmil] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/login');
   }, [isAuthenticated, router]);
 
-  useEffect(() => { fetchData(); }, [page, limit, startDate, endDate, searchQ]);
+  // Load jenis muzakki ref for filter
+  useEffect(() => {
+    import('@/lib/api').then(({ refApi }) => {
+      refApi.list('jenis-muzakki').then((res: any) => {
+        setJenisMuzakkiList(Array.isArray(res.data) ? res.data : []);
+      }).catch(() => setJenisMuzakkiList([]));
+    });
+  }, []);
+
+  useEffect(() => { fetchData(); }, [page, limit, startDate, endDate, searchQ, jenisMuzakkiFilter, jenisMuzakkiList]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +74,28 @@ export default function PengumpulanPage() {
       if (endDate) params.endDate = endDate;
       if (searchQ) params.q = searchQ;
 
+      // Translate jenis muzakki group to IDs
+      if (jenisMuzakkiFilter !== 'all' && jenisMuzakkiList.length > 0) {
+        if (jenisMuzakkiFilter === 'individu') {
+          const found = jenisMuzakkiList.find((j: any) => j.nama === 'Individu');
+          if (found) params.jenis_muzakki_ids = String(found.id);
+        } else if (jenisMuzakkiFilter === 'entitas') {
+          // Entitas includes 'Entitas' and 'UPZ'
+          const ids = jenisMuzakkiList
+            .filter((j: any) => j.nama === 'Entitas' || j.nama === 'UPZ')
+            .map((j: any) => j.id).join(',');
+          if (ids) params.jenis_muzakki_ids = ids;
+        }
+      }
+
       const res: any = await penerimaanApi.list(params);
       if (res) {
         const arr = res.data ?? [];
         setList(arr);
         setTotal(res.total ?? arr.length);
+        setTotalJumlah(Number(res.total_jumlah ?? 0));
+        setTotalDanaBersih(Number(res.total_dana_bersih ?? 0));
+        setTotalDanaAmil(Number(res.total_dana_amil ?? 0));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat data Pengumpulan');
@@ -118,24 +149,48 @@ export default function PengumpulanPage() {
           )}
         </div>
 
-        {/* Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end w-full">
-          <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto md:min-w-[300px]">
-            <Input
-              placeholder="Cari Muzakki / Resi / No. Rek..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="md:max-w-[400px]"
-            />
-            <Button type="submit" variant="outline"><Search className="h-4 w-4" /></Button>
-            {searchQ && (
-              <Button type="button" variant="ghost" onClick={() => { setSearchInput(''); setSearchQ(''); setPage(1); }}>
-                Reset
-              </Button>
-            )}
-          </form>
+        {/* Filter Bar — same layout as distribusi */}
+        <div className="flex flex-col lg:flex-row gap-4 items-start w-full">
+          {/* Left Column: Search + Jenis Muzakki */}
+          <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[400px]">
+            {/* Search */}
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cari Muzakki / Resi / No. Rek..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+              <Button type="submit" variant="default" size="sm" className="h-9 px-4">Cari</Button>
+              {searchQ && (
+                <Button type="button" variant="ghost" size="sm" className="h-9 px-2"
+                  onClick={() => { setSearchInput(''); setSearchQ(''); setPage(1); }}>
+                  Reset
+                </Button>
+              )}
+            </form>
 
-          <div className="flex flex-col gap-2 p-3 border rounded-md bg-muted/30 w-full md:w-auto md:ml-auto">
+            {/* Jenis Muzakki Filters */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-muted/20 border rounded-md">
+              <span className="text-[10px] font-bold uppercase text-muted-foreground mr-1.5 border-r pr-1.5 border-muted-foreground/30">Jenis Muzakki</span>
+              <div className="flex gap-1 flex-wrap">
+                {(['all', 'individu', 'entitas'] as const).map((k) => (
+                  <Button key={k} size="sm"
+                    variant={jenisMuzakkiFilter === k ? 'default' : 'ghost'}
+                    className={`h-7 text-[10px] px-2.5 ${jenisMuzakkiFilter === k ? 'shadow-sm' : 'hover:bg-muted'}`}
+                    onClick={() => { setJenisMuzakkiFilter(k); setPage(1); }}>
+                    {k === 'all' ? 'Semua' : k === 'individu' ? 'Individu' : 'Entitas'}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Date Filter */}
+          <div className="flex flex-col gap-2 p-3 border rounded-md bg-muted/30 w-full lg:w-auto lg:ml-auto">
             <span className="text-xs font-semibold uppercase text-muted-foreground">Filter Tanggal:</span>
             <div className="flex flex-wrap items-center gap-2">
               <div className="space-y-1">
@@ -149,7 +204,7 @@ export default function PengumpulanPage() {
                   value={endDate} onChange={(e) => { setEndDate(e.target.value); setPage(1); }} />
               </div>
               {(startDate || endDate) && (
-                <Button variant="ghost" size="sm" className="h-8 mt-4"
+                <Button variant="ghost" size="sm" className="h-8 mt-4 whitespace-nowrap"
                   onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}>
                   Bersihkan
                 </Button>
@@ -200,7 +255,7 @@ export default function PengumpulanPage() {
                           <TableCell>{p.Muzakki?.nama || p.muzakki?.nama || p.nama_muzakki || '-'}</TableCell>
                           <TableCell>{p.zis?.nama || '-'}{p.jenis_zis?.nama ? ` / ${p.jenis_zis.nama}` : ''}</TableCell>
                           <TableCell>{p.via?.nama || '-'}</TableCell>
-                          <TableCell className="text-right font-mono">Rp {(p.jumlah || 0).toLocaleString('id-ID')}</TableCell>
+                          <TableCell className="text-right font-bold text-xs">Rp {(p.jumlah || 0).toLocaleString('id-ID')}</TableCell>
                           <TableCell className="text-right space-x-1">
                             <Button size="icon" variant="outline" className="h-7 w-7"
                               onClick={() => handleViewDetail(p.id)} title="Detail">
@@ -256,6 +311,14 @@ export default function PengumpulanPage() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Total — aligned flush-right under Jumlah column */}
+            {!isLoading && list.length > 0 && (
+              <div className="border-t mt-2 pt-2 flex justify-end pr-[72px]">
+                <span className="text-xs font-bold uppercase text-muted-foreground mr-3">Total:</span>
+                <span className="text-xs font-bold text-primary">Rp {Number(totalJumlah).toLocaleString('id-ID')}</span>
+              </div>
             )}
           </CardContent>
         </Card>

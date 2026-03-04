@@ -95,8 +95,8 @@ export default function DistributionStatisticsPage() {
             margin={{ top: 30, right: 30, left: 40, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-            <XAxis 
-              dataKey="category" 
+            <XAxis
+              dataKey="category"
               type="category"
               tick={{ fontSize: 11, fontWeight: 500 }}
               interval={0}
@@ -105,10 +105,10 @@ export default function DistributionStatisticsPage() {
               axisLine={false}
               tickLine={false}
             />
-            <YAxis 
+            <YAxis
               hide
             />
-            <Tooltip 
+            <Tooltip
               formatter={(value: any) => formatCurrency(Number(value))}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
@@ -117,9 +117,9 @@ export default function DistributionStatisticsPage() {
               {stats.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
-              <LabelList 
-                dataKey="total" 
-                position="top" 
+              <LabelList
+                dataKey="total"
+                position="top"
                 formatter={(val: number) => formatCurrency(val)}
                 style={{ fontSize: '10px', fontWeight: 'bold', fill: '#666' }}
               />
@@ -148,8 +148,8 @@ export default function DistributionStatisticsPage() {
             margin={{ top: 30, right: 30, left: 40, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-            <XAxis 
-              dataKey="category" 
+            <XAxis
+              dataKey="category"
               type="category"
               tick={{ fontSize: 11, fontWeight: 500 }}
               interval={0}
@@ -158,13 +158,13 @@ export default function DistributionStatisticsPage() {
               axisLine={false}
               tickLine={false}
             />
-            <YAxis 
-              type="number" 
-              axisLine={false} 
-              tickLine={false} 
+            <YAxis
+              type="number"
+              axisLine={false}
+              tickLine={false}
               tickFormatter={(value: number) => formatCurrency(value)}
             />
-            <Tooltip 
+            <Tooltip
               formatter={(value: any) => formatCurrency(Number(value))}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
@@ -173,9 +173,9 @@ export default function DistributionStatisticsPage() {
               {stats.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
-              <LabelList 
-                dataKey="total" 
-                position="top" 
+              <LabelList
+                dataKey="total"
+                position="top"
                 formatter={(val: number) => formatCurrency(val)}
                 style={{ fontSize: '10px', fontWeight: 'bold', fill: '#666' }}
               />
@@ -288,6 +288,9 @@ export default function DistributionStatisticsPage() {
                 <TabsTrigger value="kecamatan" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">
                   <MapPin className="h-4 w-4 mr-2" /> Berdasarkan Kecamatan
                 </TabsTrigger>
+                <TabsTrigger value="kelurahan" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 rounded-full font-bold transition-all">
+                  <MapPin className="h-4 w-4 mr-2" /> Berdasarkan Kelurahan
+                </TabsTrigger>
               </TabsList>
 
               <div className="pt-8 pb-6 px-4 md:px-6">
@@ -321,7 +324,7 @@ export default function DistributionStatisticsPage() {
                   ) : (
                     <div className="space-y-6">
                       {renderBarChart(data?.by_kecamatan, 'Kecamatan')}
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
                         {data?.by_kecamatan?.map((item: any, idx: number) => (
                           <div key={idx} className="p-4 bg-muted/30 rounded-xl border border-border flex items-center justify-between">
@@ -331,6 +334,34 @@ export default function DistributionStatisticsPage() {
                             </div>
                             <div className="text-right">
                               <p className="font-mono font-bold text-sm text-primary">{formatCurrency(item.total)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="kelurahan" className="mt-0 focus-visible:outline-none">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold text-primary">Kelurahan Penerima Manfaat</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Top 20 kelurahan yang paling sering dibantu dan total penyalurannya.</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-[400px] flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary opacity-20" /></div>
+                  ) : (
+                    <div className="space-y-6">
+                      {renderBarChart(data?.by_kelurahan, 'Kelurahan')}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+                        {data?.by_kelurahan?.map((item: any, idx: number) => (
+                          <div key={idx} className="p-4 bg-muted/30 rounded-xl border border-border flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-sm">{item.category}</p>
+                              <p className="text-xs text-muted-foreground">{item.jumlah_mustahiq} Mustahiq dibantu</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-mono font-bold text-sm text-emerald-600">{formatCurrency(item.total)}</p>
                             </div>
                           </div>
                         ))}

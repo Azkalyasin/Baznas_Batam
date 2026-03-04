@@ -162,7 +162,7 @@ export default function DashboardPage() {
 
           <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-red-600">Distribusi Menunggu</CardTitle>
+              <CardTitle className="text-sm font-semibold text-red-600">Menunggu Persetujuan</CardTitle>
               <div className="bg-red-500/10 p-2 rounded-full">
                 <Loader2 className="h-4 w-4 text-red-500" />
               </div>

@@ -95,8 +95,8 @@ export default function ReceiptStatisticsPage() {
             margin={{ top: 30, right: 30, left: 40, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-            <XAxis 
-              dataKey="category" 
+            <XAxis
+              dataKey="category"
               type="category"
               tick={{ fontSize: 11, fontWeight: 500 }}
               interval={0}
@@ -105,10 +105,10 @@ export default function ReceiptStatisticsPage() {
               axisLine={false}
               tickLine={false}
             />
-            <YAxis 
+            <YAxis
               hide
             />
-            <Tooltip 
+            <Tooltip
               formatter={(value: any) => formatCurrency(Number(value))}
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
@@ -117,9 +117,9 @@ export default function ReceiptStatisticsPage() {
               {stats.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
-              <LabelList 
-                dataKey="total" 
-                position="top" 
+              <LabelList
+                dataKey="total"
+                position="top"
                 formatter={(val: number) => formatCurrency(val)}
                 style={{ fontSize: '10px', fontWeight: 'bold', fill: '#666' }}
               />
@@ -173,29 +173,50 @@ export default function ReceiptStatisticsPage() {
           </div>
         </div>
 
-        {/* Summary for Selected Period */}
-        <Card className="bg-primary text-primary-foreground shadow-lg border-none overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl" />
-          <CardContent className="p-8 relative">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <p className="text-primary-foreground/80 font-medium mb-1">Total Penerimaan Dana</p>
-                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-                  {loading ? <Loader2 className="h-10 w-10 animate-spin" /> : formatCurrency(data?.overview?.total_penerimaan || 0)}
-                </h2>
-                <div className="flex items-center gap-2 mt-4 bg-white/10 w-fit px-3 py-1 rounded-full text-sm font-medium">
-                  <ArrowUpRight className="h-4 w-4" />
-                  <span>Periode {selectedMonth === 'all' ? selectedYear : `${selectedMonth} ${selectedYear}`}</span>
-                </div>
+        {/* Summary Cards — 3 Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-primary text-primary-foreground shadow-lg border-none overflow-hidden relative group transition-all hover:scale-[1.02]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/10 transition-all" />
+            <CardContent className="p-6 relative">
+              <p className="text-primary-foreground/80 font-medium mb-1 text-sm">Total Penerimaan Dana</p>
+              <h3 className="text-2xl font-bold">
+                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatCurrency(data?.overview?.total_penerimaan || 0)}
+              </h3>
+              <div className="mt-4 flex items-center gap-2 text-xs bg-white/10 w-fit px-2 py-1 rounded-full">
+                <ArrowUpRight className="h-3 w-3" />
+                <span>Periode {selectedMonth === 'all' ? selectedYear : `${selectedMonth} ${selectedYear}`}</span>
               </div>
-              <div className="hidden lg:block">
-                <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20">
-                  <BarChart3 className="h-16 w-16 opacity-50" />
-                </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-emerald-600 text-white shadow-lg border-none overflow-hidden relative group transition-all hover:scale-[1.02]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/10 transition-all" />
+            <CardContent className="p-6 relative">
+              <p className="text-white/80 font-medium mb-1 text-sm">Penerimaan Bersih</p>
+              <h3 className="text-2xl font-bold">
+                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatCurrency(data?.details?.total_dana_bersih || 0)}
+              </h3>
+              <div className="mt-4 flex items-center gap-2 text-xs bg-white/10 w-fit px-2 py-1 rounded-full">
+                <BarChart3 className="h-3 w-3" />
+                <span>Setelah Amil</span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-amber-500 text-white shadow-lg border-none overflow-hidden relative group transition-all hover:scale-[1.02]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/10 transition-all" />
+            <CardContent className="p-6 relative">
+              <p className="text-white/80 font-medium mb-1 text-sm">Dana Amil</p>
+              <h3 className="text-2xl font-bold">
+                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : formatCurrency(data?.details?.total_dana_amil || 0)}
+              </h3>
+              <div className="mt-4 flex items-center gap-2 text-xs bg-white/10 w-fit px-2 py-1 rounded-full">
+                <BarChart3 className="h-3 w-3" />
+                <span>Bagian Pengelola</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Detailed Breakdown Tabs */}
         <Card className="shadow-xl border-none ring-1 ring-border">

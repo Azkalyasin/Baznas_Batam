@@ -118,6 +118,7 @@ const COLUMN_CONFIG = {
       { header: 'NRM', key: 'nrm', width: 20 },
       { header: 'Nama', key: 'nama', width: 30 },
       { header: 'NIK', key: 'nik', width: 20 },
+      { header: 'Jenis Kelamin', key: 'jenis_kelamin', width: 18, note: 'Laki-laki atau Perempuan (opsional)' },
       { header: 'Alamat', key: 'alamat', width: 40 },
       { header: 'Kelurahan', key: 'kelurahan', width: 20, note: 'Nama kelurahan' },
       { header: 'Kecamatan', key: 'kecamatan', width: 20, note: 'Nama kecamatan' },
@@ -134,11 +135,13 @@ const COLUMN_CONFIG = {
       { header: 'Nama', key: 'nama', width: 30 },
       { header: 'NIK', key: 'nik', width: 20 },
       { header: 'No HP', key: 'no_hp', width: 15 },
+      { header: 'NPWP', key: 'npwp', width: 22, note: 'Opsional. Contoh: 01.234.567.8-901.000' },
+      { header: 'Jenis Kelamin', key: 'jenis_kelamin', width: 18, note: 'Laki-laki atau Perempuan (opsional)' },
       { header: 'Alamat', key: 'alamat', width: 40 },
       { header: 'Kelurahan', key: 'kelurahan', width: 20, note: 'Nama kelurahan' },
       { header: 'Kecamatan', key: 'kecamatan', width: 20, note: 'Nama kecamatan' },
       { header: 'Jenis Muzakki', key: 'jenis_muzakki', width: 20, note: 'Nama jenis muzakki' },
-      { header: 'Jenis UPZ', key: 'jenis_upz', width: 20, note: 'Nama jenis UPZ' }
+      { header: 'Jenis UPZ', key: 'jenis_upz', width: 20, note: 'Nama jenis UPZ (jika UPZ)' }
     ],
     schema: createMuzakkiSchema,
     model: Muzakki
@@ -989,8 +992,8 @@ const generateTemplate = async (res, jenis) => {
 
   // Tambahkan 1 baris Data Contoh (Sample Data) di baris ke-4
   const sampleData = {
-    mustahiq: { nrm: '123456', nama: 'Contoh Fulan', nik: '2171012345678901', alamat: 'Jl. Contoh No 1', kelurahan: 'Batu Selicin', kecamatan: 'Lubuk Baja', no_hp: '081234567890', asnaf: 'Fakir', kategori_mustahiq: 'Individu' },
-    muzakki: { npwz: '987654', nama: 'Contoh Abdullah', nik: '2171098765432109', no_hp: '081298765432', alamat: 'Jl. Zakat No 2', kelurahan: 'Belian', kecamatan: 'Batam Kota', jenis_muzakki: 'Individu', jenis_upz: 'Individu' },
+    mustahiq: { nrm: 'MHQ-2026-001', nama: 'Siti Rahayu', nik: '2171012345678901', jenis_kelamin: 'Perempuan', alamat: 'Jl. Contoh No 1, Batam Kota', kelurahan: 'Batu Selicin', kecamatan: 'Lubuk Baja', no_hp: '081234567890', asnaf: 'Fakir', kategori_mustahiq: 'Individu' },
+    muzakki: { npwz: 'MZK-2026-001', nama: 'H. Ahmad Fauzi', nik: '2171098765432100', no_hp: '081298765432', npwp: '01.234.567.8-901.000', jenis_kelamin: 'Laki-laki', alamat: 'Jl. Zakat No 2, Batam Kota', kelurahan: 'Belian', kecamatan: 'Batam Kota', jenis_muzakki: 'Individu', jenis_upz: '' },
     penerimaan: { muzakki_identifier: 'Contoh Abdullah', tanggal: '2026-03-01', via: 'Bank', metode_bayar: 'Bank Mandiri', zis: 'Zakat', jenis_zis: 'Zakat Fitrah', jumlah: 500000, keterangan: 'Zakat bulanan (Contoh)' },
     distribusi: { mustahiq_identifier: 'Contoh Fulan', tanggal: '2026-03-05', jumlah: 1000000, nama_program: 'Batam Peduli', sub_program: 'Bantuan Biaya Hidup Asnaf Fakir', program_kegiatan: 'Biaya Hidup Sehari-hari', nama_entitas: 'Individu', kategori_mustahiq: 'Individu', jenis_zis_distribusi: 'Zakat', frekuensi_bantuan: 'Tidak Rutin', keterangan: 'Bantuan (Contoh)' },
     penerimaan_excel: { tanggal_raw: '01 Januari 2026', bulan_raw: 'Januari', nama_muzakki: 'Contoh Abdullah', via_raw: 'Bank', metode_bayar: 'Bank Mandiri', jenis_zis: 'Zakat Fitrah', jenis_muzakki: 'Individu', jenis_upz: 'Individu', jumlah: 500000, tunai: '', amil_pct: '12.5', dana: '', zis: 'Zakat' },
@@ -1020,11 +1023,17 @@ const generateTemplate = async (res, jenis) => {
     await fetchRef(KategoriMustahiq, 'Kategori Mustahiq');
     await fetchRef(Kecamatan, 'Kecamatan');
     await fetchRef(Kelurahan, 'Kelurahan');
+    // Jenis Kelamin adalah ENUM
+    refCols.push({ header: 'Jenis Kelamin', key: 'Jenis Kelamin', width: 20 });
+    refData['Jenis Kelamin'] = ['Laki-laki', 'Perempuan'];
   } else if (jenis === 'muzakki') {
     await fetchRef(JenisMuzakki, 'Jenis Muzakki');
     await fetchRef(JenisUpz, 'Jenis UPZ');
     await fetchRef(Kecamatan, 'Kecamatan');
     await fetchRef(Kelurahan, 'Kelurahan');
+    // Jenis Kelamin adalah ENUM, bukan tabel referensi
+    refCols.push({ header: 'Jenis Kelamin', key: 'Jenis Kelamin', width: 20 });
+    refData['Jenis Kelamin'] = ['Laki-laki', 'Perempuan'];
   } else if (jenis === 'penerimaan_excel' || jenis === 'penerimaan') {
     await fetchRef(ViaPenerimaan, 'Via (MUZAKI)');
     await fetchRef(MetodeBayar, 'Metode Bayar (CASH/BANK)');

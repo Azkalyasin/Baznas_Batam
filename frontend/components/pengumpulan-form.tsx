@@ -330,7 +330,7 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
                     if (label.includes('zakat')) {
                       const amil = persentaseAmilList.find(a => a.label === '12.5%');
                       if (amil) newData.persentase_amil_id = String(amil.id);
-                    } else if (label.includes('infaq') || label.includes('infak') || label.includes('sedekah')) {
+                    } else if (label.includes('infaq') || label.includes('infak') || label.includes('fidyah') || label.includes('dskl') || label.includes('sedekah')) {
                       const amil = persentaseAmilList.find(a => a.label === '20%');
                       if (amil) newData.persentase_amil_id = String(amil.id);
                     }

@@ -51,10 +51,23 @@ export default function DistribusiPage() {
   const [dateField, setDateField] = useState<'tanggal' | 'tgl_masuk_permohonan'>('tanggal');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [kategoriFilter, setKategoriFilter] = useState<'all' | 'individu' | 'lembaga'>('all');
+  const [kategoriList, setKategoriList] = useState<any[]>([]);
+  const [totalJumlah, setTotalJumlah] = useState(0);
+  const [totalPermohonan, setTotalPermohonan] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/login');
   }, [isAuthenticated, router]);
+
+  // Load kategori mustahiq ref for filter
+  useEffect(() => {
+    import('@/lib/api').then(({ refApi }) => {
+      refApi.list('kategori-mustahiq').then((res: any) => {
+        setKategoriList(Array.isArray(res.data) ? res.data : []);
+      }).catch(() => setKategoriList([]));
+    });
+  }, []);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -70,6 +83,20 @@ export default function DistribusiPage() {
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
+      // Translate kategori group to IDs
+      if (kategoriFilter !== 'all' && kategoriList.length > 0) {
+        const individu = kategoriList.find((k: any) => k.nama === 'Individu');
+        if (kategoriFilter === 'individu' && individu) {
+          params.kategori_mustahiq_ids = String(individu.id);
+        } else if (kategoriFilter === 'lembaga') {
+          // Lembaga includes both 'Lembaga' and 'Masjid'
+          const ids = kategoriList
+            .filter((k: any) => k.nama === 'Lembaga' || k.nama === 'Masjid')
+            .map((k: any) => k.id).join(',');
+          if (ids) params.kategori_mustahiq_ids = ids;
+        }
+      }
+
       const res = await distribusiApi.list(params);
       const resData: any = res;
 
@@ -77,12 +104,14 @@ export default function DistribusiPage() {
       const arr = resData.data ?? resData.rows ?? [];
       setTotal(resData.total ?? arr.length);
       setList(arr);
+      setTotalJumlah(Number(resData.total_jumlah ?? 0));
+      setTotalPermohonan(Number(resData.total_permohonan ?? 0));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat data distribusi');
     } finally {
       setIsLoading(false);
     }
-  }, [page, limit, searchQ, statusFilter, dateField, startDate, endDate]);
+  }, [page, limit, searchQ, statusFilter, dateField, startDate, endDate, kategoriFilter, kategoriList]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -183,6 +212,21 @@ export default function DistribusiPage() {
                 ))}
               </div>
             </div>
+
+            {/* Kategori Mustahiq Filter */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-muted/20 border rounded-md">
+              <span className="text-[10px] font-bold uppercase text-muted-foreground mr-1.5 border-r pr-1.5 border-muted-foreground/30">Kategori</span>
+              <div className="flex gap-1 flex-wrap">
+                {(['all', 'individu', 'lembaga'] as const).map((k) => (
+                  <Button key={k} size="sm"
+                    variant={kategoriFilter === k ? 'default' : 'ghost'}
+                    className={`h-7 text-[10px] px-2.5 ${kategoriFilter === k ? 'shadow-sm' : 'hover:bg-muted'}`}
+                    onClick={() => { setKategoriFilter(k); setPage(1); }}>
+                    {k === 'all' ? 'Semua' : k === 'individu' ? 'Individu' : 'Lembaga'}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Right Column (Date Filter) */}
@@ -278,7 +322,7 @@ export default function DistribusiPage() {
                         return (
                           <TableRow key={d.id}>
                             <TableCell className="text-muted-foreground text-[10px]">{(page - 1) * limit + index + 1}</TableCell>
-                            <TableCell className="font-mono text-[10px]">{mstq?.nrm || d.nrm || '-'}</TableCell>
+                            <TableCell className="font-mono text-xs">{mstq?.nrm || d.nrm || '-'}</TableCell>
                             <TableCell className="font-medium text-xs">{d.nama_mustahik || mstq?.nama || '-'}</TableCell>
                             <TableCell className="text-xs">
                               {dateField === 'tgl_masuk_permohonan'
@@ -287,15 +331,15 @@ export default function DistribusiPage() {
                               }
                             </TableCell>
                             <TableCell className="text-xs">{prog?.nama || '-'}</TableCell>
-                            <TableCell className="text-right font-mono text-xs">
+                            <TableCell className="text-right font-bold text-xs">
                               {d.status === 'diterima'
                                 ? `Rp ${Number(d.jumlah || 0).toLocaleString('id-ID')}`
-                                : <span className="text-muted-foreground text-[10px]">-</span>}
+                                : <span className="text-muted-foreground text-xs">-</span>}
                             </TableCell>
                             <TableCell>
                               {statusInfo
-                                ? <Badge variant={statusInfo.variant} className="text-[10px] px-1 h-5">{statusInfo.label}</Badge>
-                                : <span className="text-muted-foreground text-[10px]">Menunggu</span>}
+                                ? <Badge variant={statusInfo.variant} className="text-xs px-1 h-5">{statusInfo.label}</Badge>
+                                : <span className="text-muted-foreground text-xs">Menunggu</span>}
                             </TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button size="icon" variant="outline" className="h-7 w-7"
@@ -353,6 +397,14 @@ export default function DistribusiPage() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Total — aligned under Jml. Penyaluran column */}
+            {!isLoading && list.length > 0 && (
+              <div className="border-t mt-2 pt-2 flex justify-end pr-[124px]">
+                <span className="text-xs font-bold uppercase text-muted-foreground mr-3">Total:</span>
+                <span className="text-xs font-bold text-primary">Rp {Number(totalJumlah).toLocaleString('id-ID')}</span>
+              </div>
             )}
           </CardContent>
         </Card>
