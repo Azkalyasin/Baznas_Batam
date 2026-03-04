@@ -936,20 +936,32 @@ const importExcelCustom = async (fileBuffer, jenis, userId) => {
       }
     }
 
+    if (errors.length > 0) {
+      await t.rollback();
+      logData.failed_rows = errors.length;
+      await MigrationLog.create(logData); // log independently
+      return {
+        success: false,
+        berhasil: 0,
+        gagal: errors.length,
+        detail_gagal: errors,
+        message: 'Terdapat baris data yang bermasalah. Import dibatalkan secara keseluruhan untuk menjaga konsistensi data.'
+      };
+    }
+
     if (rowsToInsert.length > 0) {
       await config.model.bulkCreate(rowsToInsert, { transaction: t, ignoreDuplicates: true });
       logData.success_rows = rowsToInsert.length;
     }
 
-    logData.failed_rows = errors.length;
     await MigrationLog.create(logData, { transaction: t });
     await t.commit();
 
     return {
       success: true,
       berhasil: logData.success_rows,
-      gagal: logData.failed_rows,
-      detail_gagal: errors
+      gagal: 0,
+      detail_gagal: []
     };
   } catch (error) {
     await t.rollback();
@@ -1206,6 +1218,19 @@ const importExcel = async (fileBuffer, jenis, userId) => {
       }
     }
 
+    if (errors.length > 0) {
+      await t.rollback();
+      logData.failed_rows = errors.length;
+      await MigrationLog.create(logData); // log independently
+      return {
+        success: false,
+        berhasil: 0,
+        gagal: errors.length,
+        detail_gagal: errors,
+        message: 'Terdapat baris data yang bermasalah. Import dibatalkan secara keseluruhan untuk menjaga konsistensi data.'
+      };
+    }
+
     if (rowsToInsert.length > 0) {
       // Hilangkan duplikat internal dalam array berdasarkan NIK/NRM/NPWZ agar tidak bentrok di Sequelize
       const uniqueRows = [];
@@ -1225,15 +1250,13 @@ const importExcel = async (fileBuffer, jenis, userId) => {
       logData.success_rows = uniqueRows.length;
     }
 
-    logData.failed_rows = errors.length;
     await MigrationLog.create(logData, { transaction: t });
-
     await t.commit();
     return {
       success: true,
       berhasil: logData.success_rows,
-      gagal: logData.failed_rows,
-      detail_gagal: errors
+      gagal: 0,
+      detail_gagal: []
     };
   } catch (error) {
     await t.rollback();
