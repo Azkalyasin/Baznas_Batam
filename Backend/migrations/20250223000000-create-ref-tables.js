@@ -107,7 +107,7 @@ module.exports = {
     // 10. ref_metode_bayar
     await queryInterface.createTable('ref_metode_bayar', {
       id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
-      nama: { type: Sequelize.STRING(50), allowNull: false, unique: true },
+      nama: { type: Sequelize.STRING(50), allowNull: false },
       via_penerimaan_id: {
         type: Sequelize.INTEGER,
         references: { model: 'ref_via_penerimaan', key: 'id' }
@@ -115,6 +115,9 @@ module.exports = {
       is_active: { type: Sequelize.TINYINT, defaultValue: 1 },
       created_at: { type: Sequelize.DATE, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
       updated_at: { type: Sequelize.DATE, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP') }
+    });
+    await queryInterface.addIndex('ref_metode_bayar', ['via_penerimaan_id', 'nama'], {
+      unique: true, name: 'unique_metode_bayar_via'
     });
 
     // 11. ref_zis

@@ -68,8 +68,7 @@ export const MetodeBayar = db.define('ref_metode_bayar', {
   },
   nama: {
     type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
   via_penerimaan_id: {
     type: DataTypes.INTEGER,
@@ -86,7 +85,13 @@ export const MetodeBayar = db.define('ref_metode_bayar', {
   freezeTableName: true,
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      unique: true,
+      fields: ['via_penerimaan_id', 'nama']
+    }
+  ]
 });
 
 ViaPenerimaan.hasMany(MetodeBayar, { foreignKey: 'via_penerimaan_id' });
