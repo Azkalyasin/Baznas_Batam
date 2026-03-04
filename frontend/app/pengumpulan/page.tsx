@@ -315,8 +315,8 @@ export default function PengumpulanPage() {
                 <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Jumlah Nominal</span>
                 <span className="font-bold border-t pt-3 mt-1 text-base text-primary">Rp {Number(detailData.jumlah || 0).toLocaleString('id-ID')}</span>
 
-                <span className="text-muted-foreground font-medium">Persentase Amil</span>
-                <span>{detailData.PersentaseAmil?.label || detailData.persentase_amil?.label || '-'}</span>
+                <span className="text-muted-foreground font-medium text-emerald-600">Dana Amil (12.5%)</span>
+                <span className="font-bold text-emerald-600">Rp {Number(detailData.dana_amil || 0).toLocaleString('id-ID')}</span>
 
                 <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Via Pembayaran</span>
                 <span className="border-t pt-3 mt-1">{detailData.via?.nama || detailData.ViaPenerimaan?.nama || '-'}</span>

@@ -79,15 +79,6 @@ const Penerimaan = db.define('penerimaan', {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false
   },
-  persentase_amil_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: PersentaseAmil,
-      key: 'id'
-    }
-  },
-
   dana_amil: { type: DataTypes.DECIMAL(15, 2) },
   dana_bersih: { type: DataTypes.DECIMAL(15, 2) },
 

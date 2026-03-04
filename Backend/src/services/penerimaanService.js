@@ -102,8 +102,12 @@ const create = async (body, userId) => {
 
   const t = await db.transaction();
   try {
+    const jumlah = parseFloat(body.jumlah);
+    const dana_amil = parseFloat((jumlah * 0.125).toFixed(2));
+
     const penerimaan = await Penerimaan.create({
       ...body,
+      dana_amil,
       created_by: userId
     }, { transaction: t, userId });
 
@@ -138,14 +142,9 @@ const update = async (id, updateData, userId) => {
   }
 
   // Application layer handling for amil/bersih calculation if trigger is not enough (optional)
-  if (updateData.jumlah || updateData.persentase_amil_id) {
-    const jumlah = updateData.jumlah ?? penerimaan.jumlah;
-    const pId = updateData.persentase_amil_id ?? penerimaan.persentase_amil_id;
-    const refAmil = await PersentaseAmil.findByPk(pId);
-    if (refAmil) {
-      updateData.dana_amil = parseFloat((jumlah * refAmil.nilai).toFixed(2));
-      updateData.dana_bersih = parseFloat((jumlah - updateData.dana_amil).toFixed(2));
-    }
+  if (updateData.jumlah) {
+    const jumlah = parseFloat(updateData.jumlah);
+    updateData.dana_amil = parseFloat((jumlah * 0.125).toFixed(2));
   }
 
   const t = await db.transaction();

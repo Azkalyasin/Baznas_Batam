@@ -91,10 +91,11 @@ describe('penerimaanService', () => {
       persentase_amil_id: 1
     };
 
-    test('berhasil create with relational IDs and reload', async () => {
+    test('berhasil create with automated amil calculation (12.5%)', async () => {
       Muzakki.findByPk.mockResolvedValue({ id: 1, status: 'active' });
       const createdMock = {
         id: 1, ...payload,
+        dana_amil: 125000,
         reload: jest.fn().mockResolvedValue(true)
       };
       Penerimaan.create.mockResolvedValue(createdMock);
@@ -105,12 +106,12 @@ describe('penerimaanService', () => {
       expect(Penerimaan.create).toHaveBeenCalledWith(
         expect.objectContaining({
           ...payload,
+          dana_amil: 125000,
           created_by: 1
         }),
         expect.objectContaining({ transaction: mockTransaction })
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
-      expect(createdMock.reload).toHaveBeenCalled();
     });
 
     test('muzakki tidak ditemukan → throw 404', async () => {
@@ -127,14 +128,13 @@ describe('penerimaanService', () => {
   // ─── update ────────────────────────────────────────────────────────────────
 
   describe('update()', () => {
-    test('update jumlah → recalculate dana via PersentaseAmil ref', async () => {
+    test('update jumlah → recalculate amil (12.5%)', async () => {
       const existing = {
-        id: 1, muzakki_id: 1, jumlah: 1000000, persentase_amil_id: 1,
+        id: 1, muzakki_id: 1, jumlah: 1000000,
         update: jest.fn().mockResolvedValue(true),
         reload: jest.fn()
       };
       Penerimaan.findByPk.mockResolvedValue(existing);
-      PersentaseAmil.findByPk.mockResolvedValue({ id: 1, nilai: 0.125 }); // 12.5%
 
       await penerimaanService.update(1, { jumlah: 2000000 }, 1);
 
@@ -142,8 +142,7 @@ describe('penerimaanService', () => {
       expect(existing.update).toHaveBeenCalledWith(
         expect.objectContaining({
           jumlah: 2000000,
-          dana_amil: 250000,
-          dana_bersih: 1750000
+          dana_amil: 250000
         }),
         expect.objectContaining({ transaction: mockTransaction })
       );
