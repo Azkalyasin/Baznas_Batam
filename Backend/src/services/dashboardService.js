@@ -44,7 +44,8 @@ const getDashboardInfo = async (query) => {
       total_muzakki: parseInt(overview.total_muzakki) || 0,
       total_mustahiq: parseInt(overview.total_mustahiq) || 0,
       total_penerimaan: parseFloat(overview.total_penerimaan) || 0,
-      total_distribusi: parseFloat(overview.total_distribusi) || 0
+      total_distribusi: parseFloat(overview.total_distribusi) || 0,
+      total_distribusi_menunggu: parseInt(overview.total_distribusi_menunggu) || 0
     };
 
     // If we have a month filter, use the filtered total from sp_receipt_stats_by_month_year

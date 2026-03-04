@@ -146,6 +146,7 @@ const Distribusi = db.define('distribusi', {
     allowNull: true,
     defaultValue: 'menunggu'
   },
+  tgl_disetujui: { type: DataTypes.DATEONLY },
   no_reg_bpp: { type: DataTypes.STRING(12) },
 
   created_by: {

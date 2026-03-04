@@ -406,6 +406,20 @@ export default function DistribusiPage() {
                 <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Mustahiq</span>
                 <span className="font-semibold border-t pt-3 mt-1 text-primary">{detailData.Mustahiq?.nama || detailData.nama_mustahik || '-'} {detailData.Mustahiq?.nrm || detailData.nrm ? `(${detailData.Mustahiq?.nrm || detailData.nrm})` : ''}</span>
 
+                {detailData.status === 'menunggu' && (
+                  <>
+                    <span className="text-muted-foreground font-medium text-orange-600">Durasi Menunggu</span>
+                    <span className="font-bold text-orange-600">{detailData.durasi_proses || 0} Hari</span>
+                  </>
+                )}
+
+                {detailData.status === 'diterima' && (
+                  <>
+                    <span className="text-muted-foreground font-medium text-emerald-600">Durasi Proses</span>
+                    <span className="font-bold text-emerald-600">{detailData.durasi_proses || 0} Hari</span>
+                  </>
+                )}
+
                 <span className="text-muted-foreground font-medium">Kategori Mustahiq</span>
                 <span>{detailData.ref_kategori_mustahiq?.nama || detailData.KategoriMustahiq?.nama || detailData.kategori_mustahiq?.nama || '-'}</span>
 
@@ -426,6 +440,9 @@ export default function DistribusiPage() {
 
                 <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Tgl. Masuk Permohonan</span>
                 <span className="border-t pt-3 mt-1">{detailData.tgl_masuk_permohonan ? new Date(detailData.tgl_masuk_permohonan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
+
+                <span className="text-muted-foreground font-medium">Tgl. Disetujui</span>
+                <span>{detailData.tgl_disetujui ? new Date(detailData.tgl_disetujui).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
 
                 <span className="text-muted-foreground font-medium">Jumlah Permohonan</span>
                 <span>Rp {Number(detailData.jumlah_permohonan || 0).toLocaleString('id-ID')}</span>

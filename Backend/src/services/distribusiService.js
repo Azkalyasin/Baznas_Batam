@@ -121,7 +121,27 @@ const getById = async (id) => {
   if (!distribusi) {
     throw new AppError('Data distribusi tidak ditemukan.', 404);
   }
-  return distribusi;
+
+  // Calculate durasi_proses (in days)
+  const data = distribusi.toJSON();
+  if (data.tgl_masuk_permohonan) {
+    const start = new Date(data.tgl_masuk_permohonan);
+    const end = data.status === 'diterima' && data.tgl_disetujui 
+      ? new Date(data.tgl_disetujui) 
+      : new Date();
+    
+    // Reset hours to compare dates only
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    
+    const diffTime = Math.max(0, end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    data.durasi_proses = diffDays;
+  } else {
+    data.durasi_proses = null;
+  }
+
+  return data;
 };
 
 // --- POST /api/distribusi ---
@@ -137,6 +157,9 @@ const create = async (body, userId) => {
   const payload = { ...body, created_by: userId };
   if (body.status === 'menunggu' || !body.status) {
     payload.tanggal = null;
+    payload.tgl_disetujui = null;
+  } else if (body.status === 'diterima') {
+    payload.tgl_disetujui = body.tanggal || new Date().toISOString().split('T')[0];
   }
 
   const t = await db.transaction();
@@ -178,6 +201,10 @@ const update = async (id, body, userId) => {
   const payload = { ...body };
   if (body.status === 'menunggu') {
     payload.tanggal = null;
+    payload.tgl_disetujui = null;
+  } else if (body.status === 'diterima' && distribusi.status !== 'diterima') {
+    // Only set tgl_disetujui if it's changing TO 'diterima'
+    payload.tgl_disetujui = body.tanggal || new Date().toISOString().split('T')[0];
   }
 
   const t = await db.transaction();
