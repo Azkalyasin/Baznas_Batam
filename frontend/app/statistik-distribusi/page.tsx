@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { distribusiApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { ArrowUpRight, Loader2, BarChart3, PieChart as PieChartIcon, MapPin, Briefcase, HeartHandshake } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, Cell, LabelList } from 'recharts';
 
 const MONTHS = [
   { val: 'all', label: 'Semua Bulan' },
@@ -90,29 +90,41 @@ export default function DistributionStatisticsPage() {
     return (
       <div className="h-[450px] w-full mt-4">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={stats}
-              cx="50%"
-              cy="45%"
-              labelLine={true}
-              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-              outerRadius={120}
-              innerRadius={60}
-              paddingAngle={5}
-              dataKey="total"
-              nameKey="category"
-            >
+          <BarChart
+            data={stats}
+            margin={{ top: 30, right: 30, left: 40, bottom: 60 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+            <XAxis 
+              dataKey="category" 
+              type="category"
+              tick={{ fontSize: 11, fontWeight: 500 }}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis 
+              hide
+            />
+            <Tooltip 
+              formatter={(value: any) => formatCurrency(Number(value))}
+              cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+            />
+            <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40}>
               {stats.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
-            </Pie>
-            <Tooltip
-              formatter={(value: any) => formatCurrency(Number(value))}
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-            />
-            <Legend verticalAlign="bottom" height={36} iconType="circle" />
-          </PieChart>
+              <LabelList 
+                dataKey="total" 
+                position="top" 
+                formatter={(val: number) => formatCurrency(val)}
+                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#666' }}
+              />
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     );
@@ -133,28 +145,40 @@ export default function DistributionStatisticsPage() {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={stats}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+            margin={{ top: 30, right: 30, left: 40, bottom: 60 }}
           >
-            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} opacity={0.3} />
-            <XAxis type="number" hide />
-            <YAxis 
+            <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+            <XAxis 
               dataKey="category" 
-              type="category" 
-              width={100} 
-              tick={{ fontSize: 12, fontWeight: 500 }}
+              type="category"
+              tick={{ fontSize: 11, fontWeight: 500 }}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
               axisLine={false}
               tickLine={false}
             />
+            <YAxis 
+              type="number" 
+              axisLine={false} 
+              tickLine={false} 
+              tickFormatter={(value: number) => formatCurrency(value)}
+            />
             <Tooltip 
               formatter={(value: any) => formatCurrency(Number(value))}
-              cursor={{ fill: 'transparent' }}
+              cursor={{ fill: 'rgba(0,0,0,0.05)' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
             />
-            <Bar dataKey="total" fill="#10b981" radius={[0, 4, 4, 0]} barSize={24}>
+            <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30}>
               {stats.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
+              <LabelList 
+                dataKey="total" 
+                position="top" 
+                formatter={(val: number) => formatCurrency(val)}
+                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#666' }}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
