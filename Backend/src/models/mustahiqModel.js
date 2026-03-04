@@ -22,6 +22,7 @@ const Mustahiq = db.define('mustahiq', {
   },
   nik: {
     type: DataTypes.STRING(16),
+    allowNull: false,
     unique: true
   },
   nama: {
@@ -29,7 +30,11 @@ const Mustahiq = db.define('mustahiq', {
     allowNull: false
   },
   no_hp: {
-    type: DataTypes.STRING(14)
+    type: DataTypes.STRING(14),
+    allowNull: false
+  },
+  jenis_kelamin: {
+    type: DataTypes.ENUM('Laki-laki', 'Perempuan')
   },
   alamat: {
     type: DataTypes.TEXT

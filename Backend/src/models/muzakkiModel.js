@@ -26,10 +26,18 @@ const Muzakki = db.define('muzakki', {
   },
   nik: {
     type: DataTypes.STRING(16),
+    allowNull: false,
     unique: true
   },
   no_hp: {
-    type: DataTypes.STRING(14)
+    type: DataTypes.STRING(14),
+    allowNull: false
+  },
+  npwp: {
+    type: DataTypes.STRING(20)
+  },
+  jenis_kelamin: {
+    type: DataTypes.ENUM('Laki-laki', 'Perempuan')
   },
   jenis_muzakki_id: {
     type: DataTypes.INTEGER,

@@ -31,6 +31,7 @@ const emptyForm = {
   rekomendasi_upz: '',
   keterangan: '',
   tgl_lahir: '',
+  jenis_kelamin: '',
   registered_date: today, // default: hari ini
 };
 
@@ -87,6 +88,7 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
               rekomendasi_upz: d.rekomendasi_upz || '',
               keterangan: d.keterangan || '',
               tgl_lahir: d.tgl_lahir ? d.tgl_lahir.split('T')[0] : '',
+              jenis_kelamin: d.jenis_kelamin || '',
               registered_date: d.registered_date ? d.registered_date.split('T')[0] : today,
             });
           }
@@ -124,17 +126,21 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
     setIsLoading(true);
 
     if (!formData.nama.trim()) { toast.error('Field "Nama" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.nik.trim()) { toast.error('Field "NIK" wajib diisi'); setIsLoading(false); return; }
+    if (!formData.no_hp.trim()) { toast.error('Field "No. HP" wajib diisi'); setIsLoading(false); return; }
     if (!formData.nrm.trim()) { toast.error('Field "NRM" wajib diisi'); setIsLoading(false); return; }
     if (!formData.asnaf_id) { toast.error('Field "Asnaf" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kategori_mustahiq_id) { toast.error('Field "Kategori Mustahiq" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kecamatan_id) { toast.error('Field "Kecamatan" wajib dipilih'); setIsLoading(false); return; }
     if (!formData.kelurahan_id) { toast.error('Field "Kelurahan" wajib dipilih'); setIsLoading(false); return; }
+    if (!formData.jenis_kelamin) { toast.error('Field "Jenis Kelamin" wajib dipilih'); setIsLoading(false); return; }
 
     const payload = {
       nrm: formData.nrm || undefined,
       nama: formData.nama,
       nik: formData.nik || undefined,
       no_hp: formData.no_hp || undefined,
+      jenis_kelamin: formData.jenis_kelamin || undefined,
       alamat: formData.alamat || undefined,
       kecamatan_id: parseInt(formData.kecamatan_id),
       kelurahan_id: parseInt(formData.kelurahan_id),
@@ -176,14 +182,26 @@ export function MustahiqForm({ onSuccess, editingId, onCancelEdit }: MustahiqFor
             <Input id="nama" placeholder="Nama lengkap" value={formData.nama} onChange={set('nama')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="nik">NIK</Label>
-            <Input id="nik" placeholder="16 digit NIK" maxLength={16}
+            <Label htmlFor="nik">NIK<Req /></Label>
+            <Input id="nik" placeholder="16 digit NIK" maxLength={16} required
               value={formData.nik} onChange={set('nik')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="no_hp">No HP</Label>
-            <Input id="no_hp" placeholder="08xxxxxxxx" maxLength={14}
+            <Label htmlFor="no_hp">No HP<Req /></Label>
+            <Input id="no_hp" placeholder="08xxxxxxxx" maxLength={14} required
               value={formData.no_hp} onChange={set('no_hp')} />
+          </div>
+          <div className="space-y-2">
+            <Label>Jenis Kelamin<Req /></Label>
+            <Select value={formData.jenis_kelamin} onValueChange={(v) => setFormData((p) => ({ ...p, jenis_kelamin: v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih Jenis Kelamin" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                <SelectItem value="Perempuan">Perempuan</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="tgl_lahir">Tanggal Lahir</Label>

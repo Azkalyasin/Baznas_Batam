@@ -22,6 +22,7 @@ export const createMustahiqSchema = z.object({
   asnaf_id: z.number().int().positive(),
   rekomendasi_upz: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
   keterangan: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']).optional(),
   registered_date: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional()),
   tgl_lahir: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional())
 });
@@ -39,6 +40,7 @@ export const updateMustahiqSchema = z.object({
   asnaf_id: z.number().int().positive().optional(),
   rekomendasi_upz: z.string().optional(),
   keterangan: z.string().optional(),
+  jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']).optional(),
   registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 }).refine(

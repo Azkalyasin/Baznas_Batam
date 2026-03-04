@@ -22,6 +22,8 @@ export const createMuzakkiSchema = z.object({
   kelurahan_id: z.number().int().positive(),
   kecamatan_id: z.number().int().positive(),
   keterangan: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
+  npwp: z.preprocess(emptyToNull, z.string().trim().max(20, 'NPWP maksimal 20 karakter.').nullable().optional()),
+  jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']).optional(),
   registered_date: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional()),
   tgl_lahir: z.preprocess(emptyToNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD').nullable().optional())
 });
@@ -38,6 +40,8 @@ export const updateMuzakkiSchema = z.object({
   kelurahan_id: z.number().int().positive().optional(),
   kecamatan_id: z.number().int().positive().optional(),
   keterangan: z.string().optional(),
+  npwp: z.string().max(20).trim().optional(),
+  jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']).optional(),
   registered_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   tgl_lahir: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 }).refine(

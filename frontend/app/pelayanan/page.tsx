@@ -254,6 +254,7 @@ export default function PelayananPage() {
               <Row label="Nama" value={detailData.nama} />
               <Row label="NIK" value={detailData.nik} />
               <Row label="No HP" value={detailData.no_hp} />
+              <Row label="Jenis Kelamin" value={detailData.jenis_kelamin} />
               <Row label="Tgl. Lahir" value={detailData.tgl_lahir ? new Date(detailData.tgl_lahir).toLocaleDateString('id-ID') : undefined} />
               <Row label="Tgl. Registrasi" value={detailData.registered_date ? new Date(detailData.registered_date).toLocaleDateString('id-ID') : undefined} />
               <Row label="Alamat" value={detailData.alamat} />

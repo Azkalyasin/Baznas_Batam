@@ -312,6 +312,10 @@ export default function MuzakkiPage() {
                 <span className="font-mono">{detailData.nik || '-'}</span>
                 <span className="text-muted-foreground">No. HP</span>
                 <span>{detailData.no_hp || '-'}</span>
+                <span className="text-muted-foreground">NPWP</span>
+                <span className="font-mono">{detailData.npwp || '-'}</span>
+                <span className="text-muted-foreground">Jenis Kelamin</span>
+                <span>{detailData.jenis_kelamin || '-'}</span>
                 <span className="text-muted-foreground">Jenis Muzakki</span>
                 <span>{detailData.JenisMuzakki?.nama || detailData.jenisMuzakki?.nama || detailData.jenis_muzakki?.nama || refName(jenisMuzakkiList, detailData.jenis_muzakki_id)}</span>
                 <span className="text-muted-foreground">Jenis UPZ</span>
