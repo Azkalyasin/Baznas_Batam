@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
-  AlertCircle, Loader2, Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, Eye,
+  AlertCircle, Loader2, Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, Eye, Printer,
 } from 'lucide-react';
 import { DistribusiForm } from '@/components/distribusi-form';
 
@@ -436,7 +436,19 @@ export default function DistribusiPage() {
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-7xl sm:max-w-none w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detail Distribusi</DialogTitle>
+            <div className="flex justify-between items-center pr-10">
+              <DialogTitle>Detail Distribusi</DialogTitle>
+              {detailData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(`/distribusi/print/${detailData.id}`, '_blank')}
+                  className="gap-2"
+                >
+                  <Printer className="h-4 w-4" /> Cetak Kuitansi
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {detailLoading ? (
             <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>

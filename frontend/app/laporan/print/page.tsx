@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getAuthToken, laporanApi } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 
-export default function LaporanPrintPage() {
+function LaporanPrintContent() {
     const searchParams = useSearchParams();
     const startDate = searchParams.get('start_date');
     const endDate = searchParams.get('end_date');
@@ -311,5 +311,18 @@ export default function LaporanPrintPage() {
                 <span className="page-number italic"></span>
             </div>
         </div>
+    );
+}
+
+export default function LaporanPrintPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Memuat parameter...</span>
+            </div>
+        }>
+            <LaporanPrintContent />
+        </Suspense>
     );
 }

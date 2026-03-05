@@ -91,7 +91,7 @@ const getAll = async (query) => {
       { model: NamaProgram, attributes: ['id', 'nama'] },
       { model: SubProgram, attributes: ['id', 'nama'] },
       { model: ProgramKegiatan, attributes: ['id', 'nama'] },
-      { model: Asnaf, attributes: ['id', 'nama'] },
+      { model: Asnaf, as: 'asnaf', attributes: ['id', 'nama'] },
       { model: NamaEntitas, attributes: ['id', 'nama'] },
       { model: KategoriMustahiq, attributes: ['id', 'nama'] }
     ]
@@ -120,14 +120,14 @@ const getById = async (id) => {
       { model: Mustahiq },
       { model: Kecamatan },
       { model: Kelurahan },
-      { model: Asnaf },
+      { model: Asnaf, as: 'asnaf' },
       { model: NamaProgram },
       { model: SubProgram },
       { model: ProgramKegiatan },
       { model: FrekuensiBantuan },
       { model: NamaEntitas },
       { model: KategoriMustahiq },
-      { model: Infak },
+      { model: Infak, as: 'infak' },
       { model: JenisZisDistribusi },
       { model: User, as: 'creator', attributes: ['id', 'nama'] }
     ]

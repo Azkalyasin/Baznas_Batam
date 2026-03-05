@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { laporanApi } from '@/lib/api';
 import { Loader2, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function LaporanPerubahanDanaPage() {
+function PerubahanDanaContent() {
     const searchParams = useSearchParams();
     const startDate = searchParams.get('start_date');
     const endDate = searchParams.get('end_date');
-    
+
     const [isLoading, setIsLoading] = useState(true);
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export default function LaporanPerubahanDanaPage() {
 
                 <div className="mt-8">
                     <h3 className="font-bold border-b border-black pb-1 mb-4">{title}</h3>
-                    
+
                     <div className="grid grid-cols-12 gap-2 font-bold mb-2">
                         <div className="col-span-6"></div>
                         <div className="col-span-2 text-center">Acc. No.</div>
@@ -200,17 +200,31 @@ export default function LaporanPerubahanDanaPage() {
             </div>
 
             <div id="pdf-content" className="bg-white p-12 shadow-xl mx-auto" style={{ width: '210mm', minHeight: '297mm' }}>
-                <style dangerouslySetInnerHTML={{ __html: `
+                <style dangerouslySetInnerHTML={{
+                    __html: `
                     @media print {
                         body { background: white; p: 0; }
                         .no-print { display: none !important; }
                         .page-break-after { page-break-after: always; }
                     }
                 ` }} />
-                
+
                 <RenderSection title="DANA ZAKAT" subTitle="Zakat" dataSection={zakat} startAcc={4101} />
                 <RenderSection title="DANA INFAK" subTitle="Infak dan Sedekah" dataSection={infak} startAcc={4201} />
             </div>
         </div>
+    );
+}
+
+export default function LaporanPerubahanDanaPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Memuat parameter...</span>
+            </div>
+        }>
+            <PerubahanDanaContent />
+        </Suspense>
     );
 }

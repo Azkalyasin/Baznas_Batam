@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { penerimaanApi } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useAuth } from '@/lib/auth-context';
 
 // Utility for Terbilang (Number to Words in Indonesian)
 function terbilang(angka: number): string {
@@ -44,6 +45,7 @@ export default function CetakBuktiSetoranPage() {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { user } = useAuth();
 
     useEffect(() => {
         if (!id) {
@@ -301,7 +303,7 @@ export default function CetakBuktiSetoranPage() {
                                 </div>
                                 <div className="w-full flex justify-between font-mono mt-12 text-sm">
                                     <span>Petugas :</span>
-                                    <span className="text-right">{data.User?.nama || data.user?.nama || 'Diva Tilarisa'}</span>
+                                    <span className="text-right">{user?.nama || user?.username || data.User?.nama || data.user?.nama || 'Petugas'}</span>
                                 </div>
                             </div>
 
