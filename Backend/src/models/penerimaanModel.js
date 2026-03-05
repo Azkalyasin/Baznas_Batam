@@ -83,7 +83,6 @@ const Penerimaan = db.define('penerimaan', {
   dana_bersih: { type: DataTypes.DECIMAL(15, 2) },
 
   keterangan: { type: DataTypes.TEXT },
-  rekomendasi_upz: { type: DataTypes.TEXT },
 
   created_by: {
     type: DataTypes.INTEGER,

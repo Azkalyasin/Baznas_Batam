@@ -34,7 +34,6 @@ const emptyForm = {
   kategori_mustahiq_id: '',
   jumlah: '',
   quantity: '',
-  no_rekening: '',
   tgl_masuk_permohonan: '',
   jumlah_permohonan: '',
   tgl_survei: '',
@@ -119,7 +118,6 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit, isReadOnly 
               kategori_mustahiq_id: String(d.kategori_mustahiq_id || ''),
               jumlah: String(d.jumlah || ''),
               quantity: String(d.quantity || ''),
-              no_rekening: d.no_rekening || '',
               tgl_masuk_permohonan: d.tgl_masuk_permohonan ? d.tgl_masuk_permohonan.split('T')[0] : '',
               jumlah_permohonan: String(d.jumlah_permohonan || ''),
               tgl_survei: d.tgl_survei ? d.tgl_survei.split('T')[0] : '',
@@ -239,7 +237,6 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit, isReadOnly 
         nama_entitas_id: optNum(form.nama_entitas_id),
         kategori_mustahiq_id: optNum(form.kategori_mustahiq_id),
         quantity: optNum(form.quantity),
-        no_rekening: optStr(form.no_rekening),
         tgl_masuk_permohonan: optStr(form.tgl_masuk_permohonan),
         jumlah_permohonan: optFloat(form.jumlah_permohonan),
         tgl_survei: optStr(form.tgl_survei),
@@ -429,10 +426,6 @@ export function DistribusiForm({ onSuccess, editingId, onCancelEdit, isReadOnly 
             <Input id="quantity" type="number" min="0" value={form.quantity} onChange={set('quantity')} readOnly={isReadOnly} />
           </div>
           <Sel label="Jenis ZIS Distribusi" field="jenis_zis_distribusi_id" items={jenisZisList} placeholder="Pilih ZIS" required />
-          <div className="space-y-2">
-            <Label htmlFor="no_rekening">No. Rekening</Label>
-            <Input id="no_rekening" placeholder="Nomor rekening" value={form.no_rekening} onChange={set('no_rekening')} readOnly={isReadOnly} />
-          </div>
           <div className="space-y-2">
             <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
             <Textarea id="rekomendasi_upz" placeholder="Nama UPZ" rows={2}

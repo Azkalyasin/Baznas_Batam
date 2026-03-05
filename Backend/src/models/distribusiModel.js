@@ -134,7 +134,6 @@ const Distribusi = db.define('distribusi', {
 
   keterangan: { type: DataTypes.TEXT },
   rekomendasi_upz: { type: DataTypes.TEXT },
-  no_rekening: { type: DataTypes.STRING(50) },
 
   // Kolom Permohonan & Survei
   tgl_masuk_permohonan: { type: DataTypes.DATEONLY },

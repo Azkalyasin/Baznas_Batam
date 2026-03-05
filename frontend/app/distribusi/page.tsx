@@ -484,13 +484,11 @@ export default function DistribusiPage() {
                 <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Jumlah Penyaluran</span>
                 <span className="font-bold border-t pt-3 mt-1 text-base">Rp {Number(detailData.jumlah || 0).toLocaleString('id-ID')}</span>
 
-                <span className="text-muted-foreground font-medium">Kuantitas</span>
-                <span>{detailData.quantity || 0}</span>
+                <span className="text-muted-foreground font-medium">Banyak Bantuan</span>
+                <span>{detailData.quantity || '-'} O/L</span>
 
-                <span className="text-muted-foreground font-medium">No. Reg BPP</span>
-                <span className="font-mono text-xs">{detailData.no_reg_bpp || '-'}</span>
-
-                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Tgl. Masuk Permohonan</span>
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Rekomendasi UPZ</span>
+                <span className="border-t pt-3 mt-1">{detailData.rekomendasi_upz || '-'}</span>
                 <span className="border-t pt-3 mt-1">{detailData.tgl_masuk_permohonan ? new Date(detailData.tgl_masuk_permohonan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
 
                 <span className="text-muted-foreground font-medium">Tgl. Disetujui</span>

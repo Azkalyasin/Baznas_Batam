@@ -34,7 +34,6 @@ const emptyForm = {
   jenis_muzakki_id: '',
   jenis_upz_id: '',
   keterangan: '',
-  rekomendasi_upz: '',
 };
 
 export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuzakki, isReadOnly = false }: PengumpulanFormProps) {
@@ -147,7 +146,6 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
           jenis_muzakki_id: String(d.jenis_muzakki_id || ''),
           jenis_upz_id: String(d.jenis_upz_id || ''),
           keterangan: d.keterangan || '',
-          rekomendasi_upz: d.rekomendasi_upz || '',
         });
 
         const mzk = d.Muzakki || d.muzakki;
@@ -219,7 +217,6 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
       if (formData.jenis_upz_id) payload.jenis_upz_id = parseInt(formData.jenis_upz_id);
       if (formData.no_rekening) payload.no_rekening = formData.no_rekening;
       if (formData.keterangan) payload.keterangan = formData.keterangan;
-      if (formData.rekomendasi_upz) payload.rekomendasi_upz = formData.rekomendasi_upz;
 
       if (editingId) await penerimaanApi.update(editingId, payload);
       else await penerimaanApi.create(payload);
@@ -403,11 +400,6 @@ export function PengumpulanForm({ onSuccess, editingId, onCancelEdit, prefillMuz
             <Label htmlFor="no_rekening">No. Rekening</Label>
             <Input id="no_rekening" placeholder="Nomor rekening" maxLength={50}
               value={formData.no_rekening} onChange={set('no_rekening')} readOnly={isReadOnly} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="rekomendasi_upz">Rekomendasi UPZ</Label>
-            <Textarea id="rekomendasi_upz" placeholder="Nama UPZ" rows={2}
-              value={formData.rekomendasi_upz} onChange={set('rekomendasi_upz')} readOnly={isReadOnly} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="keterangan">Keterangan</Label>

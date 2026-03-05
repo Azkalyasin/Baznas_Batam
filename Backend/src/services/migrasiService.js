@@ -193,9 +193,10 @@ const COLUMN_CONFIG = {
       { header: 'JENIS UPZ', key: 'jenis_upz', width: 20 },
       { header: 'JUMLAH', key: 'jumlah', width: 18 },
       { header: 'TUNAI', key: 'tunai', width: 15 },
-      { header: 'AMIL %', key: 'amil_pct', width: 10 },
       { header: 'DANA', key: 'dana', width: 15 },
-      { header: 'ZIS', key: 'zis', width: 10 }   // ZAKAT / INFAQ
+      { header: 'ZIS', key: 'zis', width: 10 },   // ZAKAT / INFAQ
+      { header: 'NO REKENING', key: 'no_rekening', width: 25 },
+      { header: 'KETERANGAN', key: 'keterangan', width: 40 }
     ],
     schema: null,   // validasi manual di resolver
     model: Penerimaan
@@ -616,6 +617,10 @@ const buildResolverPenerimaanExcel = async () => {
     // 11. Snapshot nama muzakki
     resolved.nama_muzakki = rowData.nama_muzakki || null;
 
+    // 12. No Rekening & Keterangan
+    resolved.no_rekening = rowData.no_rekening || null;
+    resolved.keterangan = rowData.keterangan || null;
+
     if (warnings.length) resolved._fuzzyWarnings = warnings;
     return resolved;
   };
@@ -634,6 +639,7 @@ const penerimaanExcelSchema = z.object({
   jenis_muzakki_id: z.number().int().positive().nullable().optional(),
   jenis_upz_id: z.number().int().positive().nullable().optional(),
   nama_muzakki: z.string().nullable().optional(),
+  no_rekening: z.string().nullable().optional(),
   keterangan: z.string().nullable().optional()
 });
 

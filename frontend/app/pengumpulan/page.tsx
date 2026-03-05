@@ -349,8 +349,18 @@ export default function PengumpulanPage() {
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-7xl sm:max-w-none w-[90vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between px-6 pt-6">
             <DialogTitle>Detail Penerimaan</DialogTitle>
+            {detailData && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-0"
+                onClick={() => window.open(`/pengumpulan/print/${detailData.id}`, '_blank')}
+              >
+                Cetak Bukti Setoran
+              </Button>
+            )}
           </DialogHeader>
           {detailLoading ? (
             <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -389,9 +399,6 @@ export default function PengumpulanPage() {
 
                 <span className="text-muted-foreground font-medium">No. Rekening</span>
                 <span className="font-mono text-xs">{detailData.no_rekening || '-'}</span>
-
-                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Rekomendasi UPZ</span>
-                <span className="border-t pt-3 mt-1">{detailData.rekomendasi_upz || '-'}</span>
 
                 <span className="text-muted-foreground font-medium">Keterangan</span>
                 <span className="italic">{detailData.keterangan || '-'}</span>
