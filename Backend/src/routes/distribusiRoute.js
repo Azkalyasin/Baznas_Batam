@@ -53,6 +53,12 @@ router.get('/:id/cetak',
   distribusiController.cetakBuktiPenyaluran
 );
 
+router.get('/:id/daily-seq',
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
+  validate(idParamSchema, 'params'),
+  distribusiController.dailySeq
+);
+
 router.post('/',
   roleMiddleware(['superadmin', 'pendistribusian', 'pelayanan']),
   validate(createDistribusiSchema),

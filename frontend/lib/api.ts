@@ -44,7 +44,7 @@ export interface FetchOptions extends RequestInit {
   skipAuth?: boolean;
 }
 
-async function apiFetch<T>(
+export async function apiFetch<T>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<ApiResponse<T>> {

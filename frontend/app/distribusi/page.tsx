@@ -499,16 +499,16 @@ export default function DistribusiPage() {
                 <span className="text-muted-foreground font-medium">Banyak Bantuan</span>
                 <span>{detailData.quantity || '-'} O/L</span>
 
-                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Tgl. Permohonan</span>
+                <span className="text-muted-foreground font-medium border-t pt-3 mt-1">Tanggal Permohonan</span>
                 <span className="border-t pt-3 mt-1">{detailData.tgl_masuk_permohonan ? new Date(detailData.tgl_masuk_permohonan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
 
-                <span className="text-muted-foreground font-medium">Tgl. Disetujui</span>
+                <span className="text-muted-foreground font-medium">Tanggal Disetujui</span>
                 <span>{detailData.tgl_disetujui ? new Date(detailData.tgl_disetujui).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
 
                 <span className="text-muted-foreground font-medium">Jumlah Permohonan</span>
                 <span>Rp {Number(detailData.jumlah_permohonan || 0).toLocaleString('id-ID')}</span>
 
-                <span className="text-muted-foreground font-medium">Tgl. Survei</span>
+                <span className="text-muted-foreground font-medium">Tanggal Survei</span>
                 <span>{detailData.tgl_survei ? new Date(detailData.tgl_survei).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</span>
 
                 <span className="text-muted-foreground font-medium">Surveyor</span>

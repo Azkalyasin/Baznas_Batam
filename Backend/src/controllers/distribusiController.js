@@ -1,5 +1,7 @@
 import distribusiService from '../services/distribusiService.js';
 import PDFDocument from 'pdfkit';
+import Distribusi from '../models/distribusiModel.js';
+import { Op } from 'sequelize';
 
 const getAll = async (req, res, next) => {
   try {
@@ -203,6 +205,24 @@ const getStats = async (req, res, next) => {
   }
 };
 
+const dailySeq = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const record = await Distribusi.findByPk(id, { attributes: ['id', 'tanggal'] });
+    if (!record) return res.status(404).json({ success: false, message: 'Tidak ditemukan.' });
+    const tanggal = String(record.tanggal).slice(0, 10);
+    const count = await Distribusi.count({
+      where: {
+        tanggal: { [Op.like]: `${tanggal}%` },
+        id: { [Op.lte]: record.id }
+      }
+    });
+    res.json({ success: true, seq: count });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getAll,
   getById,
@@ -213,5 +233,6 @@ export default {
   rekapBulanan,
   rekapTahunan,
   cetakBuktiPenyaluran,
-  getStats
+  getStats,
+  dailySeq
 };

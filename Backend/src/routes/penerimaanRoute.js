@@ -59,6 +59,13 @@ router.get('/:id/cetak',
   penerimaanController.cetakBuktiSetor
 );
 
+// Daily sequence (urutan transaksi hari itu)
+router.get('/:id/daily-seq',
+  allRoles,
+  validate(idParamSchema, 'params'),
+  penerimaanController.dailySeq
+);
+
 router.post('/',
   adminOnly,
   validate(createPenerimaanSchema, 'body'),

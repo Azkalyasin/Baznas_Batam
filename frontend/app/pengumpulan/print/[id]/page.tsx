@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { penerimaanApi } from '@/lib/api';
+import { penerimaanApi, apiFetch } from '@/lib/api';
 import { Loader2, Download } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
@@ -45,6 +45,7 @@ export default function CetakBuktiSetoranPage() {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [dailySeq, setDailySeq] = useState<number | null>(null);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -72,6 +73,14 @@ export default function CetakBuktiSetoranPage() {
         fetchData();
     }, [id]);
 
+    // Fetch daily sequence number after data loads
+    useEffect(() => {
+        if (!data?.id) return;
+        apiFetch(`/api/penerimaan/${data.id}/daily-seq`)
+            .then((res: any) => setDailySeq(res.seq ?? null))
+            .catch(() => setDailySeq(null));
+    }, [data]);
+
     const handleDownloadPdf = async () => {
         const element = document.getElementById('pdf-content');
         if (!element) return;
@@ -94,7 +103,6 @@ export default function CetakBuktiSetoranPage() {
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 onclone: (clonedDoc: Document) => {
-                    // Remove stylesheets containing oklch/lab that html2canvas can't parse
                     clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
                     clonedDoc.querySelectorAll('style').forEach(el => {
                         if (el.textContent?.includes('oklch') || el.textContent?.includes(' lab(')) {
@@ -103,7 +111,7 @@ export default function CetakBuktiSetoranPage() {
                     });
                 }
             },
-            jsPDF: { unit: 'mm', format: 'a4' as const, orientation: 'portrait' as const },
+            jsPDF: { unit: 'mm', format: 'a5' as const, orientation: 'portrait' as const },
             pagebreak: { mode: 'css', before: '.print-page-break' }
         };
 
@@ -148,9 +156,17 @@ export default function CetakBuktiSetoranPage() {
     const capitalizedTerbilang = terbilangStr.charAt(0).toUpperCase() + terbilangStr.slice(1);
 
     const pages = [
-        { label: '1', arsip: isZakat ? 'Untuk Arsip Wajib Zakat' : 'Untuk Arsip BAZNAS' }, // Assuming order based on user ref
+        { label: '1', arsip: isZakat ? 'Untuk Arsip Wajib Zakat' : 'Untuk Arsip BAZNAS' },
         { label: '2', arsip: 'Untuk Arsip BAZNAS' }
     ];
+
+    // Receipt number: [1=individu,2=entitas/UPZ]/DD/MM/YY/km/[daily_seq]
+    const yy = String(tgl.getFullYear()).slice(-2);
+    const jenisUPZ = data.JenisUpz?.nama || data.jenis_upz?.nama || '';
+    const isEntitas = jenisUPZ && !jenisUPZ.toLowerCase().includes('individu');
+    const typeDigit = isEntitas ? '2' : '1';
+    const seqStr = dailySeq !== null ? String(dailySeq).padStart(4, '0') : '????';
+    const receiptNo = `${dd}/${mm}/${yy}/km/${typeDigit}/${seqStr}`;
 
     return (
         <div className="print-container bg-white text-black min-h-screen">
@@ -158,23 +174,23 @@ export default function CetakBuktiSetoranPage() {
                 __html: `
                 @media print {
                     @page { 
-                        size: A4; 
+                        size: A5 portrait; 
                         margin: 0; 
                     }
                     body { 
                         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-                        padding: 10mm;
+                        padding: 0;
                     }
                     .print-page-break { page-break-before: always; }
                     .no-print { display: none !important; }
                 }
                 body { background-color: #525659; } 
-                .print-container { max-width: 210mm; margin: 0 auto; padding: 10mm; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative; }
+                .print-container { max-width: 148mm; margin: 0 auto; padding: 6mm; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative; }
                 @media print { .print-container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; min-height: auto; } }
                 
-                table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-                th, td { border: 1px solid black; padding: 6px 8px; text-align: left; }
-                .table-no-border td { border: none; padding: 4px 6px; }
+                table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+                th, td { border: 1px solid black; padding: 4px 6px; text-align: left; }
+                .table-no-border td { border: none; padding: 3px 5px; }
             `}} />
 
             <div className="no-print mb-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded flex flex-row items-center justify-between gap-3 sticky top-0 z-50 shadow-sm">
@@ -233,7 +249,7 @@ export default function CetakBuktiSetoranPage() {
                                 <tbody>
                                     <tr>
                                         <td className="w-32 py-1">Nomor</td>
-                                        <td className="font-mono">: {`${formattedDate}/${isZakat ? 'z' : 'km'}/1/${String(data.id).padStart(7, '0')}`}</td>
+                                        <td className="font-mono">: {receiptNo}</td>
                                     </tr>
                                     <tr>
                                         <td className="w-32 py-1">Periode</td>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { distribusiApi } from '@/lib/api';
+import { distribusiApi, apiFetch } from '@/lib/api';
 import { Loader2, Printer, Download } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
@@ -46,6 +46,7 @@ export default function CetakKuitansiDistribusiPage() {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [dailySeq, setDailySeq] = useState<number | null>(null);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -72,6 +73,14 @@ export default function CetakKuitansiDistribusiPage() {
 
         fetchData();
     }, [id]);
+
+    // Fetch daily sequence after data loads
+    useEffect(() => {
+        if (!data?.id) return;
+        apiFetch(`/api/distribusi/${data.id}/daily-seq`)
+            .then((res: any) => setDailySeq(res.seq ?? null))
+            .catch(() => setDailySeq(null));
+    }, [data]);
 
     const handleDownloadPdf = async () => {
         const element = document.getElementById('kuitansi-content');
@@ -135,8 +144,12 @@ export default function CetakKuitansiDistribusiPage() {
     const yyyy = tgl.getFullYear();
     const formattedDate = `${dd}/${mm}/${yyyy}`;
 
-    // No logic (example: 27/02/26/kk/2/0000013) -> [DD]/[MM]/[YY]/kk/2/[ID]
-    const receiptNo = `${dd}/${mm}/${yy}/kk/2/${String(id).padStart(7, '0')}`;
+    // Receipt number: [1=individu,2=lembaga/masjid]/DD/MM/YY/kk/[daily_seq]
+    const kategoriMustahiq = data.ref_kategori_mustahiq?.nama || data.KategoriMustahiq?.nama || '';
+    const isLembaga = kategoriMustahiq && !kategoriMustahiq.toLowerCase().includes('individu');
+    const typeDigitD = isLembaga ? '2' : '1';
+    const seqStrD = dailySeq !== null ? String(dailySeq).padStart(4, '0') : '????';
+    const receiptNo = `${dd}/${mm}/${yy}/kk/${typeDigitD}/${seqStrD}`;
 
     const namaMustahiq = data.Mustahiq?.nama || data.nama_mustahik || '-';
     // Append NRM if available and requested, the image shows it might just be the name or name + location.
@@ -201,7 +214,7 @@ export default function CetakKuitansiDistribusiPage() {
                                     <Image src="/logo.png" alt="BAZNAS Logo" fill className="object-contain object-left" />
                                 </div>
                                 <div className="flex-1 flex justify-center items-center pt-4">
-                                    <h1 className="text-2xl font-bold tracking-wider underline underline-offset-4 decoration-[#3B4CA8]">KUITANSI</h1>
+                                    <div className="text-2xl font-bold underline underline-offset-4 decoration-[#3B4CA8]">KUITANSI</div>
                                 </div>
                                 <div className="border border-[#3B4CA8] px-3 py-1.5 mt-2">
                                     <span className="font-semibold mr-2 text-sm">No:</span>
