@@ -234,6 +234,15 @@ const getDistribusiHarian = async (req, res, next) => {
   }
 };
 
+const getPerubahanDana = async (req, res, next) => {
+  try {
+    const data = await laporanService.getPerubahanDana(req.query);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getArusKas,
   getNeraca,
@@ -244,5 +253,6 @@ export default {
   exportRekapTahunanPdf,
   getDistribusiByProgram,
   getDistribusiByAsnaf,
-  getDistribusiHarian
+  getDistribusiHarian,
+  getPerubahanDana
 };

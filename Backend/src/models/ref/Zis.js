@@ -53,7 +53,7 @@ const JenisZis = db.define('ref_jenis_zis', {
   updatedAt: 'updated_at'
 });
 
-Zis.hasMany(JenisZis, { foreignKey: 'zis_id' });
-JenisZis.belongsTo(Zis, { foreignKey: 'zis_id' });
+Zis.hasMany(JenisZis, { foreignKey: 'zis_id', as: 'jenis_zis' });
+JenisZis.belongsTo(Zis, { foreignKey: 'zis_id', as: 'zis' });
 
 export { Zis, JenisZis };

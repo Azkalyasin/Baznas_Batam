@@ -4,7 +4,7 @@ import Muzakki from '../models/muzakkiModel.js';
 import Mustahiq from '../models/mustahiqModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
-import { Asnaf, NamaProgram, SubProgram, ProgramKegiatan, NamaEntitas } from '../models/ref/index.js';
+import { Asnaf, NamaProgram, SubProgram, ProgramKegiatan, NamaEntitas, JenisZis, Zis, Infak } from '../models/ref/index.js';
 
 const getArusKas = async (query) => {
   const tahun = parseInt(query.tahun) || new Date().getFullYear();
@@ -247,6 +247,105 @@ const getDistribusiHarian = async (query) => {
   });
 };
 
+const getPerubahanDana = async (query) => {
+  const tahun = parseInt(query.tahun) || new Date().getFullYear();
+  const bulan = query.bulan || new Date().toLocaleString('id-ID', { month: 'long' });
+
+  const bulanList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const bulanIdx = bulanList.indexOf(bulan) + 1;
+
+  // 1. DANA ZAKAT
+  const zakatIn = await Penerimaan.findAll({
+    attributes: [
+      [db.col('jenis_zis.nama'), 'nama_jenis'],
+      [db.fn('SUM', db.col('jumlah')), 'total']
+    ],
+    include: [{
+      model: JenisZis,
+      as: 'jenis_zis',
+      include: [{ model: Zis, as: 'zis', where: { nama: 'Zakat' } }]
+    }],
+    where: { tahun, bulan },
+    group: ['jenis_zis.id']
+  });
+
+  const zakatOut = await Distribusi.findAll({
+    attributes: [
+      [db.col('asnaf.nama'), 'nama_asnaf'],
+      [db.fn('SUM', db.col('jumlah')), 'total']
+    ],
+    include: [{ model: Asnaf, as: 'asnaf' }],
+    where: { 
+      tahun, 
+      bulan, 
+      status: 'diterima',
+      infak_id: { [Op.or]: [null, 0] } // Zakat if infak_id is null or 0
+    },
+    group: ['asnaf.id']
+  });
+
+  // 2. DANA INFAK
+  const infakIn = await Penerimaan.findAll({
+    attributes: [
+      [db.col('jenis_zis.nama'), 'nama_jenis'],
+      [db.fn('SUM', db.col('jumlah')), 'total']
+    ],
+    include: [{
+      model: JenisZis,
+      as: 'jenis_zis',
+      include: [{ model: Zis, as: 'zis', where: { nama: 'Infak/Sedekah' } }]
+    }],
+    where: { tahun, bulan },
+    group: ['jenis_zis.id']
+  });
+
+  const infakOut = await Distribusi.findAll({
+    attributes: [
+      [db.col('asnaf.nama'), 'nama_asnaf'],
+      [db.fn('SUM', db.col('jumlah')), 'total']
+    ],
+    include: [
+      { model: Asnaf, as: 'asnaf' },
+      { model: Infak, as: 'infak', required: true } // Assuming only Infak distributions have infak_id
+    ],
+    where: { tahun, bulan, status: 'diterima' },
+    group: ['asnaf.id']
+  });
+
+  // Saldo Awal (Calculated up to previous month)
+  const saldoAwalRes = await db.query(`
+    SELECT 
+      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan p JOIN ref_jenis_zis jz ON p.jenis_zis_id = jz.id JOIN ref_zis z ON jz.zis_id = z.id WHERE z.nama = 'Zakat' AND (p.tahun < :tahun OR (p.tahun = :tahun AND FIELD(p.bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx))) as zakat_in,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi d WHERE (infak_id IS NULL OR infak_id = 0) AND (d.tahun < :tahun OR (d.tahun = :tahun AND FIELD(d.bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx)) AND status = 'diterima') as zakat_out,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan p JOIN ref_jenis_zis jz ON p.jenis_zis_id = jz.id JOIN ref_zis z ON jz.zis_id = z.id WHERE z.nama = 'Infak/Sedekah' AND (p.tahun < :tahun OR (p.tahun = :tahun AND FIELD(p.bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx))) as infak_in,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi d WHERE infak_id > 0 AND (d.tahun < :tahun OR (d.tahun = :tahun AND FIELD(d.bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx)) AND status = 'diterima') as infak_out
+  `, {
+    replacements: { tahun, bulanIdx },
+    type: db.QueryTypes.SELECT
+  });
+
+  const saldo_awal_zakat = (saldoAwalRes[0].zakat_in || 0) - (saldoAwalRes[0].zakat_out || 0);
+  const saldo_awal_infak = (saldoAwalRes[0].infak_in || 0) - (saldoAwalRes[0].infak_out || 0);
+
+  return {
+    periode: `${bulan} ${tahun}`,
+    zakat: {
+      penerimaan: zakatIn,
+      penyaluran: zakatOut,
+      total_penerimaan: zakatIn.reduce((sum, item) => sum + parseFloat(item.get('total') || 0), 0),
+      total_penyaluran: zakatOut.reduce((sum, item) => sum + parseFloat(item.get('total') || 0), 0),
+      saldo_awal: saldo_awal_zakat
+    },
+    infak: {
+      penerimaan: infakIn,
+      penyaluran: infakOut,
+      total_penerimaan: infakIn.reduce((sum, item) => sum + parseFloat(item.get('total') || 0), 0),
+      total_penyaluran: infakOut.reduce((sum, item) => sum + parseFloat(item.get('total') || 0), 0),
+      saldo_awal: saldo_awal_infak
+    }
+  };
+};
+
 export default {
   getArusKas,
   getNeraca,
@@ -254,5 +353,6 @@ export default {
   getRawDataForExport,
   getDistribusiByProgram,
   getDistribusiByAsnaf,
-  getDistribusiHarian
+  getDistribusiHarian,
+  getPerubahanDana
 };

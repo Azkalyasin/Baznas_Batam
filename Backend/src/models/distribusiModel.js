@@ -176,14 +176,14 @@ const Distribusi = db.define('distribusi', {
 Distribusi.belongsTo(Mustahiq, { foreignKey: 'mustahiq_id' });
 Distribusi.belongsTo(Kecamatan, { foreignKey: 'kecamatan_id' });
 Distribusi.belongsTo(Kelurahan, { foreignKey: 'kelurahan_id' });
-Distribusi.belongsTo(Asnaf, { foreignKey: 'asnaf_id' });
+Distribusi.belongsTo(Asnaf, { foreignKey: 'asnaf_id', as: 'asnaf' });
 Distribusi.belongsTo(NamaProgram, { foreignKey: 'nama_program_id' });
 Distribusi.belongsTo(SubProgram, { foreignKey: 'sub_program_id' });
 Distribusi.belongsTo(ProgramKegiatan, { foreignKey: 'program_kegiatan_id' });
 Distribusi.belongsTo(FrekuensiBantuan, { foreignKey: 'frekuensi_bantuan_id' });
 Distribusi.belongsTo(NamaEntitas, { foreignKey: 'nama_entitas_id' });
 Distribusi.belongsTo(KategoriMustahiq, { foreignKey: 'kategori_mustahiq_id' });
-Distribusi.belongsTo(Infak, { foreignKey: 'infak_id' });
+Distribusi.belongsTo(Infak, { foreignKey: 'infak_id', as: 'infak' });
 Distribusi.belongsTo(JenisZisDistribusi, { foreignKey: 'jenis_zis_distribusi_id' });
 Distribusi.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 

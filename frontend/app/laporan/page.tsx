@@ -39,9 +39,10 @@ export default function LaporanPage() {
     setError(null);
 
     try {
-      if (['kas_keluar_program', 'kas_keluar_asnaf', 'kas_keluar_harian'].includes(filters.jenisData)) {
+      if (['kas_keluar_program', 'kas_keluar_asnaf', 'kas_keluar_harian', 'perubahan_dana'].includes(filters.jenisData)) {
         // Open Print PDF view in a new tab
-        const url = `/laporan/print?start_date=${filters.tanggalMulai}&end_date=${filters.tanggalAkhir}&jenis_data=${filters.jenisData}`;
+        const path = filters.jenisData === 'perubahan_dana' ? '/laporan/perubahan-dana' : '/laporan/print';
+        const url = `${path}?start_date=${filters.tanggalMulai}&end_date=${filters.tanggalAkhir}&jenis_data=${filters.jenisData}`;
         window.open(url, '_blank');
         setIsLoading(false);
         return;
@@ -208,6 +209,7 @@ export default function LaporanPage() {
                     <SelectItem value="kas_keluar_program">Kas Keluar - Program</SelectItem>
                     <SelectItem value="kas_keluar_asnaf">Kas Keluar - Asnaf</SelectItem>
                     <SelectItem value="kas_keluar_harian">Kas Keluar - Harian</SelectItem>
+                    <SelectItem value="perubahan_dana">Perubahan Dana</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

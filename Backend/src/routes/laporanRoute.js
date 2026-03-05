@@ -76,4 +76,9 @@ router.get('/distribusi-harian',
   laporanController.getDistribusiHarian
 );
 
+router.get('/perubahan-dana',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  laporanController.getPerubahanDana
+);
+
 export default router;
