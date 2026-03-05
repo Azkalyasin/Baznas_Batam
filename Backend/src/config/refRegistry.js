@@ -53,7 +53,7 @@ export const refRegistry = {
     model: models.JenisZis,
     label: 'Jenis ZIS',
     readOnly: false,
-    include: [{ model: models.Zis, attributes: ['id', 'nama'] }],
+    include: [{ model: models.Zis, as: 'zis', attributes: ['id', 'nama'] }],
     allowedFilters: ['zis_id'],
     createSchema: z.object({ nama, zis_id: fkId('ZIS ID') }),
     updateSchema: z.object({ nama: nama.optional(), zis_id: fkId('ZIS ID').optional() }),
@@ -77,7 +77,15 @@ export const refRegistry = {
   'persentase-amil': {
     model: models.PersentaseAmil,
     label: 'Persentase Amil',
-    readOnly: true,
+    readOnly: false,
+    createSchema: z.object({
+      label: z.string({ required_error: 'Label wajib diisi.' }).min(1).max(10).trim(),
+      nilai: z.number({ required_error: 'Nilai wajib diisi.', invalid_type_error: 'Nilai harus angka.' }).positive()
+    }),
+    updateSchema: z.object({
+      label: z.string().min(1).max(10).trim().optional(),
+      nilai: z.number().positive().optional()
+    }),
   },
 
   // ─── Mustahiq ───────────────────────────────────────────────────────────
