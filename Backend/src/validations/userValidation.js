@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { idParamSchema } from './shared.js';
 
 // Shared Enums
-const roleEnum = z.enum(['superadmin', 'pelayanan', 'pendistribusian', 'keuangan']);
+const roleEnum = z.enum(['superadmin', 'pelayanan', 'pendistribusian', 'keuangan', 'penerimaan']);
 
 // --- Auth Validations ---
 export const loginUserSchema = z.object({

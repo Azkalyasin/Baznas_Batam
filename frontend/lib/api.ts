@@ -536,7 +536,7 @@ export const laporanApi = {
 // ─────────────────────────────────────────
 // 9. USER MANAGEMENT  (Superadmin Only)
 // ─────────────────────────────────────────
-export type UserRole = 'superadmin' | 'pelayanan' | 'distribusi' | 'keuangan' | 'penerimaan';
+export type UserRole = 'superadmin' | 'pelayanan' | 'pendistribusian' | 'keuangan' | 'penerimaan';
 
 export interface UserListParams {
   q?: string;

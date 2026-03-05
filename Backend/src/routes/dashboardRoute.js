@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/', 
-  roleMiddleware(['pelayanan', 'keuangan', 'pendistribusian', 'superadmin']), 
+  roleMiddleware(['pelayanan', 'keuangan', 'pendistribusian', 'penerimaan', 'superadmin']), 
   dashboardController.getDashboardInfo
 );
 

@@ -17,7 +17,7 @@ const getTemplate = async (req, res, next) => {
     if (jenis === 'mustahiq' && !['pelayanan', 'superadmin'].includes(role)) {
       return res.status(403).json({ success: false, message: 'Akses ditolak untuk jenis migrasi ini.' });
     }
-    if (['muzakki', 'penerimaan', 'distribusi', 'penerimaan_excel', 'distribusi_excel'].includes(jenis) && !['keuangan', 'pendistribusian', 'superadmin'].includes(role)) {
+    if (['muzakki', 'penerimaan', 'distribusi', 'penerimaan_excel', 'distribusi_excel'].includes(jenis) && !['keuangan', 'pendistribusian', 'penerimaan', 'superadmin'].includes(role)) {
       return res.status(403).json({ success: false, message: 'Akses ditolak untuk jenis migrasi ini.' });
     }
 

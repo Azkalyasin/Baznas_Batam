@@ -24,7 +24,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/muzakki', label: 'Muzakki', icon: '🧑‍💼', roles: ['superadmin', 'distribusi', 'keuangan', 'penerimaan'] },
+  { href: '/muzakki', label: 'Muzakki', icon: '🧑‍💼', roles: ['superadmin', 'pendistribusian', 'keuangan', 'penerimaan'] },
   { href: '/pelayanan', label: 'Mustahiq', icon: '👥' },
   {
     label: 'Distribusi',
@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
     label: 'Penerimaan',
     icon: '💵',
     children: [
-      { href: '/pengumpulan', label: 'Daftar Penerimaan', icon: '📋', roles: ['superadmin', 'distribusi', 'keuangan', 'penerimaan'] },
+      { href: '/pengumpulan', label: 'Daftar Penerimaan', icon: '📋', roles: ['superadmin', 'pendistribusian', 'keuangan', 'penerimaan'] },
       { href: '/statistik-penerimaan', label: 'Statistik', icon: '📈' },
     ],
   },

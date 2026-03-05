@@ -162,7 +162,7 @@ export default function UserManagementPage() {
                                         <SelectContent>
                                             <SelectItem value="superadmin">Superadmin</SelectItem>
                                             <SelectItem value="pelayanan">Pelayanan</SelectItem>
-                                            <SelectItem value="distribusi">Distribusi</SelectItem>
+                                            <SelectItem value="pendistribusian">Pendistribusian</SelectItem>
                                             <SelectItem value="penerimaan">Penerimaan</SelectItem>
                                             <SelectItem value="keuangan">Keuangan</SelectItem>
                                         </SelectContent>

@@ -14,70 +14,70 @@ router.use(authMiddleware);
 
 // --- Data Mentah (Excel) ---
 router.get('/penerimaan/export',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.exportPenerimaan
 );
 
 router.get('/distribusi/export',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.exportDistribusi
 );
 
 router.get('/mustahiq/export',
-  roleMiddleware(['pelayanan', 'superadmin']),
+  roleMiddleware(['pelayanan', 'penerimaan', 'superadmin']),
   validate(mustahiqExportSchema, 'query'),
   mustahiqController.exportExcel
 );
 
 router.get('/muzakki/export',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   validate(muzakkiExportSchema, 'query'),
   muzakkiController.exportExcel
 );
 
 // --- Laporan Keuangan (JSON & Export) ---
 router.get('/arus-kas',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.getArusKas
 );
 
 router.get('/arus-kas/export',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.exportArusKasPdf
 );
 
 router.get('/neraca',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.getNeraca
 );
 
 router.get('/neraca/export',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.exportNeracaPdf
 );
 
 router.get('/rekap-tahunan/export',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.exportRekapTahunanPdf
 );
 
 router.get('/distribusi-by-program',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.getDistribusiByProgram
 );
 
 router.get('/distribusi-by-asnaf',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.getDistribusiByAsnaf
 );
 
 router.get('/distribusi-harian',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.getDistribusiHarian
 );
 
 router.get('/perubahan-dana',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
   laporanController.getPerubahanDana
 );
 

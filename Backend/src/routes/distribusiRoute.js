@@ -16,39 +16,39 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   validate(queryDistribusiSchema, 'query'),
   distribusiController.getAll
 );
 
 router.get('/stats',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   distribusiController.getStats
 );
 
 router.get('/rekap/harian',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   distribusiController.rekapHarian
 );
 
 router.get('/rekap/bulanan',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   distribusiController.rekapBulanan
 );
 
 router.get('/rekap/tahunan',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   distribusiController.rekapTahunan
 );
 
 router.get('/:id',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   validate(idParamSchema, 'params'),
   distribusiController.getById
 );
 
 router.get('/:id/cetak',
-  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin', 'pelayanan']),
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin', 'pelayanan']),
   validate(idParamSchema, 'params'),
   distribusiController.cetakBuktiPenyaluran
 );

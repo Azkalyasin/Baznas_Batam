@@ -19,7 +19,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // --- Shared roles ---
-const allRoles = roleMiddleware(['pelayanan', 'keuangan', 'pendistribusian', 'superadmin']);
+const allRoles = roleMiddleware(['pelayanan', 'keuangan', 'pendistribusian', 'penerimaan', 'superadmin']);
 const writeRoles = roleMiddleware(['pelayanan', 'superadmin']);
 const adminOnly = roleMiddleware(['superadmin']);
 

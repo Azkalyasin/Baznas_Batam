@@ -17,8 +17,8 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-const allRoles = roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']);
-const adminOnly = roleMiddleware(['superadmin']);
+const allRoles = roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']);
+const adminOnly = roleMiddleware(['superadmin', 'penerimaan']);
 
 // --- Rekap routes (harus sebelum /:id agar tidak di-match sebagai params) ---
 router.get('/rekap/harian',
