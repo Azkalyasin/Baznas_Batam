@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2, Download, Eye } from 'lucide-react';
 import { ReportPreview } from '@/components/report-preview';
+import { exportLaporanDocx } from '@/lib/docx-export';
 
 export default function LaporanPage() {
   const { isAuthenticated } = useAuth();
@@ -38,48 +39,46 @@ export default function LaporanPage() {
     setError(null);
 
     try {
-      const { Document, Packer, Paragraph, Table, TableCell, TableRow, AlignmentType, BorderStyle } = await import('docx');
+      if (['kas_keluar_program', 'kas_keluar_asnaf', 'kas_keluar_harian'].includes(filters.jenisData)) {
+        // Open Print PDF view in a new tab
+        const url = `/laporan/print?start_date=${filters.tanggalMulai}&end_date=${filters.tanggalAkhir}&jenis_data=${filters.jenisData}`;
+        window.open(url, '_blank');
+        setIsLoading(false);
+        return;
+      }
+
+      const { Document, Packer, Paragraph, TextRun, Table, TableCell, TableRow, AlignmentType, BorderStyle } = await import('docx');
+
+      const defaultBorder = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
+      const cellBorders = { top: defaultBorder, bottom: defaultBorder, left: defaultBorder, right: defaultBorder };
 
       // Create document structure
       const doc = new Document({
         sections: [{
           children: [
             new Paragraph({
-              text: 'LAPORAN BAZNAS BATAM',
               alignment: AlignmentType.CENTER,
-              bold: true,
-              size: 28,
+              children: [new TextRun({ text: 'LAPORAN BAZNAS BATAM', bold: true, size: 28 })],
             }),
             new Paragraph({
-              text: 'Sistem Manajemen Dana Zakat, Infaq, dan Sedekah',
               alignment: AlignmentType.CENTER,
-              size: 20,
+              children: [new TextRun({ text: 'Sistem Manajemen Dana Zakat, Infaq, dan Sedekah', size: 20 })],
             }),
+            new Paragraph({ text: '' }),
             new Paragraph({
-              text: '',
-            }),
-            new Paragraph({
-              text: `Periode: ${new Date(filters.tanggalMulai).toLocaleDateString('id-ID')} - ${new Date(filters.tanggalAkhir).toLocaleDateString('id-ID')}`,
               alignment: AlignmentType.CENTER,
-              size: 22,
+              children: [new TextRun({ text: `Periode: ${new Date(filters.tanggalMulai).toLocaleDateString('id-ID')} - ${new Date(filters.tanggalAkhir).toLocaleDateString('id-ID')}`, size: 22 })],
             }),
             new Paragraph({
-              text: `Jenis Data: ${filters.jenisData === 'distribusi' ? 'Distribusi' : 'Pengumpulan'}`,
               alignment: AlignmentType.CENTER,
-              size: 22,
+              children: [new TextRun({ text: `Jenis Data: ${filters.jenisData === 'distribusi' ? 'Distribusi' : 'Pengumpulan'}`, size: 22 })],
             }),
-            new Paragraph({
-              text: '',
-            }),
-            new Paragraph({
-              text: '',
-            }),
+            new Paragraph({ text: '' }),
+            new Paragraph({ text: '' }),
 
             // Summary Section
             new Paragraph({
-              text: 'RINGKASAN DATA',
-              bold: true,
-              size: 24,
+              children: [new TextRun({ text: 'RINGKASAN DATA', bold: true, size: 24 })],
             }),
             new Table({
               rows: [
@@ -87,11 +86,11 @@ export default function LaporanPage() {
                   children: [
                     new TableCell({
                       children: [new Paragraph({ text: 'Item' })],
-                      borders: { all: { color: '000000', space: 1, style: BorderStyle.SINGLE } },
+                      borders: cellBorders,
                     }),
                     new TableCell({
                       children: [new Paragraph({ text: 'Jumlah' })],
-                      borders: { all: { color: '000000', space: 1, style: BorderStyle.SINGLE } },
+                      borders: cellBorders,
                     }),
                   ],
                 }),
@@ -99,11 +98,11 @@ export default function LaporanPage() {
                   children: [
                     new TableCell({
                       children: [new Paragraph({ text: 'Total Transaksi' })],
-                      borders: { all: { color: '000000', space: 1, style: BorderStyle.SINGLE } },
+                      borders: cellBorders,
                     }),
                     new TableCell({
                       children: [new Paragraph({ text: '0' })],
-                      borders: { all: { color: '000000', space: 1, style: BorderStyle.SINGLE } },
+                      borders: cellBorders,
                     }),
                   ],
                 }),
@@ -111,26 +110,24 @@ export default function LaporanPage() {
                   children: [
                     new TableCell({
                       children: [new Paragraph({ text: 'Total Nominal' })],
-                      borders: { all: { color: '000000', space: 1, style: BorderStyle.SINGLE } },
+                      borders: cellBorders,
                     }),
                     new TableCell({
                       children: [new Paragraph({ text: 'Rp 0' })],
-                      borders: { all: { color: '000000', space: 1, style: BorderStyle.SINGLE } },
+                      borders: cellBorders,
                     }),
                   ],
                 }),
               ],
-              width: { size: 100, type: 'pct' },
+              width: { size: 100, type: 'pct' as any },
             }),
             new Paragraph({ text: '' }),
             new Paragraph({ text: '' }),
 
             // Footer
             new Paragraph({
-              text: `Dihasilkan: ${new Date().toLocaleString('id-ID')}`,
               alignment: AlignmentType.CENTER,
-              italics: true,
-              size: 20,
+              children: [new TextRun({ text: `Dihasilkan: ${new Date().toLocaleString('id-ID')}`, italics: true, size: 20 })],
             }),
           ],
         }],
@@ -206,8 +203,11 @@ export default function LaporanPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="distribusi">Distribusi</SelectItem>
-                    <SelectItem value="pengumpulan">Pengumpulan</SelectItem>
+                    <SelectItem value="distribusi">Distribusi (Mentah)</SelectItem>
+                    <SelectItem value="pengumpulan">Pengumpulan (Mentah)</SelectItem>
+                    <SelectItem value="kas_keluar_program">Kas Keluar - Program</SelectItem>
+                    <SelectItem value="kas_keluar_asnaf">Kas Keluar - Asnaf</SelectItem>
+                    <SelectItem value="kas_keluar_harian">Kas Keluar - Harian</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -226,12 +226,12 @@ export default function LaporanPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Mengekspor...
+                    Memproses...
                   </>
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Export ke Word
+                    Cetak / PDF
                   </>
                 )}
               </Button>
@@ -249,10 +249,9 @@ export default function LaporanPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>• Laporan mencakup ringkasan data dalam periode yang dipilih</p>
-            <p>• Format export: Microsoft Word (.docx)</p>
-            <p>• Laporan dapat diedit lebih lanjut di Microsoft Word</p>
-            <p>• Data yang ditampilkan: nomor transaksi, nominal, tanggal, dan keterangan</p>
-            <p>• Laporan mencakup total transaksi dan total nominal</p>
+            <p>• Format laporan default menggunakan Microsoft Word / Tampilan Cetak (PDF)</p>
+            <p>• Laporan Kas Keluar (Program & Asnaf) akan dipisahkan tiap halaman (Page Break)</p>
+            <p>• Data yang ditampilkan: nomor transaksi, nominal, tanggal, dan NRM/keterangan yang ada</p>
           </CardContent>
         </Card>
       </div>

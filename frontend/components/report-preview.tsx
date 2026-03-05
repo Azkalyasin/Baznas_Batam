@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { distribusiApi, penerimaanApi } from '@/lib/api';
+import { distribusiApi, penerimaanApi, getAuthToken, laporanApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
@@ -10,7 +10,7 @@ interface ReportPreviewProps {
   filters: {
     tanggalMulai: string;
     tanggalAkhir: string;
-    jenisData: 'distribusi' | 'pengumpulan';
+    jenisData: string;
   };
 }
 
@@ -26,27 +26,48 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const response = filters.jenisData === 'distribusi'
-        ? await distribusiApi.list({ page: 1, limit: 100 })
-        : await penerimaanApi.list({ page: 1, limit: 100 });
+      let responseData: any[] = [];
+      if (filters.jenisData === 'distribusi') {
+        const res = await distribusiApi.list({ page: 1, limit: 100 });
+        if (res.data) responseData = res.data;
+      } else if (filters.jenisData === 'pengumpulan') {
+        const res = await penerimaanApi.list({ page: 1, limit: 100 });
+        if (res.data) responseData = res.data;
+      } else if (filters.jenisData === 'kas_keluar_program') {
+        const res = await (await fetch(`/api/laporan/distribusi-by-program?start_date=${filters.tanggalMulai}&end_date=${filters.tanggalAkhir}`, { headers: { Authorization: `Bearer ${getAuthToken()}` } })).json();
+        if (res.data) responseData = res.data;
+      } else if (filters.jenisData === 'kas_keluar_asnaf') {
+        const res = await (await fetch(`/api/laporan/distribusi-by-asnaf?start_date=${filters.tanggalMulai}&end_date=${filters.tanggalAkhir}`, { headers: { Authorization: `Bearer ${getAuthToken()}` } })).json();
+        if (res.data) responseData = res.data;
+      } else if (filters.jenisData === 'kas_keluar_harian') {
+        const res = await (await fetch(`/api/laporan/distribusi-harian?start_date=${filters.tanggalMulai}&end_date=${filters.tanggalAkhir}`, { headers: { Authorization: `Bearer ${getAuthToken()}` } })).json();
+        if (res.data) responseData = res.data;
+      }
 
-      if (response.data) {
-        // Filter by date range
-        const filtered = response.data.filter((item: any) => {
-          const itemDate = new Date(item.tanggal);
-          const startDate = new Date(filters.tanggalMulai);
-          const endDate = new Date(filters.tanggalAkhir);
-          return itemDate >= startDate && itemDate <= endDate;
-        });
+      if (responseData.length > 0 || filters.jenisData.startsWith('kas_keluar')) {
+        let filtered = responseData;
+
+        // Only manually filter if it's the old raw endpoints
+        if (filters.jenisData === 'distribusi' || filters.jenisData === 'pengumpulan') {
+          filtered = responseData.filter((item: any) => {
+            const itemDate = new Date(item.tanggal);
+            const startDate = new Date(filters.tanggalMulai);
+            const endDate = new Date(filters.tanggalAkhir);
+            return itemDate >= startDate && itemDate <= endDate;
+          });
+        }
 
         setData(filtered);
 
         // Calculate totals
-        const totalNominal = filtered.reduce((sum: number, item: any) => sum + (item.nominal || 0), 0);
+        const totalNominal = filtered.reduce((sum: number, item: any) => sum + (Number(item.nominal || item.jumlah) || 0), 0);
         setTotals({
           count: filtered.length,
           nominal: totalNominal,
         });
+      } else {
+        setData([]);
+        setTotals({ count: 0, nominal: 0 });
       }
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -98,15 +119,22 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
                     <TableRow>
                       <TableHead>No</TableHead>
                       <TableHead>Tanggal</TableHead>
+                      <TableHead>No</TableHead>
+                      <TableHead>Tanggal</TableHead>
                       {filters.jenisData === 'distribusi' ? (
                         <>
                           <TableHead>Mustahiq</TableHead>
                           <TableHead>Jenis Zakat</TableHead>
                         </>
-                      ) : (
+                      ) : filters.jenisData === 'pengumpulan' ? (
                         <>
                           <TableHead>Muzakki</TableHead>
                           <TableHead>Metode</TableHead>
+                        </>
+                      ) : (
+                        <>
+                          <TableHead>Nama / NRM</TableHead>
+                          <TableHead>Informasi Laporan</TableHead>
                         </>
                       )}
                       <TableHead className="text-right">Nominal</TableHead>
@@ -122,14 +150,32 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
                             <TableCell>{item.nama_mustahiq || '-'}</TableCell>
                             <TableCell>{item.jenis_zakat}</TableCell>
                           </>
-                        ) : (
+                        ) : filters.jenisData === 'pengumpulan' ? (
                           <>
                             <TableCell>{item.nama_muzakki || '-'}</TableCell>
                             <TableCell>{item.metode_pembayaran}</TableCell>
                           </>
+                        ) : (
+                          <>
+                            <TableCell>
+                              <div className="font-medium">{item.nama_mustahik || item.ref_nama_entita?.nama || '-'}</div>
+                              <div className="text-xs text-muted-foreground">{item.nrm || '-'}</div>
+                            </TableCell>
+                            <TableCell>
+                              {filters.jenisData === 'kas_keluar_program' && (
+                                <span className="text-xs">{item.ref_program_kegiatan?.nama || '-'}</span>
+                              )}
+                              {filters.jenisData === 'kas_keluar_asnaf' && (
+                                <span className="text-xs">{item.ref_asnaf?.nama || '-'}</span>
+                              )}
+                              {filters.jenisData === 'kas_keluar_harian' && (
+                                <span className="text-xs">{(item.keterangan || 'Penyaluran Tunai').substring(0, 30)}</span>
+                              )}
+                            </TableCell>
+                          </>
                         )}
                         <TableCell className="text-right font-medium">
-                          Rp {(item.nominal || 0).toLocaleString('id-ID')}
+                          Rp {(Number(item.nominal || item.jumlah) || 0).toLocaleString('id-ID')}
                         </TableCell>
                       </TableRow>
                     ))}

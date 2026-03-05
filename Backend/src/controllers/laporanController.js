@@ -69,7 +69,7 @@ const exportArusKasPdf = async (req, res, next) => {
   try {
     const data = await laporanService.getArusKas(req.query);
     const doc = new PDFDocument({ margin: 50 });
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Arus_Kas_${data.periode}.pdf"`);
     doc.pipe(res);
@@ -82,18 +82,18 @@ const exportArusKasPdf = async (req, res, next) => {
     const drawRow = (label, value, isBold = false) => {
       if (isBold) doc.font('Helvetica-Bold');
       else doc.font('Helvetica');
-      
+
       const y = doc.y;
       doc.text(label, 50, y);
       doc.text(value, 400, y, { align: 'right', width: 100 });
       doc.moveDown(0.5);
     };
 
-const fmt = (v) => `Rp ${parseFloat(v).toLocaleString('id-ID', { minimumFractionDigits: 2 })}`;
+    const fmt = (v) => `Rp ${parseFloat(v).toLocaleString('id-ID', { minimumFractionDigits: 2 })}`;
 
     drawRow('SALDO AWAL', fmt(data.saldo_awal), true);
     doc.moveDown();
-    
+
     doc.text('ARUS KAS MASUK:', { underline: true });
     drawRow('Total Zakat', fmt(data.arus_kas_masuk.total_zakat));
     drawRow('Total Infak/Sedekah', fmt(data.arus_kas_masuk.total_infaq));
@@ -120,7 +120,7 @@ const exportNeracaPdf = async (req, res, next) => {
   try {
     const data = await laporanService.getNeraca(req.query);
     const doc = new PDFDocument({ margin: 50 });
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Neraca_${data.periode}.pdf"`);
     doc.pipe(res);
@@ -167,7 +167,7 @@ const exportRekapTahunanPdf = async (req, res, next) => {
   try {
     const data = await laporanService.getRekapTahunan(req.query);
     const doc = new PDFDocument({ margin: 50 });
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Rekap_Tahunan_${data.tahun}.pdf"`);
     doc.pipe(res);
@@ -193,7 +193,7 @@ const exportRekapTahunanPdf = async (req, res, next) => {
     bulanList.forEach(b => {
       const p = data.penerimaan.find(x => x.bulan === b)?.get('total') || 0;
       const d = data.distribusi.find(x => x.bulan === b)?.get('total') || 0;
-      
+
       const y = doc.y;
       doc.text(b, 50, y);
       doc.text(fmt(p), 200, y);
@@ -207,6 +207,33 @@ const exportRekapTahunanPdf = async (req, res, next) => {
   }
 };
 
+const getDistribusiByProgram = async (req, res, next) => {
+  try {
+    const data = await laporanService.getDistribusiByProgram(req.query);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getDistribusiByAsnaf = async (req, res, next) => {
+  try {
+    const data = await laporanService.getDistribusiByAsnaf(req.query);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getDistribusiHarian = async (req, res, next) => {
+  try {
+    const data = await laporanService.getDistribusiHarian(req.query);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getArusKas,
   getNeraca,
@@ -214,5 +241,8 @@ export default {
   exportDistribusi,
   exportArusKasPdf,
   exportNeracaPdf,
-  exportRekapTahunanPdf
+  exportRekapTahunanPdf,
+  getDistribusiByProgram,
+  getDistribusiByAsnaf,
+  getDistribusiHarian
 };

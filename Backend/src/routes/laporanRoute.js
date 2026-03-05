@@ -61,4 +61,19 @@ router.get('/rekap-tahunan/export',
   laporanController.exportRekapTahunanPdf
 );
 
+router.get('/distribusi-by-program',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  laporanController.getDistribusiByProgram
+);
+
+router.get('/distribusi-by-asnaf',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  laporanController.getDistribusiByAsnaf
+);
+
+router.get('/distribusi-harian',
+  roleMiddleware(['keuangan', 'pendistribusian', 'superadmin']),
+  laporanController.getDistribusiHarian
+);
+
 export default router;

@@ -515,6 +515,18 @@ export const laporanApi = {
   /** GET /api/laporan/neraca/export — PDF */
   exportNeracaUrl: (params: LaporanParams = {}) =>
     `${API_BASE_URL}/api/laporan/neraca/export${buildQuery(params)}`,
+
+  /** GET /api/laporan/distribusi-by-program */
+  getDistribusiByProgram: (params: { start_date?: string; end_date?: string } = {}) =>
+    apiFetch<any[]>(`/api/laporan/distribusi-by-program${buildQuery(params)}`, { method: 'GET' }),
+
+  /** GET /api/laporan/distribusi-by-asnaf */
+  getDistribusiByAsnaf: (params: { start_date?: string; end_date?: string } = {}) =>
+    apiFetch<any[]>(`/api/laporan/distribusi-by-asnaf${buildQuery(params)}`, { method: 'GET' }),
+
+  /** GET /api/laporan/distribusi-harian */
+  getDistribusiHarian: (params: { start_date?: string; end_date?: string } = {}) =>
+    apiFetch<any[]>(`/api/laporan/distribusi-harian${buildQuery(params)}`, { method: 'GET' }),
 };
 
 // ─────────────────────────────────────────

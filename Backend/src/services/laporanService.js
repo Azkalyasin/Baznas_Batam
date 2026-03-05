@@ -4,6 +4,7 @@ import Muzakki from '../models/muzakkiModel.js';
 import Mustahiq from '../models/mustahiqModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
+import { Asnaf, NamaProgram, SubProgram, ProgramKegiatan, NamaEntitas } from '../models/ref/index.js';
 
 const getArusKas = async (query) => {
   const tahun = parseInt(query.tahun) || new Date().getFullYear();
@@ -11,7 +12,7 @@ const getArusKas = async (query) => {
 
   const bulanList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const bulanIndex = bulanList.indexOf(bulan);
-  
+
   const saldoAwalRes = await db.query(`
     SELECT 
       (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx)) as total_masuk,
@@ -95,7 +96,7 @@ const getArusKas = async (query) => {
       total_keluar
     },
     saldo_akhir,
-    dana_bersih_tersedia: saldo_akhir 
+    dana_bersih_tersedia: saldo_akhir
   };
 };
 
@@ -109,14 +110,14 @@ const getNeraca = async (query) => {
       (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE jenis_zis = 'Zakat' AND (tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') <= :bulanIdx))) as total_zakat_in,
       (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE asnaf IN ('Fakir', 'Miskin', 'Amil', 'Muallaf', 'Gharimin', 'Ibnu Sabil', 'Fisabillillah', 'Riqob') AND (tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') <= :bulanIdx))) as total_dist_out
   `, {
-    replacements: { tahun, bulanIdx: 12 }, 
+    replacements: { tahun, bulanIdx: 12 },
     type: db.QueryTypes.SELECT
   });
 
   const { total_masuk, total_keluar, total_zakat_in } = stats[0];
   const dana_amil = total_zakat_in * 0.125;
-  const dana_zakat = (total_zakat_in * 0.875) - (total_keluar * 0.7); 
-  const dana_infaq = (total_masuk - total_zakat_in) - (total_keluar * 0.3); 
+  const dana_zakat = (total_zakat_in * 0.875) - (total_keluar * 0.7);
+  const dana_infaq = (total_masuk - total_zakat_in) - (total_keluar * 0.3);
 
   const total_aktiva = (total_masuk - total_keluar);
 
@@ -147,7 +148,7 @@ const getRawDataForExport = async (type, query) => {
   if (type === 'distribusi') return await Distribusi.findAll({ where, include: [Mustahiq] });
   if (type === 'mustahiq') return await Mustahiq.findAll({ where: query.status ? { status: query.status } : {} });
   if (type === 'muzakki') return await Muzakki.findAll({ where: query.status ? { status: query.status } : {} });
-  
+
   return [];
 };
 
@@ -176,9 +177,82 @@ const getRekapTahunan = async (query) => {
   return { tahun, penerimaan, distribusi };
 };
 
+const getDistribusiByProgram = async (query) => {
+  const { start_date, end_date } = query;
+  const where = { status: 'diterima' };
+  if (start_date && end_date) {
+    where.tanggal = { [Op.between]: [start_date, end_date] };
+  } else if (start_date) {
+    where.tanggal = { [Op.gte]: start_date };
+  } else if (end_date) {
+    where.tanggal = { [Op.lte]: end_date };
+  }
+
+  return await Distribusi.findAll({
+    where,
+    include: [
+      { model: NamaProgram },
+      { model: SubProgram },
+      { model: ProgramKegiatan }
+    ],
+    order: [
+      ['nama_program_id', 'ASC'],
+      ['sub_program_id', 'ASC'],
+      ['program_kegiatan_id', 'ASC'],
+      ['tanggal', 'ASC']
+    ]
+  });
+};
+
+const getDistribusiByAsnaf = async (query) => {
+  const { start_date, end_date } = query;
+  const where = { status: 'diterima' };
+  if (start_date && end_date) {
+    where.tanggal = { [Op.between]: [start_date, end_date] };
+  } else if (start_date) {
+    where.tanggal = { [Op.gte]: start_date };
+  } else if (end_date) {
+    where.tanggal = { [Op.lte]: end_date };
+  }
+
+  return await Distribusi.findAll({
+    where,
+    include: [
+      { model: Asnaf }
+    ],
+    order: [
+      ['asnaf_id', 'ASC'],
+      ['tanggal', 'ASC']
+    ]
+  });
+};
+
+const getDistribusiHarian = async (query) => {
+  const { start_date, end_date } = query;
+  const where = { status: 'diterima' };
+  if (start_date && end_date) {
+    where.tanggal = { [Op.between]: [start_date, end_date] };
+  } else if (start_date) {
+    where.tanggal = { [Op.gte]: start_date };
+  } else if (end_date) {
+    where.tanggal = { [Op.lte]: end_date };
+  }
+
+  return await Distribusi.findAll({
+    where,
+    include: [
+      { model: NamaEntitas }
+    ],
+    order: [['tanggal', 'ASC']]
+  });
+};
+
 export default {
   getArusKas,
   getNeraca,
   getRekapTahunan,
-  getRawDataForExport
+  getRawDataForExport,
+  getDistribusiByProgram,
+  getDistribusiByAsnaf,
+  getDistribusiHarian
 };
