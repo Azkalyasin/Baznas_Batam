@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Eye, Search, Printer } from 'lucide-react';
 import { PengumpulanForm } from '@/components/pengumpulan-form';
 
 export default function PengumpulanPage() {
@@ -349,18 +349,20 @@ export default function PengumpulanPage() {
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-7xl sm:max-w-none w-[90vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="flex flex-row items-center justify-between px-6 pt-6">
-            <DialogTitle>Detail Penerimaan</DialogTitle>
-            {detailData && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-0"
-                onClick={() => window.open(`/pengumpulan/print/${detailData.id}`, '_blank')}
-              >
-                Cetak Bukti Setoran
-              </Button>
-            )}
+          <DialogHeader>
+            <div className="flex justify-between items-center pr-10">
+              <DialogTitle>Detail Penerimaan</DialogTitle>
+              {detailData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(`/pengumpulan/print/${detailData.id}`, '_blank')}
+                  className="gap-2"
+                >
+                  <Printer className="h-4 w-4" /> Cetak Bukti Setoran
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {detailLoading ? (
             <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { distribusiApi } from '@/lib/api';
-import { Loader2, Printer } from 'lucide-react';
+import { Loader2, Printer, Download } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,42 @@ export default function CetakKuitansiDistribusiPage() {
 
         fetchData();
     }, [id]);
+
+    const handleDownloadPdf = async () => {
+        const element = document.getElementById('kuitansi-content');
+        if (!element) return;
+
+        const html2pdf = (await import('html2pdf.js')).default;
+
+        // Auto-generate meaningful filename from available data
+        const tglData = data?.tanggal ? new Date(data.tanggal) : new Date();
+        const tglStr = `${String(tglData.getDate()).padStart(2, '0')}-${String(tglData.getMonth() + 1).padStart(2, '0')}-${tglData.getFullYear()}`;
+        const mustahiqName = (data?.Mustahiq?.nama || data?.nama_mustahik || 'Mustahiq').replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_');
+        const filename = `KuitansiDistribusi_${mustahiqName}_${tglStr}.pdf`;
+
+        const opt = {
+            margin: 0,
+            filename,
+            image: { type: 'jpeg' as const, quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                onclone: (clonedDoc: Document) => {
+                    // Remove stylesheets with oklch/lab that html2canvas can't parse
+                    clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+                    clonedDoc.querySelectorAll('style').forEach(el => {
+                        if (el.textContent?.includes('oklch') || el.textContent?.includes(' lab(')) {
+                            el.remove();
+                        }
+                    });
+                }
+            },
+            jsPDF: { unit: 'mm', format: [210, 148] as [number, number], orientation: 'landscape' as const },
+        };
+
+        html2pdf().set(opt).from(element).save();
+    };
 
     if (isLoading) {
         return (
@@ -145,123 +181,129 @@ export default function CetakKuitansiDistribusiPage() {
 
             {/* Print Controls */}
             <div className="no-print fixed top-4 right-4 z-50 flex gap-2">
+                <Button onClick={handleDownloadPdf} variant="outline" className="shadow-md border-[#3B4CA8] text-[#3B4CA8] hover:bg-[#3B4CA8] hover:text-white">
+                    <Download className="mr-2 h-4 w-4" /> Simpan PDF
+                </Button>
                 <Button onClick={() => window.print()} className="shadow-md bg-[#3B4CA8] hover:bg-[#2A377D]">
                     <Printer className="mr-2 h-4 w-4" /> Cetak Printer (A5 Landscape)
                 </Button>
             </div>
 
-            {copies.map((copy, index) => (
-                <div key={index} className="page-a5 bg-white w-[210mm] h-[148mm] border shadow-lg relative mx-auto box-border flex flex-col p-[8mm] text-[#2A377D] overflow-hidden shrink-0">
-                    <div className="border-[1.5px] border-[#3B4CA8] h-full flex flex-col relative p-4 overflow-hidden">
+            <div id="kuitansi-content" className="flex flex-col items-center gap-8 w-full">
 
-                        {/* Header */}
-                        <div className="flex justify-between items-start mb-4 shrink-0">
-                            <div className="w-48 relative h-16">
-                                <Image src="/logo.png" alt="BAZNAS Logo" fill className="object-contain object-left" />
-                            </div>
-                            <div className="flex-1 flex justify-center items-center pt-4">
-                                <h1 className="text-2xl font-bold tracking-wider underline underline-offset-4 decoration-[#3B4CA8]">KUITANSI</h1>
-                            </div>
-                            <div className="border border-[#3B4CA8] px-3 py-1.5 mt-2">
-                                <span className="font-semibold mr-2 text-sm">No:</span>
-                                <span className="font-mono text-sm">{receiptNo}</span>
-                            </div>
-                        </div>
+                {copies.map((copy, index) => (
+                    <div key={index} className="page-a5 bg-white w-[210mm] h-[148mm] border shadow-lg relative mx-auto box-border flex flex-col p-[8mm] text-[#2A377D] overflow-hidden shrink-0">
+                        <div className="border-[1.5px] border-[#3B4CA8] h-full flex flex-col relative p-4 overflow-hidden">
 
-                        <div className="border-b-[1.5px] border-[#3B4CA8] w-[calc(100%+2rem)] -ml-4 mb-4 shrink-0"></div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-h-0 flex flex-col gap-4 text-[13px] overflow-hidden">
-
-                            {/* Row 1: Paid To */}
-                            <div className="flex items-start gap-4 shrink-0">
-                                <div className="w-40 shrink-0 leading-tight">
-                                    <div className="font-semibold">Dibayarkan Kepada</div>
-                                    <div className="italic font-bold text-[#3B4CA8]">paid to</div>
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-4 shrink-0">
+                                <div className="w-48 relative h-16">
+                                    <Image src="/logo.png" alt="BAZNAS Logo" fill className="object-contain object-left" />
                                 </div>
-                                <div className="font-bold mr-2">:</div>
-                                <div className="flex-1 border-b border-[#3B4CA8] pb-1 font-semibold text-black tracking-wide truncate">
-                                    {mustahiqLabel}
+                                <div className="flex-1 flex justify-center items-center pt-4">
+                                    <h1 className="text-2xl font-bold tracking-wider underline underline-offset-4 decoration-[#3B4CA8]">KUITANSI</h1>
+                                </div>
+                                <div className="border border-[#3B4CA8] px-3 py-1.5 mt-2">
+                                    <span className="font-semibold mr-2 text-sm">No:</span>
+                                    <span className="font-mono text-sm">{receiptNo}</span>
                                 </div>
                             </div>
 
-                            {/* Row 2: Amount (Words) */}
-                            <div className="flex items-start gap-4 shrink-0">
-                                <div className="w-40 shrink-0 leading-tight">
-                                    <div className="font-semibold">Jumlah</div>
-                                    <div className="italic font-bold text-[#3B4CA8]">amount</div>
-                                </div>
-                                <div className="font-bold mr-2">:</div>
-                                <div className="flex-1 bg-gray-300 px-3 py-1.5 font-bold italic text-black tracking-wide truncate">
-                                    {capitalizedTerbilang} rupiah
-                                </div>
-                            </div>
+                            <div className="border-b-[1.5px] border-[#3B4CA8] w-[calc(100%+2rem)] -ml-4 mb-4 shrink-0"></div>
 
-                            {/* Row 3: Payment For */}
-                            <div className="flex items-start gap-4 flex-1 min-h-0">
-                                <div className="w-40 shrink-0 leading-tight">
-                                    <div className="font-semibold">Untuk pembayaran</div>
-                                    <div className="italic font-bold text-[#3B4CA8]">payment for</div>
-                                </div>
-                                <div className="font-bold mr-2">:</div>
-                                <div className="flex-1 text-black font-semibold leading-relaxed relative flex flex-col overflow-hidden h-full">
-                                    <div className="border-b border-[#3B4CA8] whitespace-pre-wrap">{paymentFor}</div>
-                                    <div className="border-b border-[#3B4CA8] h-6 w-full block shrink-0 mt-1"></div>
-                                </div>
-                            </div>
+                            {/* Content */}
+                            <div className="flex-1 min-h-0 flex flex-col gap-4 text-[13px] overflow-hidden">
 
-                            {/* Row 4: Numeric Amount & Date */}
-                            <div className="flex items-end justify-between mt-2 shrink-0">
-                                <div className="flex items-center gap-4 w-1/2">
-                                    <div className="italic font-bold text-[#3B4CA8] text-lg w-10">Rp</div>
-                                    <div className="bg-gray-300 px-8 py-1.5 font-bold text-black tracking-widest text-lg min-w-[200px] text-center">
-                                        {terbilangNum.toLocaleString('id-ID')}
+                                {/* Row 1: Paid To */}
+                                <div className="flex items-start gap-4 shrink-0">
+                                    <div className="w-40 shrink-0 leading-tight">
+                                        <div className="font-semibold">Dibayarkan Kepada</div>
+                                        <div className="italic font-bold text-[#3B4CA8]">paid to</div>
+                                    </div>
+                                    <div className="font-bold mr-2">:</div>
+                                    <div className="flex-1 border-b border-[#3B4CA8] pb-1 font-semibold text-black tracking-wide truncate">
+                                        {mustahiqLabel}
                                     </div>
                                 </div>
-                                <div className="flex items-end text-black font-bold text-sm">
-                                    <div className="w-40 border-b border-[#3B4CA8]"></div>
-                                    <span>, {formattedDate}</span>
-                                </div>
-                            </div>
 
-                        </div>
-
-                        {/* Footer Sigs */}
-                        <div className="mt-4 shrink-0 flex justify-between items-end text-xs">
-                            <div className="w-64 leading-tight">
-                                <div className="font-bold text-[#3B4CA8]">BADAN AMIL ZAKAT NASIONAL</div>
-                                <div className="font-bold text-[#3B4CA8]">Kota Batam</div>
-                                <div className="text-[#3B4CA8]">Graha Kadin Blok C No.8 Jl.Engku putri Batam</div>
-                                <div className="text-[#3B4CA8]">Telp. 0778477504 Fax.</div>
-                            </div>
-
-                            <div className="flex gap-16 justify-end text-center flex-1">
-                                <div className="w-48 text-black">
-                                    <div className="font-bold border-b border-black pb-1 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
-                                        {mustahiqLabel.length > 25 ? "Pimpinan Daerah" : mustahiqLabel}
+                                {/* Row 2: Amount (Words) */}
+                                <div className="flex items-start gap-4 shrink-0">
+                                    <div className="w-40 shrink-0 leading-tight">
+                                        <div className="font-semibold">Jumlah</div>
+                                        <div className="italic font-bold text-[#3B4CA8]">amount</div>
                                     </div>
-                                    <div className="text-[#3B4CA8]">Penerima</div>
+                                    <div className="font-bold mr-2">:</div>
+                                    <div className="flex-1 bg-gray-300 px-3 py-1.5 font-bold italic text-black tracking-wide truncate">
+                                        {capitalizedTerbilang} rupiah
+                                    </div>
                                 </div>
 
-                                <div className="w-48 text-black">
-                                    <div className="font-bold border-b border-black pb-1 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
-                                        {bendaharaName}
+                                {/* Row 3: Payment For */}
+                                <div className="flex items-start gap-4 flex-1 min-h-0">
+                                    <div className="w-40 shrink-0 leading-tight">
+                                        <div className="font-semibold">Untuk pembayaran</div>
+                                        <div className="italic font-bold text-[#3B4CA8]">payment for</div>
                                     </div>
-                                    <div className="text-[#3B4CA8]">Bendahara/Kasir</div>
+                                    <div className="font-bold mr-2">:</div>
+                                    <div className="flex-1 text-black font-semibold leading-relaxed relative flex flex-col overflow-hidden h-full">
+                                        <div className="border-b border-[#3B4CA8] whitespace-pre-wrap">{paymentFor}</div>
+                                        <div className="border-b border-[#3B4CA8] h-6 w-full block shrink-0 mt-1"></div>
+                                    </div>
+                                </div>
+
+                                {/* Row 4: Numeric Amount & Date */}
+                                <div className="flex items-end justify-between mt-2 shrink-0">
+                                    <div className="flex items-center gap-4 w-1/2">
+                                        <div className="italic font-bold text-[#3B4CA8] text-lg w-10">Rp</div>
+                                        <div className="bg-gray-300 px-8 py-1.5 font-bold text-black tracking-widest text-lg min-w-[200px] text-center">
+                                            {terbilangNum.toLocaleString('id-ID')}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-end text-black font-bold text-sm">
+                                        <div className="w-40 border-b border-[#3B4CA8]"></div>
+                                        <span>, {formattedDate}</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Footer Sigs */}
+                            <div className="mt-4 shrink-0 flex justify-between items-end text-xs">
+                                <div className="w-64 leading-tight">
+                                    <div className="font-bold text-[#3B4CA8]">BADAN AMIL ZAKAT NASIONAL</div>
+                                    <div className="font-bold text-[#3B4CA8]">Kota Batam</div>
+                                    <div className="text-[#3B4CA8]">Graha Kadin Blok C No.8 Jl.Engku putri Batam</div>
+                                    <div className="text-[#3B4CA8]">Telp. 0778477504 Fax.</div>
+                                </div>
+
+                                <div className="flex gap-16 justify-end text-center flex-1">
+                                    <div className="w-48 text-black">
+                                        <div className="font-bold border-b border-black pb-1 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                                            {mustahiqLabel.length > 25 ? "Pimpinan Daerah" : mustahiqLabel}
+                                        </div>
+                                        <div className="text-[#3B4CA8]">Penerima</div>
+                                    </div>
+
+                                    <div className="w-48 text-black">
+                                        <div className="font-bold border-b border-black pb-1 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                                            {bendaharaName}
+                                        </div>
+                                        <div className="text-[#3B4CA8]">Bendahara/Kasir</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Bottom Edge */}
-                        <div className="mt-auto shrink-0 w-[calc(100%+2rem)] -ml-4 pt-4">
-                            <div className="border-t-[1.5px] border-[#3B4CA8] pt-2 px-4 flex justify-between text-[11px] italic font-medium">
-                                <div>http://kotabatam.baznas.go.id</div>
-                                <div>{copy.label}</div>
+                            {/* Bottom Edge */}
+                            <div className="mt-auto shrink-0 w-[calc(100%+2rem)] -ml-4 pt-4">
+                                <div className="border-t-[1.5px] border-[#3B4CA8] pt-2 px-4 flex justify-between text-[11px] italic font-medium">
+                                    <div>http://kotabatam.baznas.go.id</div>
+                                    <div>{copy.label}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>{/* end kuitansi-content */}
         </div>
     );
 }

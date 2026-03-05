@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { penerimaanApi } from '@/lib/api';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 
@@ -78,11 +78,31 @@ export default function CetakBuktiSetoranPage() {
 
         const html2pdf = (await import('html2pdf.js')).default;
 
+        // Auto-generate meaningful filename
+        const tglData = data?.tanggal ? new Date(data.tanggal) : new Date();
+        const tglStr = `${String(tglData.getDate()).padStart(2, '0')}-${String(tglData.getMonth() + 1).padStart(2, '0')}-${tglData.getFullYear()}`;
+        const jenisZisLabel = (data?.zis?.nama || data?.jenis_zis || 'ZIS').replace(/\s+/g, '-');
+        const muzakkilabel = (data?.Muzakki?.nama || data?.nama_muzakki || 'Muzakki').replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_');
+        const filename = `BuktiSetoran_${jenisZisLabel}_${muzakkilabel}_${tglStr}.pdf`;
+
         const opt = {
             margin: 0,
-            filename: `Bukti-Setoran-${data?.Muzakki?.nama || 'Muzakki'}-${id}.pdf`,
+            filename,
             image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { scale: 2 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                onclone: (clonedDoc: Document) => {
+                    // Remove stylesheets containing oklch/lab that html2canvas can't parse
+                    clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+                    clonedDoc.querySelectorAll('style').forEach(el => {
+                        if (el.textContent?.includes('oklch') || el.textContent?.includes(' lab(')) {
+                            el.remove();
+                        }
+                    });
+                }
+            },
             jsPDF: { unit: 'mm', format: 'a4' as const, orientation: 'portrait' as const },
             pagebreak: { mode: 'css', before: '.print-page-break' }
         };
@@ -159,9 +179,12 @@ export default function CetakBuktiSetoranPage() {
 
             <div className="no-print mb-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded flex flex-row items-center justify-between gap-3 sticky top-0 z-50 shadow-sm">
                 <p>
-                    <strong>Bukti Setoran Siap.</strong> Anda dapat mencetak kuitansi ini langsung.
+                    <strong>Bukti Setoran Siap.</strong> Anda dapat mencetak atau menyimpan kuitansi ini.
                 </p>
                 <div className="flex gap-2">
+                    <button onClick={handleDownloadPdf} className="bg-emerald-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <Download className="h-4 w-4" /> Simpan PDF
+                    </button>
                     <button onClick={() => window.print()} className="bg-blue-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap">
                         Cetak Printer
                     </button>
