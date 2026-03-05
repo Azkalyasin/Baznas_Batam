@@ -195,9 +195,7 @@ const COLUMN_CONFIG = {
       { header: 'JENIS MUZAKKI', key: 'jenis_muzakki', width: 20 },
       { header: 'JENIS UPZ', key: 'jenis_upz', width: 20 },
       { header: 'JUMLAH', key: 'jumlah', width: 18 },
-      { header: 'TUNAI', key: 'tunai', width: 15 },
       { header: 'AMIL %', key: 'amil_pct', width: 10 },
-      { header: 'DANA', key: 'dana', width: 15 },
       { header: 'ZIS', key: 'zis', width: 10 },   // ZAKAT / INFAQ
       { header: 'NO REKENING', key: 'no_rekening', width: 25 },
       { header: 'KETERANGAN', key: 'keterangan', width: 40 }
@@ -220,7 +218,6 @@ const COLUMN_CONFIG = {
       { header: 'Kelurahan', key: 'kelurahan', width: 20 },
       { header: 'Kecamatan', key: 'kecamatan', width: 20 },
       { header: 'Jumlah', key: 'jumlah', width: 18 },
-      { header: 'VIA', key: 'via_raw', width: 15 },
       { header: 'Kategori Mustahiq', key: 'kategori_mustahiq', width: 20 },
       { header: 'Nama Program', key: 'nama_program', width: 30 },
       { header: 'Asnaf', key: 'asnaf', width: 15 },
@@ -1018,8 +1015,8 @@ const generateTemplate = async (res, jenis) => {
     muzakki: { npwz: 'MZK-2026-001', nama: 'H. Ahmad Fauzi', nik: '2171098765432100', no_hp: '081298765432', npwp: '01.234.567.8-901.000', jenis_kelamin: 'Laki-laki', alamat: 'Jl. Zakat No 2, Batam Kota', kelurahan: 'Belian', kecamatan: 'Batam Kota', jenis_muzakki: 'Individu', jenis_upz: '' },
     penerimaan: { muzakki_identifier: 'Contoh Abdullah', tanggal: '2026-03-01', via: 'Bank', metode_bayar: 'Bank Mandiri', no_rekening: '1234567890', zis: 'Zakat', jenis_zis: 'Zakat Fitrah', amil_pct: '12.5', jumlah: 500000, keterangan: 'Zakat bulanan (Contoh)' },
     distribusi: { mustahiq_identifier: 'Contoh Fulan', tanggal: '2026-03-05', jumlah: 1000000, nama_program: 'Batam Peduli', sub_program: 'Bantuan Biaya Hidup Asnaf Fakir', program_kegiatan: 'Biaya Hidup Sehari-hari', nama_entitas: 'Individu', kategori_mustahiq: 'Individu', jenis_zis_distribusi: 'Zakat', frekuensi_bantuan: 'Tidak Rutin', no_rekening: '0987654321', keterangan: 'Bantuan (Contoh)' },
-    penerimaan_excel: { tanggal_raw: '01 Januari 2026', bulan_raw: 'Januari', nama_muzakki: 'Contoh Abdullah', via_raw: 'Bank', metode_bayar: 'Bank Mandiri', jenis_zis: 'Zakat Fitrah', jenis_muzakki: 'Individu', jenis_upz: 'Individu', jumlah: 500000, tunai: '', amil_pct: '12.5', dana: '', zis: 'Zakat', no_rekening: '1234567890', keterangan: 'Zakat bulanan (Contoh)' },
-    distribusi_excel: { tanggal_raw: '05 Januari 2026', sub_program: 'Bantuan Biaya Hidup Asnaf Fakir', program_kegiatan: 'Biaya Hidup Sehari-hari', frekuensi_bantuan: 'Tidak Rutin', nrm: '123456', nama_mustahik: 'Contoh Fulan', nik: '2171012345678901', alamat: 'Jl. Contoh No 1', kelurahan: 'Batu Selicin', kecamatan: 'Lubuk Baja', jumlah: 1000000, via_raw: 'Bank', kategori_mustahiq: 'Individu', nama_program: 'Batam Peduli', asnaf: 'Fakir', infak: '', kuantitas: 1, jenis_zis_distribusi: 'Zakat', nama_entitas: 'Individu', keterangan: 'Bantuan (Contoh)', no_hp: '081234567890', rekomendasi_upz: '', status: 'diterima' }
+    penerimaan_excel: { tanggal_raw: '01 Januari 2026', bulan_raw: 'Januari', nama_muzakki: 'Contoh Abdullah', via_raw: 'Bank', metode_bayar: 'Bank Mandiri', jenis_zis: 'Zakat Fitrah', jenis_muzakki: 'Individu', jenis_upz: 'Individu', jumlah: 500000, amil_pct: '12.5', zis: 'Zakat', no_rekening: '1234567890', keterangan: 'Zakat bulanan (Contoh)' },
+    distribusi_excel: { tanggal_raw: '05 Januari 2026', sub_program: 'Bantuan Biaya Hidup Asnaf Fakir', program_kegiatan: 'Biaya Hidup Sehari-hari', frekuensi_bantuan: 'Tidak Rutin', nrm: '123456', nama_mustahik: 'Contoh Fulan', nik: '2171012345678901', alamat: 'Jl. Contoh No 1', kelurahan: 'Batu Selicin', kecamatan: 'Lubuk Baja', jumlah: 1000000, kategori_mustahiq: 'Individu', nama_program: 'Batam Peduli', asnaf: 'Fakir', infak: '', kuantitas: 1, jenis_zis_distribusi: 'Zakat', nama_entitas: 'Individu', keterangan: 'Bantuan (Contoh)', no_hp: '081234567890', rekomendasi_upz: '', status: 'diterima' }
   };
 
   if (sampleData[jenis]) {
