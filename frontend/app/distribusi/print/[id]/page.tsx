@@ -201,7 +201,7 @@ export default function CetakKuitansiDistribusiPage() {
                                     <Image src="/logo.png" alt="BAZNAS Logo" fill className="object-contain object-left" />
                                 </div>
                                 <div className="flex-1 flex justify-center items-center pt-4">
-                                    <h1 className="text-2xl font-bold tracking-wider underline underline-offset-4 decoration-[#3B4CA8]">KUITANSI</h1>
+                                    <div className="text-2xl font-bold underline underline-offset-4 decoration-[#3B4CA8]">KUITANSI</div>
                                 </div>
                                 <div className="border border-[#3B4CA8] px-3 py-1.5 mt-2">
                                     <span className="font-semibold mr-2 text-sm">No:</span>

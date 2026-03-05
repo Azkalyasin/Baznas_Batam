@@ -166,7 +166,7 @@ export function ReportPreview({ filters }: ReportPreviewProps) {
                                 <span className="text-xs">{item.ref_program_kegiatan?.nama || '-'}</span>
                               )}
                               {filters.jenisData === 'kas_keluar_asnaf' && (
-                                <span className="text-xs">{item.ref_asnaf?.nama || '-'}</span>
+                                <span className="text-xs">{item.asnaf?.nama || item.ref_asnaf?.nama || '-'}</span>
                               )}
                               {filters.jenisData === 'kas_keluar_harian' && (
                                 <span className="text-xs">{(item.keterangan || 'Penyaluran Tunai').substring(0, 30)}</span>

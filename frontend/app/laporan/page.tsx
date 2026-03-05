@@ -21,12 +21,14 @@ export default function LaporanPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
+  const getLocalYMD = (date: Date) => {
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+  };
+
   const [filters, setFilters] = useState({
-    tanggalMulai: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      .toISOString()
-      .split('T')[0],
-    tanggalAkhir: new Date().toISOString().split('T')[0],
-    jenisData: 'distribusi',
+    tanggalMulai: getLocalYMD(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+    tanggalAkhir: getLocalYMD(new Date()),
+    jenisData: 'perubahan_dana',
   });
 
   if (!isAuthenticated) {

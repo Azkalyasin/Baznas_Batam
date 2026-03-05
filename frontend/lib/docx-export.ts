@@ -160,8 +160,8 @@ export async function exportLaporanDocx(filters: any) {
                 const sp = item.ref_sub_program?.nama || '';
                 const np = item.ref_nama_program?.nama || '';
                 gName = `${item.ref_program_kegiatan?.kode || ''} | ${np} | ${sp} | ${pk}`;
-            } else if (jenisData === 'kas_keluar_asnaf') {
-                gName = item.ref_asnaf?.nama || 'Tanpa Asnaf';
+            } else if (filters.jenisData === 'kas_keluar_asnaf') {
+              gName = item.asnaf?.nama || item.ref_asnaf?.nama || 'Tanpa Asnaf';
             }
             if (!groups[gName]) groups[gName] = [];
             groups[gName].push(item);

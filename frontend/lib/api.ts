@@ -529,8 +529,12 @@ export const laporanApi = {
     apiFetch<any[]>(`/api/laporan/distribusi-harian${buildQuery(params)}`, { method: 'GET' }),
 
   /** GET /api/laporan/perubahan-dana */
-  getPerubahanDana: (params: { bulan?: string; tahun?: number } = {}) =>
+  getPerubahanDana: (params: { tanggal?: string; bulan?: string; tahun?: number } = {}) =>
     apiFetch<any>(`/api/laporan/perubahan-dana${buildQuery(params)}`, { method: 'GET' }),
+
+  /** GET /api/laporan/perubahan-dana/export — PDF */
+  exportPerubahanDanaUrl: (params: { tanggal?: string; bulan?: string; tahun?: number } = {}) =>
+    `${API_BASE_URL}/api/laporan/perubahan-dana/export${buildQuery(params)}`,
 };
 
 // ─────────────────────────────────────────
