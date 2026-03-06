@@ -81,4 +81,14 @@ router.get('/perubahan-dana',
   laporanController.getPerubahanDana
 );
 
+router.get('/perubahan-dana/export',
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
+  laporanController.exportPerubahanDanaPdf
+);
+
+router.get('/kas-masuk-harian',
+  roleMiddleware(['keuangan', 'pendistribusian', 'penerimaan', 'superadmin']),
+  laporanController.getKasMasukHarian
+);
+
 export default router;
