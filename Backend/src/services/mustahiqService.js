@@ -34,7 +34,7 @@ const generateNrm = async (transaction) => {
 
 // --- GET /api/mustahiq (list + filter + search + pagination) ---
 const getAll = async (query) => {
-  const { q, asnaf_id, kategori_mustahiq_id, status, kelurahan_id, kecamatan_id, page = 1, limit = 10 } = query;
+  const { q, asnaf_id, kategori_mustahiq_id, status, kelurahan_id, kecamatan_id, start_date, end_date, page = 1, limit = 10 } = query;
   const offset = (page - 1) * limit;
 
   const where = {};
@@ -49,6 +49,23 @@ const getAll = async (query) => {
       { nama: { [Op.like]: `%${q}%` } },
       { nik: { [Op.like]: `%${q}%` } },
       { nrm: { [Op.like]: `%${q}%` } }
+    ];
+  }
+
+  if (start_date && end_date) {
+    where[Op.and] = [
+      ...(where[Op.and] || []),
+      db.Sequelize.literal(`COALESCE(mustahiq.registered_date, DATE(mustahiq.created_at)) BETWEEN '${start_date}' AND '${end_date}'`)
+    ];
+  } else if (start_date) {
+    where[Op.and] = [
+      ...(where[Op.and] || []),
+      db.Sequelize.literal(`COALESCE(mustahiq.registered_date, DATE(mustahiq.created_at)) >= '${start_date}'`)
+    ];
+  } else if (end_date) {
+    where[Op.and] = [
+      ...(where[Op.and] || []),
+      db.Sequelize.literal(`COALESCE(mustahiq.registered_date, DATE(mustahiq.created_at)) <= '${end_date}'`)
     ];
   }
 

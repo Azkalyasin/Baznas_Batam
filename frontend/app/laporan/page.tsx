@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { laporanApi } from '@/lib/api';
 import { exportLaporanDocx } from '@/lib/docx-export';
+import { exportMustahiqIndividuExcel, exportMustahiqLembagaExcel } from '@/lib/xlsx-export';
+import { toast } from 'sonner';
 
 type DateMode = 'single' | 'range';
 
@@ -126,6 +128,26 @@ const REPORT_GROUPS: { group: string; reports: ReportType[] }[] = [
         border: 'border-teal-500',
         dateMode: 'range',
       },
+      {
+        value: 'mustahiq_individu',
+        label: 'Mustahiq Perorangan (Excel)',
+        description: 'Export seluruh data mustahiq kategori individu / perorangan',
+        icon: Users,
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        border: 'border-amber-500',
+        dateMode: 'range',
+      },
+      {
+        value: 'mustahiq_lembaga',
+        label: 'Mustahiq Lembaga & Masjid (Excel)',
+        description: 'Export seluruh data mustahiq kategori Lembaga dan Masjid',
+        icon: Users,
+        color: 'text-indigo-600',
+        bg: 'bg-indigo-50',
+        border: 'border-indigo-500',
+        dateMode: 'range',
+      },
     ],
   },
 ];
@@ -174,13 +196,35 @@ export default function LaporanPage() {
       const startParam = isRange ? tanggalMulai : tanggalAkhir;
       const endParam = tanggalAkhir;
 
+      if (popupReport.value === 'mustahiq_individu') {
+        try {
+          await exportMustahiqIndividuExcel(startParam, endParam);
+        } catch (err: any) {
+          toast.error(err.message || 'Tidak ada data mustahiq perorangan di rentang tanggal ini');
+        }
+        setPopupReport(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (popupReport.value === 'mustahiq_lembaga') {
+        try {
+          await exportMustahiqLembagaExcel(startParam, endParam);
+        } catch (err: any) {
+          toast.error(err.message || 'Tidak ada data mustahiq lembaga/masjid di rentang tanggal ini');
+        }
+        setPopupReport(null);
+        setIsLoading(false);
+        return;
+      }
+
       if (['kas_keluar_program', 'kas_keluar_asnaf', 'kas_keluar_harian', 'perubahan_dana', 'kas_masuk_harian', 'arus_kas'].includes(popupReport.value)) {
         let path = '/laporan/print';
         if (popupReport.value === 'perubahan_dana') path = '/laporan/perubahan-dana';
         if (popupReport.value === 'kas_masuk_harian') path = '/laporan/kas-masuk';
         // (Arus Kas currently uses standard /laporan/print API unless defined otherwise in React side.
         // If arus_kas has a specific backend endpoint or frontend page, we should route it proper)
-        
+
         // For perubahan_dana: always pass Jan 1 of the selected year as start
         // so the backend knows the full-year context
         let startForUrl = startParam;

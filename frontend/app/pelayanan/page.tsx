@@ -194,37 +194,37 @@ export default function PelayananPage() {
               </div>
             )}
 
-                {/* Pagination */}
-                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Entries per page:</span>
-                    <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
-                      <SelectTrigger className="w-[70px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Entries per page:</span>
+                <Select value={String(limit)} onValueChange={(v) => { setLimit(Number(v)); setPage(1); }}>
+                  <SelectTrigger className="w-[70px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div className="flex items-center gap-4">
-                    <p className="text-sm text-muted-foreground">
-                      Halaman {page} dari {totalPages}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Halaman {page} dari {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -262,7 +262,7 @@ export default function PelayananPage() {
               <Row label="Kelurahan" value={detailData.kelurahan?.nama ?? refName(kelurahanAll, detailData.kelurahan_id)} />
               <Row label="Asnaf" value={detailData.asnaf?.nama ?? refName(asnafList, detailData.asnaf_id)} />
               <Row label="Kategori" value={detailData.kategoriMustahiq?.nama ?? refName(kategoriList, detailData.kategori_mustahiq_id)} />
-              
+
               <div className="mt-4 pt-4 border-t space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground font-medium uppercase text-xs tracking-wider">Statistik Penyaluran</span>
