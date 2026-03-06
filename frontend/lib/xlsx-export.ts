@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { mustahiqApi } from './api';
+import { mustahiqApi, penerimaanApi, distribusiApi } from './api';
 
 export const exportMustahiqIndividuExcel = async (startDate?: string, endDate?: string) => {
     try {
@@ -33,13 +33,13 @@ export const exportMustahiqIndividuExcel = async (startDate?: string, endDate?: 
 
         const excelData = rows.map((r: any) => ({
             'Tanggal Registrasi': formatDate(r.registered_date),
-            'Nama Lengkap': r.nama || '-',
-            'NIK': r.nik || '-',
+            'Nama Lengkap': r.nama || '',
+            'NIK': r.nik || '',
             'Tanggal Lahir': formatDate(r.tgl_lahir),
-            'Jenis Kelamin': r.jenis_kelamin === 'Laki-laki' ? 'Pria' : r.jenis_kelamin === 'Perempuan' ? 'Wanita' : '-',
-            'Alamat': r.alamat || '-',
-            'No Handphone': r.no_hp || '-',
-            'Keterangan': r.keterangan || '-',
+            'Jenis Kelamin': r.jenis_kelamin === 'Laki-laki' ? 'Pria' : r.jenis_kelamin === 'Perempuan' ? 'Wanita' : '',
+            'Alamat': r.alamat || '',
+            'No Handphone': r.no_hp || '',
+            'Keterangan': r.keterangan || '',
         }));
 
         // Convert mapped data to worksheet
@@ -129,15 +129,15 @@ export const exportMustahiqLembagaExcel = async (startDate?: string, endDate?: s
 
         const excelData = combinedRows.map((r: any) => ({
             'Tanggal Registrasi': formatDate(r.registered_date),
-            'Nama Lembaga': r.nama || '-',
-            'NIK Pemimpin': r.nik || '-',
-            'Jenis Lembaga': r.KategoriMustahiq?.nama || r.ref_kategori_mustahiq?.nama || '-',
-            'Jumlah Anggota': '-',
-            'Alamat': r.alamat || '-',
-            'Telepon': '-',
-            'Handphone': r.no_hp || '-',
-            'Email': '-',
-            'Catatan': r.keterangan || '-',
+            'Nama Lembaga': r.nama || '',
+            'NIK Pemimpin': r.nik || '',
+            'Jenis Lembaga': r.KategoriMustahiq?.nama || r.ref_kategori_mustahiq?.nama || '',
+            'Jumlah Anggota': '',
+            'Alamat': r.alamat || '',
+            'Telepon': '',
+            'Handphone': r.no_hp || '',
+            'Email': '',
+            'Catatan': r.keterangan || '',
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -163,6 +163,191 @@ export const exportMustahiqLembagaExcel = async (startDate?: string, endDate?: s
         XLSX.writeFile(workbook, `Data_Mustahiq_Lembaga_${timestamp}.xlsx`);
     } catch (error) {
         console.error('Error exporting Mustahiq Lembaga to Excel:', error);
+        throw error;
+    }
+};
+
+export const exportPenerimaanZisExcel = async (startDate?: string, endDate?: string) => {
+    try {
+        const payload: any = { limit: 9999, page: 1 };
+        if (startDate) payload.start_date = startDate;
+        if (endDate) payload.end_date = endDate;
+
+        const res = await penerimaanApi.list(payload) as any;
+
+        let rows = [];
+        if (res && res.data && Array.isArray(res.data)) rows = res.data;
+        else if (res && res.rows && Array.isArray(res.rows)) rows = res.rows;
+        else if (Array.isArray(res)) rows = res;
+
+        console.log('[Export Penerimaan ZIS] fetched rows:', rows.length);
+
+        if (!rows || rows.length === 0) {
+            throw new Error('Tidak ada data penerimaan ZIS yang ditemukan di rentang tanggal ini.');
+        }
+
+        const formatDate = (dateString: string) => {
+            if (!dateString) return '-';
+            const d = new Date(dateString);
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        };
+
+        const excelData = rows.map((r: any, index: number) => {
+            const zisNama = (r.zis?.nama || r.Zis?.nama || '').toLowerCase();
+            const jenisZisNama = (r.jenis_zis?.nama || r.JenisZis?.nama || '').toLowerCase();
+            const jumlah = parseFloat(r.jumlah) || 0;
+
+            let zakatMaal = 0;
+            let zakatFitrah = 0;
+            let infak = 0;
+
+            // Zakat (Zakat Maal)
+            if (zisNama.includes('zakat') && jenisZisNama.includes('maal')) {
+                zakatMaal = jumlah;
+            }
+            // Zakat Fitrah
+            else if (zisNama.includes('zakat') && jenisZisNama.includes('fitrah')) {
+                zakatFitrah = jumlah;
+            }
+            // Infak / Sedekah / DSKL / CSR / Hibah / Fidyah
+            else if (zisNama.includes('infak') || zisNama.includes('sedekah') || zisNama.includes('dskl') || zisNama.includes('csr') || zisNama.includes('hibah') || zisNama.includes('fidyah')) {
+                infak = jumlah;
+            }
+
+            return {
+                'No': index + 1,
+                'Tgl Transaksi': formatDate(r.tanggal),
+                'NPWZ': r.Muzakki?.npwz || r.muzakki?.npwz || '',
+                'Nama': r.Muzakki?.nama || r.muzakki?.nama || '',
+                'Zakat': zakatMaal || '',
+                'Zakat Fitrah': zakatFitrah || '',
+                'Infak': infak || '',
+                'Titipan': '', // required to be empty
+                'Keterangan': r.keterangan || '',
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        const colWidths = [
+            { wch: 5 },  // No
+            { wch: 15 }, // Tgl Transaksi
+            { wch: 25 }, // NPWZ
+            { wch: 30 }, // Nama
+            { wch: 20 }, // Zakat
+            { wch: 20 }, // Zakat Fitrah
+            { wch: 20 }, // Infak
+            { wch: 15 }, // Titipan
+            { wch: 40 }, // Keterangan
+        ];
+        worksheet['!cols'] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Penerimaan ZIS');
+
+        const timestamp = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(workbook, `Data_Penerimaan_ZIS_${timestamp}.xlsx`);
+    } catch (error) {
+        console.error('Error exporting Penerimaan ZIS to Excel:', error);
+        throw error;
+    }
+};
+
+export const exportDistribusiExcel = async (startDate?: string, endDate?: string) => {
+    try {
+        const payload: any = { limit: 9999, page: 1, status: 'diterima' };
+        if (startDate) payload.startDate = startDate;
+        if (endDate) payload.endDate = endDate;
+
+        const res = await distribusiApi.list(payload) as any;
+
+        let rows = [];
+        if (res && res.data && Array.isArray(res.data)) rows = res.data;
+        else if (res && res.rows && Array.isArray(res.rows)) rows = res.rows;
+        else if (Array.isArray(res)) rows = res;
+
+        console.log('[Export Pendistribusian] fetched rows:', rows.length);
+
+        if (!rows || rows.length === 0) {
+            throw new Error('Tidak ada data pendistribusian yang ditemukan di rentang tanggal ini.');
+        }
+
+        const formatDate = (dateString: string) => {
+            if (!dateString) return '-';
+            const d = new Date(dateString);
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        };
+
+        const excelData = rows.map((r: any, index: number) => {
+            const asnafNama = (r.asnaf?.nama || r.Asnaf?.nama || '').toLowerCase();
+            const jumlah = parseFloat(r.jumlah) || 0;
+
+            let fakir = 0;
+            let miskin = 0;
+            let riqab = 0;
+            let ghamirin = 0;
+            let muallaf = 0;
+            let fisabilillah = 0;
+            let ibnuSabil = 0;
+
+            if (asnafNama.includes('fakir')) { fakir = jumlah; }
+            else if (asnafNama.includes('miskin')) { miskin = jumlah; }
+            else if (asnafNama.includes('riqob') || asnafNama.includes('riqab')) { riqab = jumlah; }
+            else if (asnafNama.includes('gharimin') || asnafNama.includes('ghamirin')) { ghamirin = jumlah; }
+            else if (asnafNama.includes('mualaf') || asnafNama.includes('muallaf')) { muallaf = jumlah; }
+            else if (asnafNama.includes('fisabilillah') || asnafNama.includes('fisabillillah')) { fisabilillah = jumlah; }
+            else if (asnafNama.includes('ibnu sabil')) { ibnuSabil = jumlah; }
+
+            const nrm = r.nrm || r.Mustahiq?.nrm || r.mustahiq?.nrm || '';
+            const fNama = r.nama_mustahik || r.Mustahiq?.nama || r.mustahiq?.nama || '';
+
+            return {
+                'No': index + 1,
+                'Tanggal': formatDate(r.tanggal),
+                'NRM': nrm,
+                'Nama': fNama,
+                'Penerima Manfaat': r.quantity || 0,
+                'Fakir': fakir || '',
+                'Miskin': miskin || '',
+                'Riqab': riqab || '',
+                'Ghamirin': ghamirin || '',
+                'Muallaf': muallaf || '',
+                'Fisabilillah': fisabilillah || '',
+                'Ibnu Sabil': ibnuSabil || '',
+                'IST': '',
+                'ISTT': '',
+                'Keterangan': r.keterangan || '',
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        const colWidths = [
+            { wch: 5 },  // No
+            { wch: 15 }, // Tanggal
+            { wch: 20 }, // NRM
+            { wch: 30 }, // Nama
+            { wch: 18 }, // Penerima Manfaat
+            { wch: 15 }, // Fakir
+            { wch: 15 }, // Miskin
+            { wch: 15 }, // Riqab
+            { wch: 15 }, // Ghamirin
+            { wch: 15 }, // Muallaf
+            { wch: 15 }, // Fisabilillah
+            { wch: 15 }, // Ibnu Sabil
+            { wch: 10 }, // IST
+            { wch: 10 }, // ISTT
+            { wch: 40 }, // Keterangan
+        ];
+        worksheet['!cols'] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Pendistribusian');
+
+        const timestamp = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(workbook, `Data_Pendistribusian_${timestamp}.xlsx`);
+    } catch (error) {
+        console.error('Error exporting Pendistribusian to Excel:', error);
         throw error;
     }
 };

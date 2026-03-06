@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   { href: '/distribusi', label: 'Distribusi', icon: '📦' },
   { href: '/pengumpulan', label: 'Penerimaan', icon: '💵', roles: ['superadmin', 'pendistribusian', 'keuangan', 'penerimaan'] },
   { href: '/migrasi-excel', label: 'Migrasi Excel', icon: '📁' },
-  { href: '/laporan', label: 'Laporan', icon: '📄' },
+  { href: '/laporan', label: 'Laporan & Export', icon: '📄' },
   {
     label: 'Administrasi',
     icon: '⚙️',

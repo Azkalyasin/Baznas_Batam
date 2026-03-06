@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { laporanApi } from '@/lib/api';
 import { exportLaporanDocx } from '@/lib/docx-export';
-import { exportMustahiqIndividuExcel, exportMustahiqLembagaExcel } from '@/lib/xlsx-export';
+import { exportMustahiqIndividuExcel, exportMustahiqLembagaExcel, exportPenerimaanZisExcel, exportDistribusiExcel } from '@/lib/xlsx-export';
 import { toast } from 'sonner';
 
 type DateMode = 'single' | 'range';
@@ -129,6 +129,26 @@ const REPORT_GROUPS: { group: string; reports: ReportType[] }[] = [
         dateMode: 'range',
       },
       {
+        value: 'penerimaan_zis_excel',
+        label: 'Data Penerimaan ZIS (Excel)',
+        description: 'Export rekap data penerimaan ZIS dengan rincian per kategori dana',
+        icon: FileText,
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-500',
+        dateMode: 'range',
+      },
+      {
+        value: 'distribusi_excel',
+        label: 'Data Pendistribusian (Excel)',
+        description: 'Export seluruh data pendistribusian dengan rincian asnaf',
+        icon: FileText,
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
+        border: 'border-blue-500',
+        dateMode: 'range',
+      },
+      {
         value: 'mustahiq_individu',
         label: 'Mustahiq Perorangan (Excel)',
         description: 'Export seluruh data mustahiq kategori individu / perorangan',
@@ -212,6 +232,28 @@ export default function LaporanPage() {
           await exportMustahiqLembagaExcel(startParam, endParam);
         } catch (err: any) {
           toast.error(err.message || 'Tidak ada data mustahiq lembaga/masjid di rentang tanggal ini');
+        }
+        setPopupReport(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (popupReport.value === 'penerimaan_zis_excel') {
+        try {
+          await exportPenerimaanZisExcel(startParam, endParam);
+        } catch (err: any) {
+          toast.error(err.message || 'Tidak ada data penerimaan ZIS di rentang tanggal ini');
+        }
+        setPopupReport(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (popupReport.value === 'distribusi_excel') {
+        try {
+          await exportDistribusiExcel(startParam, endParam);
+        } catch (err: any) {
+          toast.error(err.message || 'Tidak ada data pendistribusian di rentang tanggal ini');
         }
         setPopupReport(null);
         setIsLoading(false);

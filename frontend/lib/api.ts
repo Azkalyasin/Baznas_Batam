@@ -312,6 +312,8 @@ export interface DistribusiListParams {
   tanggal?: string;
   bulan?: number;
   tahun?: number;
+  startDate?: string;
+  endDate?: string;
   nama_program_id?: number;
   sub_program_id?: number;
   program_kegiatan_id?: number;
