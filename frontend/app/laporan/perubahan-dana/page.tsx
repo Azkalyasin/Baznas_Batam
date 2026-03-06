@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { laporanApi } from '@/lib/api';
 import { Loader2, Printer, Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 function PerubahanDanaContent() {
     const searchParams = useSearchParams();
@@ -53,27 +52,30 @@ function PerubahanDanaContent() {
         fetchData();
     }, [startDate]);
 
-    const handleDownloadPdf = () => {
-        const bulanList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        let tanggal = '';
-        let bulan = '';
-        let tahun = 0;
-
-        if (startDate && startDate.includes('-')) {
-            const parts = startDate.split('-');
-            tahun = parseInt(parts[0]);
-            const monthIdx = parseInt(parts[1]) - 1;
-            bulan = bulanList[monthIdx] || bulanList[new Date().getMonth()];
-            tanggal = parts[2];
-        } else {
-            const date = new Date();
-            tahun = date.getFullYear();
-            bulan = bulanList[date.getMonth()];
-            tanggal = date.getDate().toString().padStart(2, '0');
-        }
-        
-        const url = laporanApi.exportPerubahanDanaUrl({ tanggal, bulan, tahun });
-        window.open(url, '_blank');
+    const handleDownloadPdf = async () => {
+        const element = document.getElementById('pdf-content');
+        if (!element) return;
+        const html2pdf = (await import('html2pdf.js')).default;
+        html2pdf().set({
+            margin: 0,
+            filename: `Laporan-Perubahan-Dana-${periode}.pdf`,
+            image: { type: 'jpeg' as const, quality: 0.98 },
+            html2canvas: { 
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                onclone: (clonedDoc: Document) => {
+                    clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+                    clonedDoc.querySelectorAll('style').forEach(el => {
+                        if (el.textContent?.includes('oklch') || el.textContent?.includes(' lab(')) {
+                            el.remove();
+                        }
+                    });
+                }
+            },
+            jsPDF: { unit: 'mm', format: 'a4' as const, orientation: 'portrait' as const },
+            pagebreak: { mode: 'css' as const, before: '.print-page-break' }
+        } as any).from(element).save();
     };
 
     if (isLoading) {
@@ -147,205 +149,217 @@ function PerubahanDanaContent() {
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 font-sans">
-            <div className="max-w-[210mm] mx-auto mb-4 flex justify-end px-4 print:hidden">
-                <div className="space-x-4">
-                    <Button variant="outline" onClick={handleDownloadPdf}>
-                        <Download className="mr-2 h-4 w-4" /> Download PDF
-                    </Button>
-                    <Button onClick={() => window.print()}>
-                        <Printer className="mr-2 h-4 w-4" /> Cetak
-                    </Button>
-                    <Button variant="outline" onClick={() => window.close()}>Tutup</Button>
+            {/* Standardized Sticky Header */}
+            {/* Standardized Yellow Sticky Header */}
+            <div className="no-print mb-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded flex flex-row items-center justify-between gap-3 sticky top-0 z-50 shadow-sm">
+                <p>
+                    <strong>Laporan Siap.</strong> Anda dapat mencetak atau menyimpan laporan ini.
+                </p>
+                <div className="flex gap-2">
+                    <button onClick={handleDownloadPdf} className="bg-emerald-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <Download className="h-4 w-4 text-white" /> Simpan PDF
+                    </button>
+                    <button onClick={() => window.print()} className="bg-blue-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <Printer className="h-4 w-4" /> Cetak Printer
+                    </button>
+                    <button onClick={() => window.close()} className="bg-white border border-gray-300 font-medium text-gray-700 px-5 py-2.5 rounded shadow-sm hover:bg-gray-50 transition-colors whitespace-nowrap">
+                        Tutup
+                    </button>
                 </div>
             </div>
 
-            {/* PAGE 1: ZAKAT */}
-            <div id="pdf-content-page-1" className="bg-white p-12 shadow-xl mx-auto relative printable-page flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm' }}>
-                <style dangerouslySetInnerHTML={{
-                    __html: `
-                    @page { margin: 0; size: A4 portrait; }
-                    @media print {
-                        body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        .print\\:hidden { display: none !important; }
-                        .printable-page { 
-                            box-shadow: none !important; 
-                            margin: 0 !important; 
-                            width: 210mm !important; 
-                            height: 296mm !important; 
-                            padding: 15mm 20mm !important; 
-                            page-break-after: always;
-                            page-break-inside: avoid;
+            <div id="pdf-content">
+                {/* PAGE 1: ZAKAT */}
+                <div id="pdf-content-page-1" className="bg-white p-12 shadow-xl mx-auto relative printable-page flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm' }}>
+                    <style dangerouslySetInnerHTML={{
+                        __html: `
+                        @page { margin: 0; size: A4 portrait; }
+                        @media print {
+                            body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            .print\\:hidden { display: none !important; }
+                            .printable-page { 
+                                box-shadow: none !important; 
+                                margin: 0 !important; 
+                                width: 210mm !important; 
+                                height: 296mm !important; 
+                                padding: 15mm 20mm !important; 
+                                page-break-after: always;
+                                page-break-inside: avoid;
+                            }
                         }
-                    }
-                ` }} />
+                    ` }} />
 
-                <div>
-                    {renderHeader()}
+                    <div>
+                        {renderHeader()}
 
-                    <div className="pt-2">
-                        <div className="font-bold text-lg mb-4">DANA ZAKAT</div>
+                        <div className="pt-2">
+                            <div className="font-bold text-lg mb-4">DANA ZAKAT</div>
 
-                        <div className="mb-6">
-                            <div className="font-bold mb-2">Penerimaan Dana</div>
-                            <DataRow label="Penerimaan | Zakat | Entitas" acc="4101" curr={current.zakat.penerimaan.entitas} prev={previous.zakat.penerimaan.entitas} pl={4} />
-                            <DataRow label="Penerimaan | Zakat | Individual" acc="4102" curr={current.zakat.penerimaan.individual} prev={previous.zakat.penerimaan.individual} pl={4} />
-                            <DataRow label="Penerimaan | Zakat | Bagi Hasil atas..." acc="4103" curr={0} prev={0} pl={4} />
-                            <DataRow label="Penerimaan | Zakat | Dampak Pengukuran" acc="4104" curr={0} prev={0} pl={4} />
-                            <DataRow label="Penerimaan | Zakat | Hasil Penjualan/Laba" acc="4105" curr={0} prev={0} pl={4} />
-                            <DataRow label="Penerimaan | Zakat | Lainnya" acc="4199" curr={current.zakat.penerimaan.lainnya} prev={previous.zakat.penerimaan.lainnya} pl={4} />
-                            
-                            <div className="mt-2">
-                                <DataRow label="Jumlah Penerimaan BAZNAS" acc="" curr={current.zakat.total_penerimaan} prev={previous.zakat.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
+                            <div className="mb-6">
+                                <div className="font-bold mb-2">Penerimaan Dana</div>
+                                <DataRow label="Penerimaan | Zakat | Entitas" acc="4101" curr={current.zakat.penerimaan.entitas} prev={previous.zakat.penerimaan.entitas} pl={4} />
+                                <DataRow label="Penerimaan | Zakat | Individual" acc="4102" curr={current.zakat.penerimaan.individual} prev={previous.zakat.penerimaan.individual} pl={4} />
+                                <DataRow label="Penerimaan | Zakat | Bagi Hasil atas..." acc="4103" curr={0} prev={0} pl={4} />
+                                <DataRow label="Penerimaan | Zakat | Dampak Pengukuran" acc="4104" curr={0} prev={0} pl={4} />
+                                <DataRow label="Penerimaan | Zakat | Hasil Penjualan/Laba" acc="4105" curr={0} prev={0} pl={4} />
+                                <DataRow label="Penerimaan | Zakat | Lainnya" acc="4199" curr={current.zakat.penerimaan.lainnya} prev={previous.zakat.penerimaan.lainnya} pl={4} />
+                                
+                                <div className="mt-2">
+                                    <DataRow label="Jumlah Penerimaan BAZNAS" acc="" curr={current.zakat.total_penerimaan} prev={previous.zakat.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="font-bold mb-2">Penyaluran Dana</div>
+                                <DataRow label="Penyaluran | Zakat | Amil" acc="5101" curr={current.zakat.penyaluran.amil} prev={previous.zakat.penyaluran.amil} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Fakir" acc="5102" curr={current.zakat.penyaluran.fakir} prev={previous.zakat.penyaluran.fakir} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Miskin" acc="5103" curr={current.zakat.penyaluran.miskin} prev={previous.zakat.penyaluran.miskin} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Riqab" acc="5104" curr={current.zakat.penyaluran.riqob} prev={previous.zakat.penyaluran.riqob} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Gharimin" acc="5105" curr={current.zakat.penyaluran.gharimin} prev={previous.zakat.penyaluran.gharimin} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Muallaf" acc="5106" curr={current.zakat.penyaluran.muallaf} prev={previous.zakat.penyaluran.muallaf} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Sabilillah" acc="5107" curr={current.zakat.penyaluran.fisabilillah} prev={previous.zakat.penyaluran.fisabilillah} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Ibnu Sabil" acc="5108" curr={current.zakat.penyaluran.ibnu_sabil} prev={previous.zakat.penyaluran.ibnu_sabil} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Alokasi Pemanfaatan" acc="5109" curr={0} prev={0} pl={4} />
+                                <DataRow label="Penyaluran | Zakat | Lainnya" acc="5199" curr={current.zakat.penyaluran.lainnya} prev={previous.zakat.penyaluran.lainnya} pl={4} />
+                                
+                                <div className="mt-2">
+                                    <DataRow label="Jumlah Penyaluran" acc="" curr={current.zakat.total_penyaluran} prev={previous.zakat.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-2">
+                                <DataRow label="Surplus (Defisit)" acc="" curr={current.zakat.surplus} prev={previous.zakat.surplus} isBold={true} />
+                                <div className="h-2"></div>
+                                <DataRow label="Saldo Dana Zakat Awal Periode" acc="" curr={current.zakat.saldo_awal} prev={previous.zakat.saldo_awal} isBold={true} />
+                                <div className="h-2"></div>
+                                <div className="mt-1">
+                                    <DataRow label="Saldo Dana Zakat Akhir Periode" acc="" curr={current.zakat.saldo_akhir} prev={previous.zakat.saldo_akhir} isBold={true} topBorder={true} doubleBottomBorder={true} />
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="mb-6">
-                            <div className="font-bold mb-2">Penyaluran Dana</div>
-                            <DataRow label="Penyaluran | Zakat | Amil" acc="5101" curr={current.zakat.penyaluran.amil} prev={previous.zakat.penyaluran.amil} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Fakir" acc="5102" curr={current.zakat.penyaluran.fakir} prev={previous.zakat.penyaluran.fakir} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Miskin" acc="5103" curr={current.zakat.penyaluran.miskin} prev={previous.zakat.penyaluran.miskin} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Riqab" acc="5104" curr={current.zakat.penyaluran.riqob} prev={previous.zakat.penyaluran.riqob} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Gharimin" acc="5105" curr={current.zakat.penyaluran.gharimin} prev={previous.zakat.penyaluran.gharimin} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Muallaf" acc="5106" curr={current.zakat.penyaluran.muallaf} prev={previous.zakat.penyaluran.muallaf} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Sabilillah" acc="5107" curr={current.zakat.penyaluran.fisabilillah} prev={previous.zakat.penyaluran.fisabilillah} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Ibnu Sabil" acc="5108" curr={current.zakat.penyaluran.ibnu_sabil} prev={previous.zakat.penyaluran.ibnu_sabil} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Alokasi Pemanfaatan" acc="5109" curr={0} prev={0} pl={4} />
-                            <DataRow label="Penyaluran | Zakat | Lainnya" acc="5199" curr={current.zakat.penyaluran.lainnya} prev={previous.zakat.penyaluran.lainnya} pl={4} />
-                            
-                            <div className="mt-2">
-                                <DataRow label="Jumlah Penyaluran" acc="" curr={current.zakat.total_penyaluran} prev={previous.zakat.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
-                            </div>
-                        </div>
-
-                        <div className="mt-8 pt-2">
-                            <DataRow label="Surplus (Defisit)" acc="" curr={current.zakat.surplus} prev={previous.zakat.surplus} isBold={true} />
-                            <div className="h-2"></div>
-                            <DataRow label="Saldo Dana Zakat Awal Periode" acc="" curr={current.zakat.saldo_awal} prev={previous.zakat.saldo_awal} isBold={true} />
-                            <div className="h-2"></div>
-                            <div className="mt-1">
-                                <DataRow label="Saldo Dana Zakat Akhir Periode" acc="" curr={current.zakat.saldo_akhir} prev={previous.zakat.saldo_akhir} isBold={true} topBorder={true} doubleBottomBorder={true} />
-                            </div>
+                    <div>
+                        {renderSignatures()}
+                        <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1 relative bottom-0">
+                            Page 1/2
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    {renderSignatures()}
-                    <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1 relative bottom-0">
-                        Page 1/2
+                {/* PAGE BREAK DUMMY ELEMENT FOR BROWSER PRINTING */}
+                <div className="h-4 print:h-0 print-page-break" style={{ pageBreakAfter: 'always' }}></div>
+
+                {/* PAGE 2: INFAK */}
+                <div id="pdf-content-page-2" className="bg-white p-12 shadow-xl mx-auto relative printable-page flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm', pageBreakInside: 'avoid' }}>
+                    <div>
+                        {renderHeader()}
+
+                        <div className="pt-2">
+                            <div className="font-bold text-lg mb-4">DANA INFAK</div>
+                            <div className="mb-6">
+                                <div className="font-bold mb-2">Penerimaan Dana</div>
+                                <DataRow label="Penerimaan | Infak dan Sedekah | Terikat" acc="4201" curr={current.infak.penerimaan.terikat} prev={previous.infak.penerimaan.terikat} pl={4} />
+                                <DataRow label="Penerimaan | Infak dan Sedekah | Tidak" acc="4202" curr={current.infak.penerimaan.tidak_terikat} prev={previous.infak.penerimaan.tidak_terikat} pl={4} />
+                                <DataRow label="Penerimaan | Infak dan Sedekah | Bagi Hasil" acc="4203" curr={current.infak.penerimaan.bagi_hasil} prev={previous.infak.penerimaan.bagi_hasil} pl={4} />
+                                <DataRow label="Penerimaan | Infak dan Sedekah | Dampak" acc="4204" curr={current.infak.penerimaan.dampak} prev={previous.infak.penerimaan.dampak} pl={4} />
+                                <DataRow label="Penerimaan | Infak dan Sedekah | Hasil" acc="4205" curr={current.infak.penerimaan.hasil} prev={previous.infak.penerimaan.hasil} pl={4} />
+                                <DataRow label="Penerimaan | Infak dan Sedekah | Lainnya" acc="4299" curr={current.infak.penerimaan.lainnya} prev={previous.infak.penerimaan.lainnya} pl={4} />
+                                <div className="mt-2">
+                                    <DataRow label="Jumlah Penerimaan" acc="" curr={current.infak.total_penerimaan} prev={previous.infak.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="font-bold mb-2">Penyaluran Dana</div>
+                                <DataRow label="Penyaluran | Infak dan Sedekah | Amil-Infak" acc="5201" curr={current.infak.penyaluran.amil_infak} prev={previous.infak.penyaluran.amil_infak} pl={4} />
+                                <DataRow label="Penyaluran | Infak dan Sedekah | Amil-Sedekah" acc="5202" curr={current.infak.penyaluran.amil_sedekah} prev={previous.infak.penyaluran.amil_sedekah} pl={4} />
+                                <DataRow label="Penyaluran | Infak dan Sedekah | Terikat" acc="5203" curr={current.infak.penyaluran.terikat} prev={previous.infak.penyaluran.terikat} pl={4} />
+                                <DataRow label="Penyaluran | Infak dan Sedekah | Tidak" acc="5204" curr={current.infak.penyaluran.tidak_terikat} prev={previous.infak.penyaluran.tidak_terikat} pl={4} />
+                                <DataRow label="Penyaluran | Infak dan Sedekah | Alokasi" acc="5205" curr={current.infak.penyaluran.alokasi} prev={previous.infak.penyaluran.alokasi} pl={4} />
+                                <DataRow label="Penyaluran | Infak dan Sedekah | Lainnya" acc="5299" curr={current.infak.penyaluran.lainnya} prev={previous.infak.penyaluran.lainnya} pl={4} />
+                                <div className="mt-2">
+                                    <DataRow label="Jumlah Penyaluran" acc="" curr={current.infak.total_penyaluran} prev={previous.infak.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-2">
+                                <DataRow label="Surplus (Defisit)" acc="" curr={current.infak.surplus} prev={previous.infak.surplus} isBold={true} />
+                                <div className="h-2"></div>
+                                <DataRow label="Saldo Dana Infak Awal Periode" acc="" curr={current.infak.saldo_awal} prev={previous.infak.saldo_awal} isBold={true} />
+                                <div className="h-2"></div>
+                                <div className="mt-1">
+                                    <DataRow label="Saldo Dana Infak Akhir Periode" acc="" curr={current.infak.saldo_akhir} prev={previous.infak.saldo_akhir} isBold={true} topBorder={true} doubleBottomBorder={true} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        {renderSignatures()}
+                        <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1 relative bottom-0">
+                            Page 2/3
+                        </div>
+                    </div>
+                </div>
+
+                <div className="h-8 print:h-0 print-page-break" style={{ pageBreakAfter: 'always' }}></div>
+
+                {/* PAGE 3 - DANA AMIL */}
+                <div className="max-w-[210mm] mx-auto bg-white shadow-lg p-12 print:shadow-none print:p-8 mb-4">
+                    <div>
+                        {renderHeader()}
+
+                        <div className="pt-2">
+                            <div className="font-bold text-lg mb-4">DANA AMIL</div>
+
+                            <div className="mb-6">
+                                <div className="font-bold mb-2">Penerimaan Dana</div>
+                                <DataRow label="Penerimaan | Amil | Bagian dari Zakat" acc="4301" curr={current.amil?.penerimaan?.bagian_dari_zakat} prev={previous.amil?.penerimaan?.bagian_dari_zakat} pl={4} />
+                                <DataRow label="Penerimaan | Amil | Bagian dari Infak dan Sedekah" acc="4302" curr={current.amil?.penerimaan?.bagian_dari_infak} prev={previous.amil?.penerimaan?.bagian_dari_infak} pl={4} />
+                                <DataRow label="Penerimaan | Amil | Infak dan Sedekah" acc="4303" curr={current.amil?.penerimaan?.infak_sedekah} prev={previous.amil?.penerimaan?.infak_sedekah} pl={4} />
+                                <DataRow label="Penerimaan | Amil | Bagi Hasil" acc="4304" curr={current.amil?.penerimaan?.bagi_hasil} prev={previous.amil?.penerimaan?.bagi_hasil} pl={4} />
+                                <DataRow label="Penerimaan | Amil | Lainnya" acc="4399" curr={current.amil?.penerimaan?.lainnya} prev={previous.amil?.penerimaan?.lainnya} pl={4} />
+                                <div className="mt-2">
+                                    <DataRow label="Jumlah Penerimaan" acc="" curr={current.amil?.total_penerimaan} prev={previous.amil?.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="font-bold mb-2">Penyaluran Dana</div>
+                                <DataRow label="Penyaluran | Amil | Belanja Pegawai" acc="5301" curr={current.amil?.penyaluran?.belanja_pegawai} prev={previous.amil?.penyaluran?.belanja_pegawai} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Belanja Kegiatan" acc="5302" curr={current.amil?.penyaluran?.belanja_kegiatan} prev={previous.amil?.penyaluran?.belanja_kegiatan} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Belanja Perjalanan Dinas" acc="5303" curr={current.amil?.penyaluran?.perjalanan_dinas} prev={previous.amil?.penyaluran?.perjalanan_dinas} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Belanja Administrasi" acc="5304" curr={current.amil?.penyaluran?.belanja_administrasi} prev={previous.amil?.penyaluran?.belanja_administrasi} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Beban Pengadaan" acc="5305" curr={current.amil?.penyaluran?.beban_pengadaan} prev={previous.amil?.penyaluran?.beban_pengadaan} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Beban Penyusutan" acc="5306" curr={current.amil?.penyaluran?.beban_penyusutan} prev={previous.amil?.penyaluran?.beban_penyusutan} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Belanja Jasa Pihak Ketiga" acc="5307" curr={current.amil?.penyaluran?.jasa_pihak_ketiga} prev={previous.amil?.penyaluran?.jasa_pihak_ketiga} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Operasional UPZ" acc="5308" curr={current.amil?.penyaluran?.operasional_upz} prev={previous.amil?.penyaluran?.operasional_upz} pl={4} />
+                                <DataRow label="Penyaluran | Amil | Lainnya" acc="5399" curr={current.amil?.penyaluran?.lainnya} prev={previous.amil?.penyaluran?.lainnya} pl={4} />
+                                <div className="mt-2">
+                                    <DataRow label="Jumlah Penyaluran" acc="" curr={current.amil?.total_penyaluran} prev={previous.amil?.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-2">
+                                <DataRow label="Surplus (Defisit)" acc="" curr={current.amil?.surplus} prev={previous.amil?.surplus} isBold={true} />
+                                <div className="h-2"></div>
+                                <DataRow label="Saldo Dana Amil Awal Periode" acc="" curr={current.amil?.saldo_awal} prev={previous.amil?.saldo_awal} isBold={true} />
+                                <div className="h-2"></div>
+                                <div className="mt-1">
+                                    <DataRow label="Saldo Dana Amil Akhir Periode" acc="" curr={current.amil?.saldo_akhir} prev={previous.amil?.saldo_akhir} isBold={true} topBorder={true} doubleBottomBorder={true} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {renderSignatures()}
+                        <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1">
+                            Page 3/3
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* PAGE BREAK DUMMY ELEMENT FOR BROWSER PRINTING */}
-            <div className="h-4 print:h-0" style={{ pageBreakAfter: 'always' }}></div>
-
-            {/* PAGE 2: INFAK */}
-            <div id="pdf-content-page-2" className="bg-white p-12 shadow-xl mx-auto relative printable-page flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm', pageBreakInside: 'avoid' }}>
-                <div>
-                    {renderHeader()}
-
-                    <div className="pt-2">
-                        <div className="font-bold text-lg mb-4">DANA INFAK</div>
-                        <div className="mb-6">
-                            <div className="font-bold mb-2">Penerimaan Dana</div>
-                            <DataRow label="Penerimaan | Infak dan Sedekah | Terikat" acc="4201" curr={current.infak.penerimaan.terikat} prev={previous.infak.penerimaan.terikat} pl={4} />
-                            <DataRow label="Penerimaan | Infak dan Sedekah | Tidak" acc="4202" curr={current.infak.penerimaan.tidak_terikat} prev={previous.infak.penerimaan.tidak_terikat} pl={4} />
-                            <DataRow label="Penerimaan | Infak dan Sedekah | Bagi Hasil" acc="4203" curr={current.infak.penerimaan.bagi_hasil} prev={previous.infak.penerimaan.bagi_hasil} pl={4} />
-                            <DataRow label="Penerimaan | Infak dan Sedekah | Dampak" acc="4204" curr={current.infak.penerimaan.dampak} prev={previous.infak.penerimaan.dampak} pl={4} />
-                            <DataRow label="Penerimaan | Infak dan Sedekah | Hasil" acc="4205" curr={current.infak.penerimaan.hasil} prev={previous.infak.penerimaan.hasil} pl={4} />
-                            <DataRow label="Penerimaan | Infak dan Sedekah | Lainnya" acc="4299" curr={current.infak.penerimaan.lainnya} prev={previous.infak.penerimaan.lainnya} pl={4} />
-                            <div className="mt-2">
-                                <DataRow label="Jumlah Penerimaan" acc="" curr={current.infak.total_penerimaan} prev={previous.infak.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
-                            </div>
-                        </div>
-
-                        <div className="mb-6">
-                            <div className="font-bold mb-2">Penyaluran Dana</div>
-                            <DataRow label="Penyaluran | Infak dan Sedekah | Amil-Infak" acc="5201" curr={current.infak.penyaluran.amil_infak} prev={previous.infak.penyaluran.amil_infak} pl={4} />
-                            <DataRow label="Penyaluran | Infak dan Sedekah | Amil-Sedekah" acc="5202" curr={current.infak.penyaluran.amil_sedekah} prev={previous.infak.penyaluran.amil_sedekah} pl={4} />
-                            <DataRow label="Penyaluran | Infak dan Sedekah | Terikat" acc="5203" curr={current.infak.penyaluran.terikat} prev={previous.infak.penyaluran.terikat} pl={4} />
-                            <DataRow label="Penyaluran | Infak dan Sedekah | Tidak" acc="5204" curr={current.infak.penyaluran.tidak_terikat} prev={previous.infak.penyaluran.tidak_terikat} pl={4} />
-                            <DataRow label="Penyaluran | Infak dan Sedekah | Alokasi" acc="5205" curr={current.infak.penyaluran.alokasi} prev={previous.infak.penyaluran.alokasi} pl={4} />
-                            <DataRow label="Penyaluran | Infak dan Sedekah | Lainnya" acc="5299" curr={current.infak.penyaluran.lainnya} prev={previous.infak.penyaluran.lainnya} pl={4} />
-                            <div className="mt-2">
-                                <DataRow label="Jumlah Penyaluran" acc="" curr={current.infak.total_penyaluran} prev={previous.infak.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
-                            </div>
-                        </div>
-
-                        <div className="mt-8 pt-2">
-                            <DataRow label="Surplus (Defisit)" acc="" curr={current.infak.surplus} prev={previous.infak.surplus} isBold={true} />
-                            <div className="h-2"></div>
-                            <DataRow label="Saldo Dana Infak Awal Periode" acc="" curr={current.infak.saldo_awal} prev={previous.infak.saldo_awal} isBold={true} />
-                            <div className="h-2"></div>
-                            <div className="mt-1">
-                                <DataRow label="Saldo Dana Infak Akhir Periode" acc="" curr={current.infak.saldo_akhir} prev={previous.infak.saldo_akhir} isBold={true} topBorder={true} doubleBottomBorder={true} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    {renderSignatures()}
-                    <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1 relative bottom-0">
-                        Page 2/3
-                    </div>
-                </div>
-            </div>
-
-            {/* PAGE 3 - DANA AMIL */}
-            <div className="max-w-[210mm] mx-auto bg-white shadow-lg p-12 print:shadow-none print:p-8 mb-4">
-                <div>
-                    {renderHeader()}
-
-                    <div className="pt-2">
-                        <div className="font-bold text-lg mb-4">DANA AMIL</div>
-
-                        <div className="mb-6">
-                            <div className="font-bold mb-2">Penerimaan Dana</div>
-                            <DataRow label="Penerimaan | Amil | Bagian dari Zakat" acc="4301" curr={current.amil?.penerimaan?.bagian_dari_zakat} prev={previous.amil?.penerimaan?.bagian_dari_zakat} pl={4} />
-                            <DataRow label="Penerimaan | Amil | Bagian dari Infak dan Sedekah" acc="4302" curr={current.amil?.penerimaan?.bagian_dari_infak} prev={previous.amil?.penerimaan?.bagian_dari_infak} pl={4} />
-                            <DataRow label="Penerimaan | Amil | Infak dan Sedekah" acc="4303" curr={current.amil?.penerimaan?.infak_sedekah} prev={previous.amil?.penerimaan?.infak_sedekah} pl={4} />
-                            <DataRow label="Penerimaan | Amil | Bagi Hasil" acc="4304" curr={current.amil?.penerimaan?.bagi_hasil} prev={previous.amil?.penerimaan?.bagi_hasil} pl={4} />
-                            <DataRow label="Penerimaan | Amil | Lainnya" acc="4399" curr={current.amil?.penerimaan?.lainnya} prev={previous.amil?.penerimaan?.lainnya} pl={4} />
-                            <div className="mt-2">
-                                <DataRow label="Jumlah Penerimaan" acc="" curr={current.amil?.total_penerimaan} prev={previous.amil?.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
-                            </div>
-                        </div>
-
-                        <div className="mb-6">
-                            <div className="font-bold mb-2">Penyaluran Dana</div>
-                            <DataRow label="Penyaluran | Amil | Belanja Pegawai" acc="5301" curr={current.amil?.penyaluran?.belanja_pegawai} prev={previous.amil?.penyaluran?.belanja_pegawai} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Belanja Kegiatan" acc="5302" curr={current.amil?.penyaluran?.belanja_kegiatan} prev={previous.amil?.penyaluran?.belanja_kegiatan} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Belanja Perjalanan Dinas" acc="5303" curr={current.amil?.penyaluran?.perjalanan_dinas} prev={previous.amil?.penyaluran?.perjalanan_dinas} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Belanja Administrasi" acc="5304" curr={current.amil?.penyaluran?.belanja_administrasi} prev={previous.amil?.penyaluran?.belanja_administrasi} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Beban Pengadaan" acc="5305" curr={current.amil?.penyaluran?.beban_pengadaan} prev={previous.amil?.penyaluran?.beban_pengadaan} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Beban Penyusutan" acc="5306" curr={current.amil?.penyaluran?.beban_penyusutan} prev={previous.amil?.penyaluran?.beban_penyusutan} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Belanja Jasa Pihak Ketiga" acc="5307" curr={current.amil?.penyaluran?.jasa_pihak_ketiga} prev={previous.amil?.penyaluran?.jasa_pihak_ketiga} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Operasional UPZ" acc="5308" curr={current.amil?.penyaluran?.operasional_upz} prev={previous.amil?.penyaluran?.operasional_upz} pl={4} />
-                            <DataRow label="Penyaluran | Amil | Lainnya" acc="5399" curr={current.amil?.penyaluran?.lainnya} prev={previous.amil?.penyaluran?.lainnya} pl={4} />
-                            <div className="mt-2">
-                                <DataRow label="Jumlah Penyaluran" acc="" curr={current.amil?.total_penyaluran} prev={previous.amil?.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
-                            </div>
-                        </div>
-
-                        <div className="mt-8 pt-2">
-                            <DataRow label="Surplus (Defisit)" acc="" curr={current.amil?.surplus} prev={previous.amil?.surplus} isBold={true} />
-                            <div className="h-2"></div>
-                            <DataRow label="Saldo Dana Amil Awal Periode" acc="" curr={current.amil?.saldo_awal} prev={previous.amil?.saldo_awal} isBold={true} />
-                            <div className="h-2"></div>
-                            <div className="mt-1">
-                                <DataRow label="Saldo Dana Amil Akhir Periode" acc="" curr={current.amil?.saldo_akhir} prev={previous.amil?.saldo_akhir} isBold={true} topBorder={true} doubleBottomBorder={true} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {renderSignatures()}
-                    <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1">
-                        Page 3/3
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }

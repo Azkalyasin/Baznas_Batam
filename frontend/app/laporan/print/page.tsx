@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getAuthToken, laporanApi } from '@/lib/api';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download, Printer } from 'lucide-react';
 
 function LaporanPrintContent() {
     const searchParams = useSearchParams();
@@ -58,9 +58,22 @@ function LaporanPrintContent() {
             margin: 15,
             filename: `Laporan-Kas-Keluar-${jenisData}-${endDate}.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { scale: 2 },
+            html2canvas: { 
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                onclone: (clonedDoc: Document) => {
+                    // Remove stylesheets containing oklch/lab that html2canvas can't parse
+                    clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+                    clonedDoc.querySelectorAll('style').forEach(el => {
+                        if (el.textContent?.includes('oklch') || el.textContent?.includes(' lab(')) {
+                            el.remove();
+                        }
+                    });
+                }
+            },
             jsPDF: { unit: 'mm', format: 'a4' as const, orientation: 'portrait' as const },
-            pagebreak: { mode: 'css', before: '.print-page-break' }
+            pagebreak: { mode: 'css' as const, before: '.print-page-break' }
         };
 
         html2pdf().set(opt).from(element).save();
@@ -149,16 +162,20 @@ function LaporanPrintContent() {
                 .uppercase { text-transform: uppercase; }
             `}} />
 
-            <div className="no-print mb-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded flex flex-row items-center justify-between gap-3 sticky top-0 z-50">
+            {/* Standardized Sticky Header */}
+            <div className="no-print mb-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded flex flex-row items-center justify-between gap-3 sticky top-0 z-50 shadow-sm">
                 <p>
-                    <strong>Tampilan Laporan Siap.</strong> Anda dapat mencetaknya langsung ke Printer fisik, atau mengunduhnya sebagai file PDF langsung.
+                    <strong>Laporan Siap.</strong> Anda dapat mencetak atau menyimpan laporan ini.
                 </p>
                 <div className="flex gap-2">
-                    <button onClick={handleDownloadPdf} className="bg-red-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-red-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                        Download PDF
+                    <button onClick={handleDownloadPdf} className="bg-emerald-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <Download className="h-4 w-4 text-white" /> Simpan PDF
                     </button>
                     <button onClick={() => window.print()} className="bg-blue-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                        Cetak Printer
+                        <Printer className="h-4 w-4" /> Cetak Printer
+                    </button>
+                    <button onClick={() => window.close()} className="bg-white border border-gray-300 font-medium text-gray-700 px-5 py-2.5 rounded shadow-sm hover:bg-gray-50 transition-colors whitespace-nowrap">
+                        Tutup
                     </button>
                 </div>
             </div>
