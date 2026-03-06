@@ -481,6 +481,8 @@ export interface LaporanParams {
   bulan?: number;
   tahun?: number;
   tanggal?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export const laporanApi = {
@@ -535,6 +537,10 @@ export const laporanApi = {
   /** GET /api/laporan/perubahan-dana/export — PDF */
   exportPerubahanDanaUrl: (params: { tanggal?: string; bulan?: string; tahun?: number } = {}) =>
     `${API_BASE_URL}/api/laporan/perubahan-dana/export${buildQuery(params)}`,
+
+  /** GET /api/laporan/kas-masuk-harian */
+  getKasMasukHarian: (params: { tanggal?: string } = {}) =>
+    apiFetch<any>(`/api/laporan/kas-masuk-harian${buildQuery(params)}`, { method: 'GET' }),
 };
 
 // ─────────────────────────────────────────

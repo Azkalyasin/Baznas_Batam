@@ -459,6 +459,79 @@ const getPerubahanDana = async (query) => {
 };
 
 
+const getKasMasukHarian = async (query) => {
+  const { tanggal } = query;
+  const targetDate = tanggal || new Date().toISOString().slice(0, 10);
+
+  const rows = await db.query(`
+    SELECT
+      p.id,
+      p.tanggal,
+      p.npwz,
+      p.nama_muzakki,
+      p.jumlah,
+      p.zis_id,
+      vp.nama as via_nama,
+      p.via_id,
+      z.nama as jenis_zis_nama
+    FROM penerimaan p
+    LEFT JOIN ref_via_penerimaan vp ON p.via_id = vp.id
+    LEFT JOIN ref_zis z ON p.zis_id = z.id
+    WHERE p.tanggal = :targetDate
+    ORDER BY p.id ASC
+  `, { replacements: { targetDate }, type: db.QueryTypes.SELECT });
+
+  // Format no_trans from tanggal + id: dd/mm/yy/km/{zis_id}/{id padded}
+  const d = new Date(targetDate);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+
+  const items = rows.map((r, idx) => {
+    const isDonasi = [9, 10].includes(Number(r.zis_id));
+    return {
+      no: idx + 1,
+      npwz: r.npwz || '-',
+      nama: r.nama_muzakki || '-',
+      donasi: isDonasi ? parseFloat(r.jumlah || 0) : 0,
+      non_donasi: !isDonasi ? parseFloat(r.jumlah || 0) : 0,
+      via: r.via_nama || '-',
+      via_id: r.via_id
+    };
+  });
+
+  // Summary by via — match by name (case-insensitive)
+  const viaNama = (r) => (r.via_nama || '').toLowerCase();
+  
+  // Tunai: matching "cash" or "tunai"
+  const tunai = rows.filter(r => viaNama(r).includes('cash') || viaNama(r).includes('tunai')).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);
+  
+  // Bank: matching "bank"
+  const bank  = rows.filter(r => viaNama(r).includes('bank')).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);
+  
+  // Lain: everything else (including "kantor digital" etc.)
+  const lain  = rows.filter(r => {
+    const name = viaNama(r);
+    return !name.includes('cash') && !name.includes('tunai') && !name.includes('bank');
+  }).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);
+  const total = tunai + bank + lain;
+
+  // Day name in Indonesian
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const dayName = dayNames[d.getDay()];
+  const dateLabel = `Hari ${dayName} Tanggal ${dd}/${mm}/${yy.length === 2 ? '20' + yy : yy}`;
+  const signatureDate = `${dd} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+
+  return {
+    tanggal: targetDate,
+    dateLabel,
+    signatureDate,
+    items,
+    summary: { tunai, bank, lain, total }
+  };
+};
+
 export default {
   getArusKas,
   getNeraca,
@@ -467,5 +540,6 @@ export default {
   getDistribusiByProgram,
   getDistribusiByAsnaf,
   getDistribusiHarian,
-  getPerubahanDana
+  getPerubahanDana,
+  getKasMasukHarian
 };

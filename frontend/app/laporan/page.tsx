@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertCircle, Loader2, Printer, X,
-  FileText, BarChart2, TrendingUp, CalendarDays, Users, BookOpen
+  FileText, BarChart2, TrendingUp, CalendarDays, Users, BookOpen, Wallet
 } from 'lucide-react';
+import { laporanApi } from '@/lib/api';
 
 type DateMode = 'single' | 'range';
 
@@ -41,6 +42,17 @@ const REPORT_GROUPS: { group: string; reports: ReportType[] }[] = [
         border: 'border-emerald-500',
         dateMode: 'single',
         dateLabel: 'Per Tanggal',
+      },
+      {
+        value: 'kas_masuk_harian',
+        label: 'Kas Masuk Harian',
+        description: 'Laporan penerimaan (kas masuk) pada satu tanggal tertentu',
+        icon: Wallet,
+        color: 'text-green-600',
+        bg: 'bg-green-50',
+        border: 'border-green-500',
+        dateMode: 'single' as DateMode,
+        dateLabel: 'Tanggal',
       },
     ],
   },
@@ -151,9 +163,25 @@ export default function LaporanPage() {
       const startParam = isRange ? tanggalMulai : tanggalAkhir;
       const endParam = tanggalAkhir;
 
-      if (['kas_keluar_program', 'kas_keluar_asnaf', 'kas_keluar_harian', 'perubahan_dana'].includes(popupReport.value)) {
-        const path = popupReport.value === 'perubahan_dana' ? '/laporan/perubahan-dana' : '/laporan/print';
-        const url = `${path}?start_date=${startParam}&end_date=${endParam}&jenis_data=${popupReport.value}`;
+      if (['kas_keluar_program', 'kas_keluar_asnaf', 'kas_keluar_harian', 'perubahan_dana', 'kas_masuk_harian', 'neraca', 'arus_kas'].includes(popupReport.value)) {
+        let path = '/laporan/print';
+        if (popupReport.value === 'perubahan_dana') path = '/laporan/perubahan-dana';
+        if (popupReport.value === 'kas_masuk_harian') path = '/laporan/kas-masuk';
+        
+        let url = `${path}?start_date=${startParam}&end_date=${endParam}&jenis_data=${popupReport.value}`;
+        
+        // Use direct backend PDF URL for reports that don't have a frontend preview page yet
+        if (popupReport.value === 'neraca') {
+            url = laporanApi.exportNeracaUrl({ 
+                tanggal: endParam 
+            });
+        } else if (popupReport.value === 'arus_kas') {
+            url = laporanApi.exportArusKasUrl({ 
+                start_date: startParam, 
+                end_date: endParam 
+            });
+        }
+
         window.open(url, '_blank');
         setPopupReport(null);
         setIsLoading(false);
