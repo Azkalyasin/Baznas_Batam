@@ -65,7 +65,7 @@ export default function DistribusiPage() {
     const currentYear = new Date().getFullYear();
     dashboardApi.getUtama({ tahun: currentYear }).then((res: any) => {
       if (res.success) setDashboardData(res.data);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   // Load kategori mustahiq ref for filter
@@ -410,8 +410,8 @@ export default function DistribusiPage() {
             {/* Total — aligned under Jml. Penyaluran column */}
             {!isLoading && list.length > 0 && (
               <div className="border-t mt-2 pt-2 flex justify-end pr-[124px]">
-                <span className="text-xs font-bold uppercase text-muted-foreground mr-3">Total:</span>
-                <span className="text-xs font-bold text-primary">Rp {Number(totalJumlah).toLocaleString('id-ID')}</span>
+                <span className="text-xs font-bold uppercase text-muted-foreground mr-3">Total di Halaman Ini:</span>
+                <span className="text-xs font-bold text-primary">Rp {Number(list.reduce((sum: number, item: any) => sum + (item.status === 'diterima' ? Number(item.jumlah || 0) : 0), 0)).toLocaleString('id-ID')}</span>
               </div>
             )}
           </CardContent>

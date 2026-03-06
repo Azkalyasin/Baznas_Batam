@@ -316,8 +316,8 @@ export default function PengumpulanPage() {
             {/* Total — aligned flush-right under Jumlah column */}
             {!isLoading && list.length > 0 && (
               <div className="border-t mt-2 pt-2 flex justify-end pr-[72px]">
-                <span className="text-xs font-bold uppercase text-muted-foreground mr-3">Total:</span>
-                <span className="text-xs font-bold text-primary">Rp {Number(totalJumlah).toLocaleString('id-ID')}</span>
+                <span className="text-xs font-bold uppercase text-muted-foreground mr-3">Total di Halaman Ini:</span>
+                <span className="text-xs font-bold text-primary">Rp {Number(list.reduce((sum: number, item: any) => sum + Number(item.jumlah || 0), 0)).toLocaleString('id-ID')}</span>
               </div>
             )}
           </CardContent>
