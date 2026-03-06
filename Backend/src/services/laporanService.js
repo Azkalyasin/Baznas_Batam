@@ -4,7 +4,7 @@ import Muzakki from '../models/muzakkiModel.js';
 import Mustahiq from '../models/mustahiqModel.js';
 import { Op } from 'sequelize';
 import db from '../config/database.js';
-import { Asnaf, NamaProgram, SubProgram, ProgramKegiatan, NamaEntitas, JenisZis, Zis, Infak } from '../models/ref/index.js';
+import { Asnaf, NamaProgram, SubProgram, ProgramKegiatan, NamaEntitas, JenisZis, Zis, Infak, JenisZisDistribusi } from '../models/ref/index.js';
 
 const getArusKas = async (query) => {
   const tahun = parseInt(query.tahun) || new Date().getFullYear();
@@ -180,7 +180,7 @@ const getRekapTahunan = async (query) => {
 const getDistribusiByProgram = async (query) => {
   const { start_date, end_date, jenis_zis } = query;
   const where = { status: 'diterima' };
-  
+
   if (start_date && end_date) {
     where.tanggal = { [Op.between]: [start_date, end_date] };
   } else if (start_date) {
@@ -215,7 +215,7 @@ const getDistribusiByProgram = async (query) => {
 const getDistribusiByAsnaf = async (query) => {
   const { start_date, end_date, jenis_zis } = query;
   const where = { status: 'diterima' };
-  
+
   if (start_date && end_date) {
     where.tanggal = { [Op.between]: [start_date, end_date] };
   } else if (start_date) {
@@ -246,7 +246,7 @@ const getDistribusiByAsnaf = async (query) => {
 const getDistribusiHarian = async (query) => {
   const { start_date, end_date, jenis_zis } = query;
   const where = { status: 'diterima' };
-  
+
   if (start_date && end_date) {
     where.tanggal = { [Op.between]: [start_date, end_date] };
   } else if (start_date) {
@@ -274,63 +274,88 @@ const getDistribusiHarian = async (query) => {
 
 
 const getPerubahanDana = async (query) => {
-  let { bulan, tahun } = query;
+  let { bulan, tahun, tanggal } = query;
   tahun = parseInt(tahun) || new Date().getFullYear();
-  
+
   const bulanList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-  
+
+  // Dynamically fetch reference IDs to avoid hardcoding during migrations
+  const [refZisZakat, refZisInfak, refDistZakat, refDistInfakTerikat, refDistInfakTidakTerikat] = await Promise.all([
+    Zis.findOne({ where: { nama: 'Zakat' } }),
+    Zis.findOne({ where: { nama: 'Infak/Sedekah' } }),
+    JenisZisDistribusi.findOne({ where: { nama: 'Zakat' } }),
+    JenisZisDistribusi.findOne({ where: { nama: 'Infak Terikat' } }),
+    JenisZisDistribusi.findOne({ where: { nama: 'Infak Tidak Terikat' } })
+  ]);
+
+  const ZIS_ZAKAT_ID = refZisZakat?.id || 3;
+  const ZIS_INFAK_ID = refZisInfak?.id || 4;
+  const DIST_ZAKAT_ID = refDistZakat?.id || 3;
+  const DIST_INFAK_TERIKAT_ID = refDistInfakTerikat?.id || 4;
+  const DIST_INFAK_TIDAK_TERIKAT_ID = refDistInfakTidakTerikat?.id || 5;
+
+  // Determine cutoff dates
+  // tanggal = YYYY-MM-DD end date sent from frontend
+  const endDate = tanggal || `${tahun}-12-31`;
+  const startDateCurrent = `${tahun}-01-01`;
+  const prevTahun = tahun - 1;
+  const startDatePrev = `${prevTahun}-01-01`;
+  const endDatePrev = `${prevTahun}-12-31`;
+
   if (!bulan) {
-    bulan = bulanList[new Date().getMonth()];
+    const d = new Date(endDate + 'T00:00:00');
+    bulan = bulanList[d.getMonth()];
   } else {
     const b = bulan.toLowerCase();
     const idx = bulanList.findIndex(m => m.toLowerCase() === b);
     if (idx !== -1) bulan = bulanList[idx];
   }
 
-  const bulanIdx = bulanList.indexOf(bulan) + 1;
+  console.log(`[getPerubahanDana] tahun=${tahun}, endDate=${endDate}, startDateCurrent=${startDateCurrent}`);
 
-  console.log(`[getPerubahanDana] Params: bulan=${bulan}, tahun=${tahun}, bulanIdx=${bulanIdx}`);
+  const fetchYearData = async (targetStartDate, targetEndDate) => {
+    const dateWhere = { tanggal: { [Op.between]: [targetStartDate, targetEndDate] } };
+    const distDateWhere = { tanggal: { [Op.between]: [targetStartDate, targetEndDate] } };
 
-  const fetchYearData = async (targetTahun) => {
     const zakatIn = await Penerimaan.findAll({
       attributes: ['jenis_muzakki_id', [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: { tahun: targetTahun, bulan, zis_id: 9 },
+      where: { ...dateWhere, zis_id: ZIS_ZAKAT_ID },
       group: ['jenis_muzakki_id']
     });
 
     const zakatOut = await Distribusi.findAll({
       attributes: ['asnaf_id', [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: { tahun: targetTahun, bulan, status: 'diterima', jenis_zis_distribusi_id: 8 },
+      where: { ...distDateWhere, status: 'diterima', jenis_zis_distribusi_id: DIST_ZAKAT_ID },
       group: ['asnaf_id']
     });
 
     const infakIn = await Penerimaan.findAll({
       attributes: ['jenis_muzakki_id', [db.fn('SUM', db.col('jumlah')), 'total']],
-      where: { tahun: targetTahun, bulan, zis_id: 10 },
+      where: { ...dateWhere, zis_id: ZIS_INFAK_ID },
       group: ['jenis_muzakki_id']
     });
 
     const infakOut = await Distribusi.findAll({
       attributes: ['jenis_zis_distribusi_id', [db.fn('SUM', db.col('jumlah')), 'total']],
       where: {
-        tahun: targetTahun, bulan, status: 'diterima',
-        jenis_zis_distribusi_id: { [Op.in]: [9, 10] }
+        ...distDateWhere, status: 'diterima',
+        jenis_zis_distribusi_id: { [Op.in]: [DIST_INFAK_TERIKAT_ID, DIST_INFAK_TIDAK_TERIKAT_ID] }
       },
       group: ['jenis_zis_distribusi_id']
     });
 
     const saldoAwalZakatRes = await db.query(`
       SELECT 
-        (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE zis_id = 9 AND (tahun < :targetTahun OR (tahun = :targetTahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx))) as in_all,
-        (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE jenis_zis_distribusi_id = 8 AND status = 'diterima' AND (tahun < :targetTahun OR (tahun = :targetTahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx))) as out_all
-    `, { replacements: { targetTahun, bulanIdx }, type: db.QueryTypes.SELECT });
+        (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE zis_id = :zisZakat AND tanggal < :startDate) as in_all,
+        (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE jenis_zis_distribusi_id = :distZakat AND status = 'diterima' AND tanggal < :startDate) as out_all
+    `, { replacements: { startDate: targetStartDate, zisZakat: ZIS_ZAKAT_ID, distZakat: DIST_ZAKAT_ID }, type: db.QueryTypes.SELECT });
     const saldo_awal_zakat = (saldoAwalZakatRes[0].in_all || 0) - (saldoAwalZakatRes[0].out_all || 0);
 
     const saldoAwalInfakRes = await db.query(`
       SELECT 
-        (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE zis_id = 10 AND (tahun < :targetTahun OR (tahun = :targetTahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx))) as in_all,
-        (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE jenis_zis_distribusi_id IN (9, 10) AND status = 'diterima' AND (tahun < :targetTahun OR (tahun = :targetTahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx))) as out_all
-    `, { replacements: { targetTahun, bulanIdx }, type: db.QueryTypes.SELECT });
+        (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE zis_id = :zisInfak AND tanggal < :startDate) as in_all,
+        (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE jenis_zis_distribusi_id IN (:distInfakTerikat, :distInfakTidak) AND status = 'diterima' AND tanggal < :startDate) as out_all
+    `, { replacements: { startDate: targetStartDate, zisInfak: ZIS_INFAK_ID, distInfakTerikat: DIST_INFAK_TERIKAT_ID, distInfakTidak: DIST_INFAK_TIDAK_TERIKAT_ID }, type: db.QueryTypes.SELECT });
     const saldo_awal_infak = (saldoAwalInfakRes[0].in_all || 0) - (saldoAwalInfakRes[0].out_all || 0);
 
     const mapPenerimaan = (arr) => ({
@@ -352,7 +377,7 @@ const getPerubahanDana = async (query) => {
       muallaf: zakatOut.find(i => i.asnaf_id === 4)?.get('total') || 0,
       fisabilillah: zakatOut.find(i => i.asnaf_id === 7)?.get('total') || 0,
       ibnu_sabil: zakatOut.find(i => i.asnaf_id === 8)?.get('total') || 0,
-      lainnya: zakatOut.filter(i => ![1,2,3,4,5,6,7,8].includes(i.asnaf_id)).reduce((s, i) => s + parseFloat(i.get('total') || 0), 0)
+      lainnya: zakatOut.filter(i => ![1, 2, 3, 4, 5, 6, 7, 8].includes(i.asnaf_id)).reduce((s, i) => s + parseFloat(i.get('total') || 0), 0)
     };
 
     const totalZakatOut = Object.values(mappedZakatOut).reduce((s, v) => s + parseFloat(v || 0), 0);
@@ -368,8 +393,8 @@ const getPerubahanDana = async (query) => {
     const totalInfakIn = Object.values(mappedInfakIn).reduce((s, v) => s + parseFloat(v || 0), 0);
 
     // Raw terikat penyaluran from DB
-    const rawTerikat = parseFloat(infakOut.find(i => i.jenis_zis_distribusi_id === 9)?.get('total') || 0);
-    const rawTidakTerikat = parseFloat(infakOut.find(i => i.jenis_zis_distribusi_id === 10)?.get('total') || 0);
+    const rawTerikat = parseFloat(infakOut.find(i => i.jenis_zis_distribusi_id === DIST_INFAK_TERIKAT_ID)?.get('total') || 0);
+    const rawTidakTerikat = parseFloat(infakOut.find(i => i.jenis_zis_distribusi_id === DIST_INFAK_TIDAK_TERIKAT_ID)?.get('total') || 0);
 
     // 5201: Amil-Infak = 20% dari penyaluran infak terikat
     const amil_infak = rawTerikat * 0.20;
@@ -381,8 +406,8 @@ const getPerubahanDana = async (query) => {
       amil_sedekah,
       terikat: rawTerikat,
       tidak_terikat: rawTidakTerikat,
-      alokasi: parseFloat(infakOut.find(i => i.jenis_zis_distribusi_id === 12)?.get('total') || 0),
-      lainnya: infakOut.filter(i => ![9, 10, 11, 12].includes(i.jenis_zis_distribusi_id)).reduce((s, i) => s + parseFloat(i.get('total') || 0), 0)
+      alokasi: 0,
+      lainnya: infakOut.filter(i => ![DIST_INFAK_TERIKAT_ID, DIST_INFAK_TIDAK_TERIKAT_ID].includes(i.jenis_zis_distribusi_id)).reduce((s, i) => s + parseFloat(i.get('total') || 0), 0)
     };
 
     const totalInfakOut = Object.values(mappedInfakOut).reduce((s, v) => s + parseFloat(v || 0), 0);
@@ -405,23 +430,23 @@ const getPerubahanDana = async (query) => {
 
     // Penyaluran Amil: data akan dari tabel baru, sementara semua 0
     const amil_penyaluran = {
-      belanja_pegawai:      0,  // 5301
-      belanja_kegiatan:     0,  // 5302
-      perjalanan_dinas:     0,  // 5303
+      belanja_pegawai: 0,  // 5301
+      belanja_kegiatan: 0,  // 5302
+      perjalanan_dinas: 0,  // 5303
       belanja_administrasi: 0,  // 5304
-      beban_pengadaan:      0,  // 5305
-      beban_penyusutan:     0,  // 5306
-      jasa_pihak_ketiga:    0,  // 5307
-      operasional_upz:      0,  // 5308
-      lainnya:              0   // 5399
+      beban_pengadaan: 0,  // 5305
+      beban_penyusutan: 0,  // 5306
+      jasa_pihak_ketiga: 0,  // 5307
+      operasional_upz: 0,  // 5308
+      lainnya: 0   // 5399
     };
     const total_amil_penyaluran = 0;
 
     // Saldo awal amil = total amil sebelum tahun ini
     const saldoAwalAmilRes = await db.query(`
       SELECT
-        (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE asnaf_id = 3 AND status = 'diterima' AND tahun < :targetTahun) as out_all
-    `, { replacements: { targetTahun }, type: db.QueryTypes.SELECT });
+        (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE asnaf_id = 3 AND status = 'diterima' AND tanggal < :startDate) as out_all
+    `, { replacements: { startDate: targetStartDate }, type: db.QueryTypes.SELECT });
     // Saldo awal amil = akumulasi penerimaan amil - pengeluaran amil sebelumnya
     // simplified as 0 in first year (no prior data), else compute from raw SQL
     const saldo_awal_amil = 0; // conservative default; balance carried from prior years
@@ -447,8 +472,8 @@ const getPerubahanDana = async (query) => {
     };
   };
 
-  const currentYear = await fetchYearData(tahun);
-  const prevYear = await fetchYearData(tahun - 1);
+  const currentYear = await fetchYearData(startDateCurrent, endDate);
+  const prevYear = await fetchYearData(startDatePrev, endDatePrev);
 
   return {
     periode: `${bulan} ${tahun}`,
@@ -502,15 +527,15 @@ const getKasMasukHarian = async (query) => {
 
   // Summary by via — match by name (case-insensitive)
   const viaNama = (r) => (r.via_nama || '').toLowerCase();
-  
+
   // Tunai: matching "cash" or "tunai"
   const tunai = rows.filter(r => viaNama(r).includes('cash') || viaNama(r).includes('tunai')).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);
-  
+
   // Bank: matching "bank"
-  const bank  = rows.filter(r => viaNama(r).includes('bank')).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);
-  
+  const bank = rows.filter(r => viaNama(r).includes('bank')).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);
+
   // Lain: everything else (including "kantor digital" etc.)
-  const lain  = rows.filter(r => {
+  const lain = rows.filter(r => {
     const name = viaNama(r);
     return !name.includes('cash') && !name.includes('tunai') && !name.includes('bank');
   }).reduce((s, r) => s + parseFloat(r.jumlah || 0), 0);

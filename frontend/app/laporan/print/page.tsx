@@ -58,7 +58,7 @@ function LaporanPrintContent() {
             margin: 15,
             filename: `Laporan-Kas-Keluar-${jenisData}-${endDate}.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { 
+            html2canvas: {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
@@ -137,12 +137,13 @@ function LaporanPrintContent() {
                     tr { page-break-inside: avoid; page-break-after: auto; }
                     thead { display: table-header-group; }
                     tfoot { display: table-footer-group; }
-                    
-                    /* Add page numbering using CSS Counters */
-                    body { counter-reset: page; }
-                    .page-number::after {
-                        counter-increment: page;
-                        content: "Page " counter(page);
+                }\n                @page {
+                    size: A4 portrait;
+                    margin: 15mm 10mm 20mm 10mm;
+                    @bottom-center {
+                        content: 'Halaman ' counter(page) ' dari ' counter(pages);
+                        font-size: 9pt;
+                        font-family: sans-serif;
                     }
                 }
                 body { background-color: #f3f4f6; } /* gray background for screen */

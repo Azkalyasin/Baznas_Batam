@@ -7,7 +7,7 @@ import { Loader2, Printer, Download } from 'lucide-react';
 
 function PerubahanDanaContent() {
     const searchParams = useSearchParams();
-    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date') || searchParams.get('start_date');
 
     const [isLoading, setIsLoading] = useState(true);
     const [data, setData] = useState<any>(null);
@@ -15,28 +15,26 @@ function PerubahanDanaContent() {
 
     useEffect(() => {
         const bulanList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        
-        // Parse from YYYY-MM-DD string directly
-        let tanggal = '';
+
         let bulan = '';
         let tahun = 0;
+        let end_date = '';
 
-        if (startDate && startDate.includes('-')) {
-            const parts = startDate.split('-');
-            tahun = parseInt(parts[0]);
-            const monthIdx = parseInt(parts[1]) - 1;
-            bulan = bulanList[monthIdx] || bulanList[new Date().getMonth()];
-            tanggal = parts[2];
+        if (endDate && endDate.includes('-')) {
+            const d = new Date(endDate + 'T00:00:00');
+            tahun = d.getFullYear();
+            bulan = bulanList[d.getMonth()];
+            end_date = endDate; // pass the full date for backend range filtering
         } else {
             const date = new Date();
             tahun = date.getFullYear();
             bulan = bulanList[date.getMonth()];
-            tanggal = date.getDate().toString().padStart(2, '0');
+            end_date = date.toISOString().slice(0, 10);
         }
 
         const fetchData = async () => {
             try {
-                const res = await laporanApi.getPerubahanDana({ tanggal, bulan, tahun });
+                const res = await laporanApi.getPerubahanDana({ bulan, tahun, tanggal: end_date });
                 if (res.success) {
                     setData(res.data);
                 } else {
@@ -50,7 +48,7 @@ function PerubahanDanaContent() {
         };
 
         fetchData();
-    }, [startDate]);
+    }, [endDate]);
 
     const handleDownloadPdf = async () => {
         const element = document.getElementById('pdf-content');
@@ -60,7 +58,7 @@ function PerubahanDanaContent() {
             margin: 0,
             filename: `Laporan-Perubahan-Dana-${periode}.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas: { 
+            html2canvas: {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
@@ -173,19 +171,28 @@ function PerubahanDanaContent() {
                 <div id="pdf-content-page-1" className="bg-white p-12 shadow-xl mx-auto relative printable-page flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm' }}>
                     <style dangerouslySetInnerHTML={{
                         __html: `
-                        @page { margin: 0; size: A4 portrait; }
+                        @page { 
+                            margin: 15mm 10mm 20mm 10mm; 
+                            size: A4 portrait;
+                            @bottom-center { 
+                                content: 'Halaman ' counter(page) ' dari ' counter(pages);
+                                font-size: 9pt;
+                                font-family: sans-serif;
+                            }
+                        }
                         @media print {
                             body { background: white; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                            .print\\:hidden { display: none !important; }
+                            .no-print { display: none !important; }
                             .printable-page { 
                                 box-shadow: none !important; 
                                 margin: 0 !important; 
-                                width: 210mm !important; 
-                                height: 296mm !important; 
-                                padding: 15mm 20mm !important; 
+                                width: 100% !important; 
+                                min-height: auto !important; 
+                                padding: 5mm 10mm !important; 
                                 page-break-after: always;
                                 page-break-inside: avoid;
                             }
+                            .page-num { display: none; }
                         }
                     ` }} />
 
@@ -203,7 +210,7 @@ function PerubahanDanaContent() {
                                 <DataRow label="Penerimaan | Zakat | Dampak Pengukuran" acc="4104" curr={0} prev={0} pl={4} />
                                 <DataRow label="Penerimaan | Zakat | Hasil Penjualan/Laba" acc="4105" curr={0} prev={0} pl={4} />
                                 <DataRow label="Penerimaan | Zakat | Lainnya" acc="4199" curr={current.zakat.penerimaan.lainnya} prev={previous.zakat.penerimaan.lainnya} pl={4} />
-                                
+
                                 <div className="mt-2">
                                     <DataRow label="Jumlah Penerimaan BAZNAS" acc="" curr={current.zakat.total_penerimaan} prev={previous.zakat.total_penerimaan} isBold={true} topBorder={true} bottomBorder={true} />
                                 </div>
@@ -221,7 +228,7 @@ function PerubahanDanaContent() {
                                 <DataRow label="Penyaluran | Zakat | Ibnu Sabil" acc="5108" curr={current.zakat.penyaluran.ibnu_sabil} prev={previous.zakat.penyaluran.ibnu_sabil} pl={4} />
                                 <DataRow label="Penyaluran | Zakat | Alokasi Pemanfaatan" acc="5109" curr={0} prev={0} pl={4} />
                                 <DataRow label="Penyaluran | Zakat | Lainnya" acc="5199" curr={current.zakat.penyaluran.lainnya} prev={previous.zakat.penyaluran.lainnya} pl={4} />
-                                
+
                                 <div className="mt-2">
                                     <DataRow label="Jumlah Penyaluran" acc="" curr={current.zakat.total_penyaluran} prev={previous.zakat.total_penyaluran} isBold={true} topBorder={true} bottomBorder={true} />
                                 </div>
@@ -242,7 +249,7 @@ function PerubahanDanaContent() {
                     <div>
                         {renderSignatures()}
                         <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1 relative bottom-0">
-                            Page 1/2
+                            <span className="page-num"></span>
                         </div>
                     </div>
                 </div>
@@ -298,7 +305,7 @@ function PerubahanDanaContent() {
                     <div>
                         {renderSignatures()}
                         <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1 relative bottom-0">
-                            Page 2/3
+                            <span className="page-num"></span>
                         </div>
                     </div>
                 </div>
@@ -354,7 +361,7 @@ function PerubahanDanaContent() {
 
                         {renderSignatures()}
                         <div className="text-center text-xs font-normal border-t border-gray-400 w-full mt-8 pt-1">
-                            Page 3/3
+                            <span className="page-num"></span>
                         </div>
                     </div>
                 </div>

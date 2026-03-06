@@ -1,8 +1,111 @@
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, AlignmentType, BorderStyle, WidthType, TextRun, Header, HeadingLevel } from 'docx';
-import { laporanApi } from '@/lib/api';
+import { laporanApi, distribusiApi, penerimaanApi } from '@/lib/api';
 
 export async function exportLaporanDocx(filters: any) {
     const { tanggalMulai, tanggalAkhir, jenisData } = filters;
+
+    // ── Raw export: Distribusi ──────────────────────────────────────────
+    if (jenisData === 'distribusi') {
+        // Controller: res.json({ success: true, ...data }) where data from service = { rows: [...], total, ... }
+        // So the raw JSON = { success: true, rows: [...], total, ... }
+        // apiFetch returns this raw JSON directly (return data at line 77)
+        const res = await distribusiApi.list({ startDate: tanggalMulai, endDate: tanggalAkhir, status: 'diterima', limit: 9999, page: 1 } as any) as any;
+        const rows: any[] = Array.isArray(res?.rows) ? res.rows : [];
+        console.log('[Export Distribusi] fetched rows:', rows.length, 'params:', { startDate: tanggalMulai, endDate: tanggalAkhir, status: 'diterima' });
+
+        const defaultBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
+        const cb = { top: defaultBorder, bottom: defaultBorder, left: defaultBorder, right: defaultBorder };
+        const cell = (text: string, bold = false) =>
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text, bold, size: 18 })] })], borders: cb });
+
+        const tableRows = [
+            new TableRow({ children: ['No', 'Tanggal', 'Nama Mustahiq', 'Program', 'Asnaf', 'Jumlah (Rp)'].map(h => cell(h, true)) }),
+            ...rows.map((r: any, idx: number) => new TableRow({
+                children: [
+                    cell(String(idx + 1)),
+                    cell(r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '-'),
+                    cell(r.Mustahiq?.nama || r.nama_mustahik || '-'),
+                    cell(r.ref_nama_program?.nama || r.NamaProgram?.nama || '-'),
+                    cell(r.asnaf?.nama || '-'),
+                    cell(new Intl.NumberFormat('id-ID').format(Number(r.jumlah) || 0)),
+                ]
+            })),
+        ];
+
+        const doc = new Document({
+            sections: [{
+                children: [
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'BAZNAS KOTA BATAM', bold: true, size: 28 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'DATA DISTRIBUSI', bold: true, size: 24 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Periode: ${new Date(tanggalMulai).toLocaleDateString('id-ID')} – ${new Date(tanggalAkhir).toLocaleDateString('id-ID')}`, size: 20 })] }),
+                    new Paragraph({ text: '' }),
+                    new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }),
+                    new Paragraph({ text: '' }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Total ${rows.length} transaksi`, italics: true, size: 18 })] }),
+                ]
+            }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Data-Distribusi-${tanggalMulai}-sd-${tanggalAkhir}.docx`;
+        document.body.appendChild(a); a.click();
+        URL.revokeObjectURL(url); document.body.removeChild(a);
+        return;
+    }
+
+    // ── Raw export: Pengumpulan (Penerimaan) ───────────────────────────
+    if (jenisData === 'pengumpulan') {
+        // Controller: res.json({ success: true, ...data }) where data from service = { data: rows, total, ... }
+        // So the raw JSON = { success: true, data: [...], total, ... }
+        const res = await penerimaanApi.list({ startDate: tanggalMulai, endDate: tanggalAkhir, limit: 9999, page: 1 } as any) as any;
+        const rows: any[] = Array.isArray(res?.data) ? res.data : [];
+        console.log('[Export Penerimaan] fetched rows:', rows.length, 'params:', { startDate: tanggalMulai, endDate: tanggalAkhir });
+
+        const defaultBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
+        const cb = { top: defaultBorder, bottom: defaultBorder, left: defaultBorder, right: defaultBorder };
+        const cell = (text: string, bold = false) =>
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text, bold, size: 18 })] })], borders: cb });
+
+        const tableRows = [
+            new TableRow({ children: ['No', 'Tanggal', 'Nama Muzakki', 'NPWZ', 'Jenis ZIS', 'Jumlah (Rp)', 'Via'].map(h => cell(h, true)) }),
+            ...rows.map((r: any, idx: number) => new TableRow({
+                children: [
+                    cell(String(idx + 1)),
+                    cell(r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '-'),
+                    // Sequelize includes: Muzakki (capital M), jenis_zis (lowercase alias), via (lowercase alias)
+                    cell(r.Muzakki?.nama || r.nama_muzakki || '-'),
+                    cell(r.Muzakki?.npwz || r.npwz || '-'),
+                    cell(r.jenis_zis?.nama || r.zis?.nama || '-'),
+                    cell(new Intl.NumberFormat('id-ID').format(Number(r.jumlah) || 0)),
+                    cell(r.via?.nama || '-'),  // via association alias is 'via' (lowercase)
+                ]
+            })),
+        ];
+
+        const doc = new Document({
+            sections: [{
+                children: [
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'BAZNAS KOTA BATAM', bold: true, size: 28 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'DATA PENGUMPULAN', bold: true, size: 24 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Periode: ${new Date(tanggalMulai).toLocaleDateString('id-ID')} – ${new Date(tanggalAkhir).toLocaleDateString('id-ID')}`, size: 20 })] }),
+                    new Paragraph({ text: '' }),
+                    new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }),
+                    new Paragraph({ text: '' }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Total ${rows.length} transaksi`, italics: true, size: 18 })] }),
+                ]
+            }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Data-Pengumpulan-${tanggalMulai}-sd-${tanggalAkhir}.docx`;
+        document.body.appendChild(a); a.click();
+        URL.revokeObjectURL(url); document.body.removeChild(a);
+        return;
+    }
 
     let data: any[] = [];
     let title = 'LAPORAN KAS KELUAR';
@@ -161,7 +264,7 @@ export async function exportLaporanDocx(filters: any) {
                 const np = item.ref_nama_program?.nama || '';
                 gName = `${item.ref_program_kegiatan?.kode || ''} | ${np} | ${sp} | ${pk}`;
             } else if (filters.jenisData === 'kas_keluar_asnaf') {
-              gName = item.asnaf?.nama || item.ref_asnaf?.nama || 'Tanpa Asnaf';
+                gName = item.asnaf?.nama || item.ref_asnaf?.nama || 'Tanpa Asnaf';
             }
             if (!groups[gName]) groups[gName] = [];
             groups[gName].push(item);

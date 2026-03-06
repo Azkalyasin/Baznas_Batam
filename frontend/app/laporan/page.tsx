@@ -13,6 +13,7 @@ import {
   FileText, BarChart2, TrendingUp, CalendarDays, Users, BookOpen, Wallet
 } from 'lucide-react';
 import { laporanApi } from '@/lib/api';
+import { exportLaporanDocx } from '@/lib/docx-export';
 
 type DateMode = 'single' | 'range';
 
@@ -93,12 +94,12 @@ const REPORT_GROUPS: { group: string; reports: ReportType[] }[] = [
     ],
   },
   {
-    group: 'Data Mentah',
+    group: 'Export Data',
     reports: [
       {
         value: 'distribusi',
-        label: 'Data Distribusi',
-        description: 'Export raw data distribusi dalam format dokumen',
+        label: 'Data Distribusi (Word)',
+        description: 'Export data distribusi dalam format dokumen',
         icon: BarChart2,
         color: 'text-rose-600',
         bg: 'bg-rose-50',
@@ -107,8 +108,8 @@ const REPORT_GROUPS: { group: string; reports: ReportType[] }[] = [
       },
       {
         value: 'pengumpulan',
-        label: 'Data Pengumpulan',
-        description: 'Export raw data penerimaan dalam format dokumen',
+        label: 'Data Pengumpulan (Word)',
+        description: 'Export data penerimaan dalam format dokumen',
         icon: FileText,
         color: 'text-teal-600',
         bg: 'bg-teal-50',
@@ -167,19 +168,21 @@ export default function LaporanPage() {
         let path = '/laporan/print';
         if (popupReport.value === 'perubahan_dana') path = '/laporan/perubahan-dana';
         if (popupReport.value === 'kas_masuk_harian') path = '/laporan/kas-masuk';
-        
-        let url = `${path}?start_date=${startParam}&end_date=${endParam}&jenis_data=${popupReport.value}`;
-        
-        // Use direct backend PDF URL for reports that don't have a frontend preview page yet
+
+        // For perubahan_dana: always pass Jan 1 of the selected year as start
+        // so the backend knows the full-year context
+        let startForUrl = startParam;
+        if (popupReport.value === 'perubahan_dana') {
+          const selYear = new Date(endParam).getFullYear();
+          startForUrl = `${selYear}-01-01`;
+        }
+
+        let url = `${path}?start_date=${startForUrl}&end_date=${endParam}&jenis_data=${popupReport.value}`;
+
         if (popupReport.value === 'neraca') {
-            url = laporanApi.exportNeracaUrl({ 
-                tanggal: endParam 
-            });
+          url = laporanApi.exportNeracaUrl({ tanggal: endParam });
         } else if (popupReport.value === 'arus_kas') {
-            url = laporanApi.exportArusKasUrl({ 
-                start_date: startParam, 
-                end_date: endParam 
-            });
+          url = laporanApi.exportArusKasUrl({ start_date: startForUrl, end_date: endParam });
         }
 
         window.open(url, '_blank');
@@ -188,53 +191,12 @@ export default function LaporanPage() {
         return;
       }
 
-      const { Document, Packer, Paragraph, TextRun, Table, TableCell, TableRow, AlignmentType, BorderStyle } = await import('docx');
-      const defaultBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
-      const cellBorders = { top: defaultBorder, bottom: defaultBorder, left: defaultBorder, right: defaultBorder };
-
-      const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: 'LAPORAN BAZNAS BATAM', bold: true, size: 28 })],
-            }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: `Periode: ${new Date(startParam).toLocaleDateString('id-ID')} - ${new Date(endParam).toLocaleDateString('id-ID')}`, size: 22 })],
-            }),
-            new Paragraph({ text: '' }),
-            new Table({
-              rows: [
-                new TableRow({ children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Item' })], borders: cellBorders }),
-                  new TableCell({ children: [new Paragraph({ text: 'Jumlah' })], borders: cellBorders }),
-                ]}),
-                new TableRow({ children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Total Transaksi' })], borders: cellBorders }),
-                  new TableCell({ children: [new Paragraph({ text: '0' })], borders: cellBorders }),
-                ]}),
-              ],
-              width: { size: 100, type: 'pct' as any },
-            }),
-            new Paragraph({ text: '' }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: `Dihasilkan: ${new Date().toLocaleString('id-ID')}`, italics: true, size: 20 })],
-            }),
-          ],
-        }],
+      // Word export for distribusi / pengumpulan using real data
+      await exportLaporanDocx({
+        tanggalMulai: startParam,
+        tanggalAkhir: endParam,
+        jenisData: popupReport.value, // 'distribusi' | 'pengumpulan'
       });
-
-      const blob = await Packer.toBlob(doc);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Laporan-BAZNAS-${popupReport.value}-${today.toISOString().split('T')[0]}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
       setPopupReport(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal mengekspor laporan');
