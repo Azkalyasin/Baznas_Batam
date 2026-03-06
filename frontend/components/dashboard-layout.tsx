@@ -26,22 +26,8 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/muzakki', label: 'Muzakki', icon: '🧑‍💼', roles: ['superadmin', 'pendistribusian', 'keuangan', 'penerimaan'] },
   { href: '/pelayanan', label: 'Mustahiq', icon: '👥' },
-  {
-    label: 'Distribusi',
-    icon: '📦',
-    children: [
-      { href: '/distribusi', label: 'Daftar Distribusi', icon: '📋' },
-      { href: '/statistik-distribusi', label: 'Statistik', icon: '📈' },
-    ],
-  },
-  {
-    label: 'Penerimaan',
-    icon: '💵',
-    children: [
-      { href: '/pengumpulan', label: 'Daftar Penerimaan', icon: '📋', roles: ['superadmin', 'pendistribusian', 'keuangan', 'penerimaan'] },
-      { href: '/statistik-penerimaan', label: 'Statistik', icon: '📈' },
-    ],
-  },
+  { href: '/distribusi', label: 'Distribusi', icon: '📦' },
+  { href: '/pengumpulan', label: 'Penerimaan', icon: '💵', roles: ['superadmin', 'pendistribusian', 'keuangan', 'penerimaan'] },
   { href: '/migrasi-excel', label: 'Migrasi Excel', icon: '📁' },
   { href: '/laporan', label: 'Laporan', icon: '📄' },
   {
@@ -177,7 +163,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Sidebar Navigation */}
         <nav className={`hidden shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:block transition-all duration-300 sticky top-16 h-[calc(100vh-4rem)] z-40 ${isCollapsed ? 'w-0 overflow-hidden border-none' : 'w-64 overflow-y-auto overflow-x-hidden'}`}>
           <div className={`p-4 transition-opacity duration-300 ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
-            {!isCollapsed && <div className="text-sm font-semibold text-sidebar-foreground mb-4">Menu Utama</div>}
             <ul className="space-y-1">
               {navItems
                 .filter(item => !item.roles || (user && item.roles.includes(user.role)))

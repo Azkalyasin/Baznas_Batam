@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
-import { distribusiApi } from '@/lib/api';
+import { distribusiApi, dashboardApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,10 +55,18 @@ export default function DistribusiPage() {
   const [kategoriList, setKategoriList] = useState<any[]>([]);
   const [totalJumlah, setTotalJumlah] = useState(0);
   const [totalPermohonan, setTotalPermohonan] = useState(0);
+  const [dashboardData, setDashboardData] = useState<any>(null);
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/login');
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const currentYear = new Date().getFullYear();
+    dashboardApi.getUtama({ tahun: currentYear }).then((res: any) => {
+      if (res.success) setDashboardData(res.data);
+    }).catch(() => {});
+  }, []);
 
   // Load kategori mustahiq ref for filter
   useEffect(() => {
