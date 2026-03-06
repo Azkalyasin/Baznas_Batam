@@ -68,6 +68,8 @@ function KasMasukContent() {
 
     const items: any[] = data.items || [];
     const summary = data.summary || {};
+    const totalDonasi = items.reduce((acc, row) => acc + (row.donasi || 0), 0);
+    const totalNonDonasi = items.reduce((acc, row) => acc + (row.non_donasi || 0), 0);
     const fmt = (v: any) => (parseFloat(v || 0)).toLocaleString('id-ID');
 
     return (
@@ -147,8 +149,8 @@ function KasMasukContent() {
                         {/* Jumlah row */}
                         <tr>
                             <td colSpan={3} className="text-right font-bold">Jumlah (Rp)</td>
-                            <td className="text-right font-bold">{fmt(summary.total)}</td>
-                            <td className="text-right font-bold">0</td>
+                            <td className="text-right font-bold">{totalDonasi > 0 ? fmt(totalDonasi) : '0'}</td>
+                            <td className="text-right font-bold">{totalNonDonasi > 0 ? fmt(totalNonDonasi) : '0'}</td>
                         </tr>
                     </tbody>
                 </table>

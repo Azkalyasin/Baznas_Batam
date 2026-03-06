@@ -547,13 +547,16 @@ const getKasMasukHarian = async (query) => {
   const yy = String(d.getFullYear()).slice(-2);
 
   const items = rows.map((r, idx) => {
-    const isDonasi = [9, 10].includes(Number(r.zis_id));
+    const namaZis = (r.jenis_zis_nama || '').toLowerCase();
+    const isNonDonasi = namaZis.includes('zakat') || namaZis.includes('fidyah');
+    const isDonasi = !isNonDonasi;
+    
     return {
       no: idx + 1,
       npwz: r.npwz || '-',
       nama: r.nama_muzakki || '-',
       donasi: isDonasi ? parseFloat(r.jumlah || 0) : 0,
-      non_donasi: !isDonasi ? parseFloat(r.jumlah || 0) : 0,
+      non_donasi: isNonDonasi ? parseFloat(r.jumlah || 0) : 0,
       via: r.via_nama || '-',
       via_id: r.via_id
     };
