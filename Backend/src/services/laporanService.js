@@ -7,31 +7,46 @@ import db from '../config/database.js';
 import { Asnaf, NamaProgram, SubProgram, ProgramKegiatan, NamaEntitas, JenisZis, Zis, Infak, JenisZisDistribusi } from '../models/ref/index.js';
 
 const getArusKas = async (query) => {
-  const tahun = parseInt(query.tahun) || new Date().getFullYear();
-  const bulan = query.bulan || new Date().toLocaleString('id-ID', { month: 'long' });
+  const { start_date, end_date } = query;
+  
+  const endTarget = end_date || new Date().toISOString().slice(0, 10);
+  let tahun = new Date(endTarget).getFullYear();
+  const startTarget = start_date || `${tahun}-01-01`;
 
-  const bulanList = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-  const bulanIndex = bulanList.indexOf(bulan);
+  const d = new Date(endTarget);
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = monthNames[d.getMonth()];
+  const yy = d.getFullYear();
+  const periodeLabel = `${startTarget} s.d ${dd} ${mm} ${yy}`;
 
   const saldoAwalRes = await db.query(`
     SELECT 
-      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx)) as total_masuk,
-      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') < :bulanIdx)) as total_keluar
+      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE tanggal < :startTarget) as total_masuk,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE status = 'diterima' AND tanggal < :startTarget) as total_keluar
   `, {
-    replacements: { tahun, bulanIdx: bulanIndex + 1 },
+    replacements: { startTarget },
     type: db.QueryTypes.SELECT
   });
 
-  const saldo_awal = (saldoAwalRes[0].total_masuk * 0.875) - saldoAwalRes[0].total_keluar; // 0.875 karena Zakat dikurangi 12.5% amil (asumsi sederhana)
+  const saldo_awal = (saldoAwalRes[0].total_masuk * 0.875) - (saldoAwalRes[0].total_keluar * 0.7); // simplified
 
-  const penerimaan = await Penerimaan.findAll({
-    attributes: [
-      'jenis_zis',
-      'via',
-      [db.fn('SUM', db.col('jumlah')), 'total']
-    ],
-    where: { tahun, bulan },
-    group: ['jenis_zis', 'via']
+  // In getArusKas, query direct from tables but joined with reference lookup since we rely on names 
+  // Wait, let's keep it simple: group by ids and map them. Or use literal if needed. Let's do raw to be safe with names.
+
+  const penerimaanRaw = await db.query(`
+    SELECT 
+      z.nama as jenis_zis,
+      v.nama as via,
+      SUM(p.jumlah) as total
+    FROM penerimaan p
+    LEFT JOIN ref_jenis_zis z ON p.jenis_zis_id = z.id
+    LEFT JOIN ref_via_penerimaan v ON p.via_id = v.id
+    WHERE p.tanggal BETWEEN :startTarget AND :endTarget
+    GROUP BY p.jenis_zis_id, p.via_id
+  `, {
+    replacements: { startTarget, endTarget },
+    type: db.QueryTypes.SELECT
   });
 
   let total_zakat = 0;
@@ -40,12 +55,12 @@ const getArusKas = async (query) => {
   const breakdown_per_jenis_zis = {};
   const breakdown_per_channel = {};
 
-  penerimaan.forEach(item => {
-    const val = parseFloat(item.get('total')) || 0;
-    const type = item.jenis_zis;
-    const channel = item.via;
+  penerimaanRaw.forEach(item => {
+    const val = parseFloat(item.total) || 0;
+    const type = item.jenis_zis || 'Lainnya';
+    const channel = item.via || 'Lainnya';
 
-    if (type === 'Zakat') total_zakat += val;
+    if (type.toLowerCase().includes('zakat')) total_zakat += val;
     else total_infaq += val;
 
     total_masuk += val;
@@ -55,31 +70,40 @@ const getArusKas = async (query) => {
 
   const total_dana_amil = total_zakat * 0.125;
 
-  const distribusi = await Distribusi.findAll({
-    attributes: [
-      'nama_program',
-      'asnaf',
-      [db.fn('SUM', db.col('jumlah')), 'total']
-    ],
-    where: { tahun, bulan },
-    group: ['nama_program', 'asnaf']
+  const distribusiRaw = await db.query(`
+    SELECT 
+      np.nama as nama_program,
+      a.nama as asnaf,
+      SUM(d.jumlah) as total
+    FROM distribusi d
+    LEFT JOIN ref_nama_program np ON d.nama_program_id = np.id
+    LEFT JOIN ref_asnaf a ON d.asnaf_id = a.id
+    WHERE d.status = 'diterima' AND d.tanggal BETWEEN :startTarget AND :endTarget
+    GROUP BY d.nama_program_id, d.asnaf_id
+  `, {
+    replacements: { startTarget, endTarget },
+    type: db.QueryTypes.SELECT
   });
+
 
   let total_keluar = 0;
   const breakdown_per_program = {};
   const breakdown_per_asnaf = {};
 
-  distribusi.forEach(item => {
-    const val = parseFloat(item.get('total')) || 0;
+  distribusiRaw.forEach(item => {
+    const val = parseFloat(item.total) || 0;
+    const programName = item.nama_program || 'Program Lainnya';
+    const asnafName = item.asnaf || 'Asnaf Lainnya';
+
     total_keluar += val;
-    breakdown_per_program[item.nama_program] = (breakdown_per_program[item.nama_program] || 0) + val;
-    breakdown_per_asnaf[item.asnaf] = (breakdown_per_asnaf[item.asnaf] || 0) + val;
+    breakdown_per_program[programName] = (breakdown_per_program[programName] || 0) + val;
+    breakdown_per_asnaf[asnafName] = (breakdown_per_asnaf[asnafName] || 0) + val;
   });
 
   const saldo_akhir = saldo_awal + (total_masuk - total_dana_amil) - total_keluar;
 
   return {
-    periode: `${bulan} ${tahun}`,
+    periode: periodeLabel,
     saldo_awal,
     arus_kas_masuk: {
       total_zakat,
@@ -101,16 +125,26 @@ const getArusKas = async (query) => {
 };
 
 const getNeraca = async (query) => {
-  const tahun = parseInt(query.tahun) || new Date().getFullYear();
-  const bulan = query.bulan || new Date().toLocaleString('id-ID', { month: 'long' });
+  const { tanggal } = query;
+  const targetDate = tanggal || new Date().toISOString().slice(0, 10);
+  const tahun = new Date(targetDate).getFullYear();
+  const awalTahun = `${tahun}-01-01`;
+
+  const d = new Date(targetDate);
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = monthNames[d.getMonth()];
+  const yy = d.getFullYear();
+  const periodeLabel = `${dd} ${mm} ${yy}`;
+
   const stats = await db.query(`
     SELECT 
-      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') <= :bulanIdx)) as total_masuk,
-      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') <= :bulanIdx)) as total_keluar,
-      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE jenis_zis = 'Zakat' AND (tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') <= :bulanIdx))) as total_zakat_in,
-      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE asnaf IN ('Fakir', 'Miskin', 'Amil', 'Muallaf', 'Gharimin', 'Ibnu Sabil', 'Fisabillillah', 'Riqob') AND (tahun < :tahun OR (tahun = :tahun AND FIELD(bulan, 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember') <= :bulanIdx))) as total_dist_out
+      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE tanggal BETWEEN :awalTahun AND :targetDate) as total_masuk,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE status = 'diterima' AND tanggal BETWEEN :awalTahun AND :targetDate) as total_keluar,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM penerimaan WHERE zis_id = 3 AND tanggal BETWEEN :awalTahun AND :targetDate) as total_zakat_in,
+      (SELECT IFNULL(SUM(jumlah), 0) FROM distribusi WHERE asnaf_id IN (1,2,3,4,5,6,7,8) AND status = 'diterima' AND tanggal BETWEEN :awalTahun AND :targetDate) as total_dist_out
   `, {
-    replacements: { tahun, bulanIdx: 12 },
+    replacements: { targetDate, awalTahun },
     type: db.QueryTypes.SELECT
   });
 
@@ -122,7 +156,7 @@ const getNeraca = async (query) => {
   const total_aktiva = (total_masuk - total_keluar);
 
   return {
-    periode: `${bulan} ${tahun}`,
+    periode: periodeLabel,
     aktiva: {
       kas_dan_setara_kas: total_aktiva,
       total_aktiva
