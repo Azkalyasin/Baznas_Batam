@@ -166,12 +166,9 @@ function LaporanPrintContent() {
             {/* Standardized Sticky Header */}
             <div className="no-print mb-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded flex flex-row items-center justify-between gap-3 sticky top-0 z-50 shadow-sm">
                 <p>
-                    <strong>Laporan Siap.</strong> Anda dapat mencetak atau menyimpan laporan ini.
+                    <strong>Laporan Siap.</strong> Anda dapat mencetak laporan ini.
                 </p>
                 <div className="flex gap-2">
-                    <button onClick={handleDownloadPdf} className="bg-emerald-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 whitespace-nowrap">
-                        <Download className="h-4 w-4 text-white" /> Simpan PDF
-                    </button>
                     <button onClick={() => window.print()} className="bg-blue-600 font-medium text-white px-5 py-2.5 rounded shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap">
                         <Printer className="h-4 w-4" /> Cetak Printer
                     </button>
